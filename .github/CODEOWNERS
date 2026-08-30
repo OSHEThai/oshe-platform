@@ -1,9 +1,14 @@
 * @OSHEThai/engineering
 /docs/adr/ @OSHEThai/architecture
 /docs/rfc/ @OSHEThai/architecture
+/products/ @OSHEThai/architecture @OSHEThai/engineering
+/modules/ @OSHEThai/architecture @OSHEThai/engineering
 /contracts/ @OSHEThai/architecture
 /schemas/ @OSHEThai/architecture
 /database/ @OSHEThai/engineering @OSHEThai/quality
+/tests/ @OSHEThai/quality
+/tests/security/ @OSHEThai/security @OSHEThai/quality
+/tests/release/ @OSHEThai/quality
 /deploy/ @OSHEThai/engineering @OSHEThai/security
 /.github/ @OSHEThai/engineering @OSHEThai/security
 /.ai/ @OSHEThai/engineering @OSHEThai/security
