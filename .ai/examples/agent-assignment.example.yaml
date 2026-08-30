@@ -1,0 +1,89 @@
+schema_version: 1.0.0
+assignment_id: ASN-V010-EXAMPLE-001
+mission_id: MISSION-V010-EXAMPLE
+task_id: TASK-V010-EXAMPLE-001
+agent_session_id: SESSION-EXAMPLE-NOT-ACTIVE
+role:
+  role_id: documentation-configuration-agent
+  role_version: 1.0.0
+  role_card_ref: .ai/roles/cards/documentation-configuration-agent.md
+  specialist_profile: docs-content-pack-worker
+provider_route:
+  route_id: route-openai-codex-candidate
+  provider: openai
+  model_or_runtime: model-openai-codex-candidate
+  revision: null
+  cli_or_adapter: UNQUALIFIED
+  configuration_digest: null
+  route_status: UNKNOWN
+skill_bundle:
+  bundle_id: documentation-configuration-agent
+  skills:
+  - docs-from-diff
+  - record-evidence-integrity
+  - result-contract
+authority:
+  mode: BOUNDED_DOCUMENT_WRITE
+  data_classes:
+  - INTERNAL
+  allowed_tools:
+  - repository-read
+  - bounded-file-edit
+  forbidden_tools:
+  - production-access
+  - secret-export
+  - protected-github-execution
+  allowed_artifacts:
+  - assigned repository documentation
+  allowed_paths:
+  - docs/**
+  - .ai/examples/**
+  forbidden_paths:
+  - unrelated libraries
+  - production systems
+  network_mode: ALLOWLIST
+  credential_profile_ref: null
+  write_lease_id: LEASE-V010-EXAMPLE-001
+contracts:
+  input_refs:
+  - ADR-0005
+  - REG-PCR-001
+  output_schema_ref: .ai/schemas/result.schema.json
+  acceptance_criteria:
+  - Only assigned artifacts change.
+  - Source-derived and proposed content remain distinguishable.
+  - Review findings are resolved or recorded.
+  required_checks:
+  - metadata validation
+  - link check
+  - independent review
+  stop_conditions:
+  - authority is unclear
+  - source documents conflict
+  - prohibited data or credentials appear
+dependencies: []
+review:
+  required: true
+  reviewer_role_id: independent-review-challenge-agent
+  reviewer_assignment_id: null
+  read_only_preferred: true
+  independent_route_required: false
+usage:
+  cost_class: C1
+  quota_ref: QUOTA-EXAMPLE-NOT-APPROVED
+  soft_warning: No active quota; dispatch remains denied.
+  hard_stop: Stop when the approved quota or service hard limit is reached.
+  actual_usage_ref: null
+timing:
+  activated_at: null
+  expires_at: null
+  timeout_seconds: 3600
+human_approval:
+  required: true
+  triggers:
+  - document approval
+  - material authority change
+  - new provider or data route
+  decision_ref: null
+state: DRAFT
+evidence_refs: []

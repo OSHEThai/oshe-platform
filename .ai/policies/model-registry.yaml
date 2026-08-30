@@ -1,0 +1,209 @@
+schema_version: 1.0.0
+registry_id: REG-MODEL-001
+title: Model and Runtime Registry
+registry_version: 1.0.0
+lifecycle_status: APPROVED
+maturity: OPERATIONAL
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL
+runtime_enforcement_status: NOT_IMPLEMENTED
+review_status: APPROVED
+effective_date: '2026-08-18'
+authority_basis:
+- ADR-0005
+- REL-V010-PQCP-001
+- REL-V010-BCR04-001
+- V010-I023
+owner: security-privacy-product-safety-agent
+approval_authority: Sole Human Owner / Human Product and Release Authority
+source_of_truth: GOOGLE_DRIVE
+registry_state: CANDIDATE_MODELS_RECORDED_NO_MODEL_APPROVED
+approved_model_refs: []
+dispatch_default: DENY
+models:
+- model_record_id: model-qwen-local-candidate
+  provider_id: qwen
+  service_family: qwen-local
+  route_kind: LOCAL_RUNTIME
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: TBD
+  package_checksum: TBD
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: &id001
+  - PUBLIC
+  - INTERNAL
+  - CONFIDENTIAL
+  - RESTRICTED
+  - MEDICAL
+  - SECURITY_CASE
+  - LEGAL_PRIVILEGED
+  - PRODUCTION_SECRET
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+- model_record_id: model-openai-codex-candidate
+  provider_id: openai
+  service_family: codex
+  route_kind: ONLINE_SERVICE
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+- model_record_id: model-google-gemini-candidate
+  provider_id: google
+  service_family: gemini
+  route_kind: ONLINE_SERVICE
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+- model_record_id: model-anthropic-claude-candidate
+  provider_id: anthropic
+  service_family: claude
+  route_kind: ONLINE_SERVICE
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+- model_record_id: model-deepseek-pro-candidate
+  provider_id: deepseek
+  service_family: deepseek-pro
+  route_kind: ONLINE_SERVICE
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+- model_record_id: model-deepseek-flash-candidate
+  provider_id: deepseek
+  service_family: deepseek-flash
+  route_kind: ONLINE_SERVICE
+  model_id: TBD
+  deployment_name_or_alias: TBD
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: TBD
+  cli_version: TBD
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: INTAKE_INCOMPLETE
+  dispatch_enabled: false
+  review_trigger: Resolve exact identity and complete route qualification before use
+enabled_model_record_ids: []
+legacy_aliases:
+  codex:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  gemini:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  claude:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  deepseek-pro:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  deepseek-flash:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  qwen-local:
+    status: UNRESOLVED_UNQUALIFIED_ALIAS
+    resolves_to: null
+  deterministic-plus-qwen:
+    status: RETIRED_INVALID_COMPOSITE_ALIAS
+    resolves_to: null

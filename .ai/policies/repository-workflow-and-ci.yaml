@@ -1,0 +1,74 @@
+schema_version: 1.0.0
+policy_id: POL-REPOSITORY-WORKFLOW-CI-001
+title: Repository Workflow, Local-First CI, and Cleanup Policy
+lifecycle_status: APPROVED
+approved_by: Sole Human Owner
+effective_date: 30-08-2026
+authority_basis:
+  - docs/adr/adr-0007-local-first-ci-and-repository-lifecycle.md
+default_decision: DENY_ON_MISSING_STALE_OR_CONFLICTING_EVIDENCE
+pull_requests:
+  protected_branch_delivery: PULL_REQUEST_REQUIRED
+  issue_scoped_work: LINK_THE_GOVERNING_ISSUE
+  directly_authorized_out_of_issue_work: OPEN_PULL_REQUEST_AS_PRIMARY_AUDIT_RECORD
+  synthetic_issue_required: false
+  direct_push_to_main: DENY
+  merge_method: SQUASH
+  merge_prerequisites:
+    - EXACT_HEAD_LOCAL_CI_PASS
+    - REQUIRED_GITHUB_CHECKS_PASS
+    - REQUIRED_REVIEW_PASS
+    - MERGEABLE_AND_UP_TO_DATE
+    - SCOPE_AND_AUTHORITY_PASS
+    - EXACT_GITHUB_OPERATION_GATE_PASS
+ci:
+  primary_environment: LOCAL
+  incremental:
+    default_for: ORDINARY_CHANGE_AND_PULL_REQUEST_WORK
+    execution: RUN_ALL_APPLICABLE_CHECKS_IN_ONE_BATCH
+    failure_behavior: COLLECT_ALL_FAILURES_WITHOUT_FAIL_FAST
+    checkpoint:
+      allow_skip_after_pass: true
+      required_match_fields:
+        - CHECK_COMMAND_DIGEST
+        - TOOLCHAIN_IDENTITY
+        - REPOSITORY_INPUT_DIGEST
+        - BASE_COMMIT
+      unknown_or_changed_state: INVALIDATE_AND_RERUN
+  github:
+    prerequisite: APPLICABLE_LOCAL_INCREMENTAL_CI_PASS
+    checkpoint_trust: NEVER_TRUST_LOCAL_CHECKPOINT_FILE
+    purpose: PROTECTED_INTEGRATION_EVIDENCE
+  full:
+    allowed_trigger: MILESTONE_CLOSE_ONLY
+    order:
+      - LOCAL_EXACT_CANDIDATE_PASS
+      - GITHUB_EXACT_CANDIDATE_PASS
+    checkpoint_skip: DENY
+branch_lifecycle:
+  delete_head_branch_after_merge: true
+  delete_closed_unmerged_or_abandoned_branch: true
+  deletion_preconditions:
+    - NO_OPEN_PULL_REQUEST
+    - NO_ACTIVE_ASSIGNMENT_OR_WORKTREE
+    - NO_UNRECOVERED_COMMIT
+    - NO_RELEASE_OR_EVIDENCE_REFERENCE
+    - EXACT_TARGET_RE_RESOLVED
+  postcondition: BRANCH_ABSENCE_VERIFIED
+workspace_cleanup:
+  timing: AFTER_TASK_COMPLETION
+  remove_when_unreferenced:
+    - DISPOSABLE_WORKTREES
+    - MERGED_OR_ABANDONED_LOCAL_BRANCHES
+    - CACHES
+    - TEMPORARY_LOGS
+    - DOWNLOADED_ARTIFACTS
+    - FAILED_BUILD_OUTPUTS
+  preserve:
+    - REQUIRED_EVIDENCE_RECORDS
+    - VALID_CI_CHECKPOINT_METADATA
+    - RECOVERY_REFERENCES
+  safety:
+    - RESOLVE_EXACT_TARGET
+    - KEEP_TARGET_INSIDE_GOVERNED_WORKSPACE
+    - VERIFY_POST_CLEANUP_STATE

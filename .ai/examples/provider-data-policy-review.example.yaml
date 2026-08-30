@@ -1,0 +1,34 @@
+schema_version: 1.0.0
+review_id: PDR-EXAMPLE-001
+provider_id: TBD
+service_id: TBD
+account_profile_id: TBD
+region_or_host_profile: TBD
+authoritative_sources: []
+review_dimensions:
+  input_output_handling: NOT_ASSESSED
+  retention_and_deletion: NOT_ASSESSED
+  training_and_service_improvement: NOT_ASSESSED
+  regions_and_subprocessors: NOT_ASSESSED
+  human_support_access: NOT_ASSESSED
+  security_and_encryption: NOT_ASSESSED
+  incident_and_change_notification: NOT_ASSESSED
+  audit_and_export: NOT_ASSESSED
+allowed_data_classes: []
+prohibited_data_classes:
+- PUBLIC
+- INTERNAL
+- CONFIDENTIAL
+- RESTRICTED
+- MEDICAL
+- SECURITY_CASE
+- LEGAL_PRIVILEGED
+- PRODUCTION_SECRET
+status: NOT_ASSESSED
+unresolved_questions:
+- Exact service/account/region and authoritative policy sources are not yet supplied.
+reviewers:
+- security-privacy-product-safety-agent
+- independent-review-challenge-agent
+human_approver: Sole Human Owner / Human Product and Release Authority
+review_trigger: Complete before route activation or any provider submission.

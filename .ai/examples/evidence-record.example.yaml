@@ -1,0 +1,17 @@
+schema_version: 1.0.0
+evidence_id: EVD-V010-STATIC-001
+evidence_class: STATIC
+claim: AI Agent OS registries and local references pass static validation.
+repository: OSHEThai/oshe-platform
+commit: null
+environment: local-preparation-worktree
+command_or_method: python .ai/tools/validate_agent_os.py
+result: PASS
+artifact_refs:
+- .ai/readiness.yaml
+captured_at: '2026-08-30T00:00:00+07:00'
+captured_by: release-evidence-agent-example
+limitations:
+- Example only; not runtime, hosted CI, independent review, or release evidence.
+review_ref: null
+human_decision_ref: null

@@ -1,0 +1,102 @@
+schema_version: 1.0.0
+registry_id: REG-SPECIALIST-PROFILE-001
+title: Specialist Agent Profile Registry
+lifecycle_status: UNDER_REVIEW
+authority_basis: ADR-0005
+additional_authority_basis:
+- ADR-0006
+runtime_enforcement_status: NOT_IMPLEMENTED
+default_dispatch_status: NOT_DISPATCHABLE_WITHOUT_REGISTERED_ASSIGNMENT_AND_APPROVED_ROUTE
+rules:
+- profile-does-not-grant-authority
+- canonical-role-and-assignment-must-be-registered
+- profile-scope-must-be-narrower-than-role-and-assignment
+- hidden-delegation-is-prohibited
+- specialist-profile-may-not-spawn
+- independent-review-requirements-remain-active
+profiles:
+- profile_id: repo-domain-analyst
+  path: .ai/agents/profiles/repo-domain-analyst.md
+  parent_roles: [architecture-agent, data-integration-agent, research-legal-content-agent]
+  default_tool_profile: discovery-readonly
+  required_skills: [repo-map]
+- profile_id: backend-dotnet-worker
+  path: .ai/agents/profiles/backend-dotnet-worker.md
+  parent_roles: [engineering-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [module-change, api-event-contract-change, database-migration]
+- profile_id: frontend-pwa-worker
+  path: .ai/agents/profiles/frontend-pwa-worker.md
+  parent_roles: [engineering-agent, test-quality-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [pwa-offline-change, accessibility-usability-review, localization-thai-english]
+- profile_id: database-migration-worker
+  path: .ai/agents/profiles/database-migration-worker.md
+  parent_roles: [data-integration-agent, engineering-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [database-migration, schema-contract-validation]
+- profile_id: api-event-contract-worker
+  path: .ai/agents/profiles/api-event-contract-worker.md
+  parent_roles: [architecture-agent, engineering-agent, data-integration-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [api-event-contract-change, schema-contract-validation]
+- profile_id: edge-offline-sync-worker
+  path: .ai/agents/profiles/edge-offline-sync-worker.md
+  parent_roles: [engineering-agent, data-integration-agent, test-quality-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [pwa-offline-change, integration-e2e-testing, backup-restore-continuity]
+- profile_id: unit-property-test-worker
+  path: .ai/agents/profiles/unit-property-test-worker.md
+  parent_roles: [test-quality-agent]
+  default_tool_profile: test-scoped
+  required_skills: [test-plan]
+- profile_id: integration-e2e-worker
+  path: .ai/agents/profiles/integration-e2e-worker.md
+  parent_roles: [test-quality-agent, data-integration-agent]
+  default_tool_profile: test-scoped
+  required_skills: [integration-e2e-testing, backup-restore-continuity]
+- profile_id: security-isolation-worker
+  path: .ai/agents/profiles/security-isolation-worker.md
+  parent_roles: [security-privacy-product-safety-agent, test-quality-agent]
+  default_tool_profile: test-scoped
+  required_skills: [security-review, permission-scope-review, privacy-impact-assessment]
+- profile_id: docs-content-pack-worker
+  path: .ai/agents/profiles/docs-content-pack-worker.md
+  parent_roles: [documentation-configuration-agent, research-legal-content-agent]
+  default_tool_profile: documentation-scoped
+  required_skills: [docs-from-diff, localization-thai-english, content-provenance-legal-citation]
+- profile_id: devops-platform-specialist
+  path: .ai/agents/profiles/devops-platform-specialist.md
+  parent_roles: [architecture-agent, engineering-agent, release-evidence-agent]
+  default_tool_profile: implement-scoped
+  required_skills: [ci-workflow-change, infrastructure-deployment-change, dependency-supply-chain-review]
+- profile_id: observability-reliability-specialist
+  path: .ai/agents/profiles/observability-reliability-specialist.md
+  parent_roles: [architecture-agent, engineering-agent, test-quality-agent, release-evidence-agent]
+  default_tool_profile: test-scoped
+  required_skills: [observability-telemetry-change, performance-capacity-testing, backup-restore-continuity]
+- profile_id: accessibility-localization-specialist
+  path: .ai/agents/profiles/accessibility-localization-specialist.md
+  parent_roles: [product-planning-agent, engineering-agent, test-quality-agent, documentation-configuration-agent, implementation-customer-success-planning-agent]
+  default_tool_profile: documentation-scoped
+  required_skills: [accessibility-usability-review, localization-thai-english]
+- profile_id: content-governance-specialist
+  path: .ai/agents/profiles/content-governance-specialist.md
+  parent_roles: [documentation-configuration-agent, research-legal-content-agent, release-evidence-agent]
+  default_tool_profile: documentation-scoped
+  required_skills: [content-provenance-legal-citation, localization-thai-english, record-evidence-integrity]
+- profile_id: incident-continuity-specialist
+  path: .ai/agents/profiles/incident-continuity-specialist.md
+  parent_roles: [project-management-agent, security-privacy-product-safety-agent, test-quality-agent, release-evidence-agent]
+  default_tool_profile: incident-readonly
+  required_skills: [incident-response-preparation, backup-restore-continuity]
+- profile_id: privacy-data-governance-specialist
+  path: .ai/agents/profiles/privacy-data-governance-specialist.md
+  parent_roles: [data-integration-agent, security-privacy-product-safety-agent, research-legal-content-agent]
+  default_tool_profile: review-readonly
+  required_skills: [privacy-impact-assessment, record-evidence-integrity, content-provenance-legal-citation]
+- profile_id: github-manager
+  path: .ai/agents/profiles/github-manager.md
+  parent_roles: [release-evidence-agent]
+  default_tool_profile: github-full-control
+  required_skills: [github-pr-release, github-metadata-management, github-branch-pr-operations, github-release-operations, github-repository-administration, record-evidence-integrity, human-handoff]

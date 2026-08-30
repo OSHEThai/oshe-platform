@@ -1,0 +1,22 @@
+schema_version: 1.0.0
+policy_id: POL-RETENTION-001
+title: Agent Artifact Retention Policy
+lifecycle_status: UNDER_REVIEW
+retain_in_repository:
+- approved-role-cards-and-registries
+- versioned-skills-policies-schemas-and-runbooks
+- accepted-mission-task-result-review-integration-and-handoff-records
+- failure-rejection-supersession-and-decision-evidence-when-governed
+never_commit:
+- live-secrets
+- provider-tokens
+- customer-or-production-data
+- raw-sensitive-prompts-or-transcripts
+- local-runtime-state
+- unrestricted-debug-dumps
+local_ephemeral_paths:
+- .ai/runs/
+- .ai/state/
+- .ai/transcripts/
+deletion_rule: GOVERNED_HUMAN_AUTHORIZED_AND_EVIDENCE_PRESERVING_ONLY
+unknown_retention_rule: RETAIN_AND_ESCALATE

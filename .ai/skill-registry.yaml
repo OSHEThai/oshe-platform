@@ -1,0 +1,129 @@
+schema_version: 1.0.0
+registry_id: REG-SKILL-001
+version: 1.0.0
+lifecycle_status: UNDER_REVIEW
+runtime_enforcement_status: NOT_IMPLEMENTED
+skills:
+- name: mission-intake
+  description: Turn an approved issue or request into a complete mission draft with scope, non-goals, risk, and human decisions.
+  source: .ai/skill-catalog/mission-intake
+- name: task-graph
+  description: Decompose a mission into an acyclic dependency graph with non-overlapping write scopes.
+  source: .ai/skill-catalog/task-graph
+- name: agent-routing
+  description: Select role, provider, model, effort, tool profile, and fallback under quota and data constraints.
+  source: .ai/skill-catalog/agent-routing
+- name: task-dispatch
+  description: Create worktree, issue write lease, materialize skill bundle, and start the assigned agent through Herdr.
+  source: .ai/skill-catalog/task-dispatch
+- name: monitor-recover
+  description: Monitor agent and task state, handle blockers and timeouts, and recover interrupted sessions safely.
+  source: .ai/skill-catalog/monitor-recover
+- name: result-contract
+  description: Validate worker result metadata, commits, changed paths, commands, tests, assumptions, and risks.
+  source: .ai/skill-catalog/result-contract
+- name: mission-integration
+  description: Integrate verified task commits in dependency order and produce an integration result.
+  source: .ai/skill-catalog/mission-integration
+- name: human-handoff
+  description: Produce a concise human decision and release-readiness package.
+  source: .ai/skill-catalog/human-handoff
+- name: repo-map
+  description: Map relevant applications, modules, contracts, data stores, tests, and owners.
+  source: .ai/skill-catalog/repo-map
+- name: architecture-rfc
+  description: Create options, trade-offs, decision, consequences, migration, rollback, and assurance impact.
+  source: .ai/skill-catalog/architecture-rfc
+- name: module-change
+  description: Implement a scoped domain-module change without violating ownership boundaries.
+  source: .ai/skill-catalog/module-change
+- name: database-migration
+  description: Design and verify expand-migrate-contract changes, backfill, reconciliation, and rollback.
+  source: .ai/skill-catalog/database-migration
+- name: api-event-contract-change
+  description: Change public or internal contracts with compatibility, idempotency, version, and consumer evidence.
+  source: .ai/skill-catalog/api-event-contract-change
+- name: test-plan
+  description: Create risk-based unit, property, integration, E2E, offline, permission, and recovery tests.
+  source: .ai/skill-catalog/test-plan
+- name: code-review
+  description: Review final diff against requirements, architecture, error handling, observability, and tests.
+  source: .ai/skill-catalog/code-review
+- name: security-review
+  description: Review threat surface, authorization, isolation, input handling, secrets, dependencies, and exfiltration.
+  source: .ai/skill-catalog/security-review
+- name: permission-scope-review
+  description: Review tenant, company, project, site, area, contractor, role, validity, and compartment enforcement.
+  source: .ai/skill-catalog/permission-scope-review
+- name: checklist-workflow-authoring
+  description: Author versioned checklist, workflow, rules, evidence requirements, findings, and evaluation logic.
+  source: .ai/skill-catalog/checklist-workflow-authoring
+- name: record-evidence-integrity
+  description: Review immutable records, hashes, signatures, audit, retention, legal hold, and export integrity.
+  source: .ai/skill-catalog/record-evidence-integrity
+- name: pwa-offline-change
+  description: Design and verify local queues, cache freshness, conflicts, retries, reconciliation, and stale-state behavior.
+  source: .ai/skill-catalog/pwa-offline-change
+- name: integration-e2e-testing
+  description: Implement repeatable end-to-end tests across API, UI, database, object storage, and background jobs.
+  source: .ai/skill-catalog/integration-e2e-testing
+- name: safety-critical-change
+  description: Apply fail-safe behavior, deterministic rules, independent review, manual fallback, and safety evidence.
+  source: .ai/skill-catalog/safety-critical-change
+- name: github-pr-release
+  description: Create draft PR metadata, changeset, checks summary, release note draft, and evidence references.
+  source: .ai/skill-catalog/github-pr-release
+- name: docs-from-diff
+  description: Update user, admin, API, migration, ADR, and changelog documentation from an accepted diff.
+  source: .ai/skill-catalog/docs-from-diff
+- name: adr-decision-governance
+  description: Create or update ADRs and decision records with authority, alternatives, consequences, review triggers, and supersession controls.
+  source: .ai/skill-catalog/adr-decision-governance
+- name: schema-contract-validation
+  description: Validate JSON, YAML, schemas, examples, identifiers, uniqueness, and repository-local cross-references.
+  source: .ai/skill-catalog/schema-contract-validation
+- name: ci-workflow-change
+  description: Change CI workflows with least privilege, pinned dependencies, deterministic checks, and safe pull-request behavior.
+  source: .ai/skill-catalog/ci-workflow-change
+- name: dependency-supply-chain-review
+  description: Review dependencies, provenance, licenses, advisories, lockfiles, checksums, and build-chain risk.
+  source: .ai/skill-catalog/dependency-supply-chain-review
+- name: observability-telemetry-change
+  description: Design logs, metrics, traces, health signals, alert context, privacy filters, and evidence attribution.
+  source: .ai/skill-catalog/observability-telemetry-change
+- name: performance-capacity-testing
+  description: Define reproducible performance and capacity tests with environment identity, thresholds, variance, and evidence class.
+  source: .ai/skill-catalog/performance-capacity-testing
+- name: backup-restore-continuity
+  description: Design and exercise backup, restore, reconstruction, provider-exit, and sole-owner continuity controls.
+  source: .ai/skill-catalog/backup-restore-continuity
+- name: incident-response-preparation
+  description: Prepare detection, containment, evidence preservation, recovery, communication, and resumption decision procedures.
+  source: .ai/skill-catalog/incident-response-preparation
+- name: accessibility-usability-review
+  description: Review accessible interactions, content, keyboard and assistive-technology behavior, and human usability evidence gaps.
+  source: .ai/skill-catalog/accessibility-usability-review
+- name: localization-thai-english
+  description: Prepare Thai-English localization with terminology control, source traceability, separate-language outputs, and layout QA where required.
+  source: .ai/skill-catalog/localization-thai-english
+- name: content-provenance-legal-citation
+  description: Control source provenance, jurisdiction, effective date, citations, legal-review boundaries, lifecycle, and publication evidence.
+  source: .ai/skill-catalog/content-provenance-legal-citation
+- name: infrastructure-deployment-change
+  description: Prepare infrastructure and deployment-profile changes with environment separation, least privilege, rollback, and verification.
+  source: .ai/skill-catalog/infrastructure-deployment-change
+- name: privacy-impact-assessment
+  description: Assess purpose, minimization, classification, data flow, retention, disclosure, subject impact, and approval needs.
+  source: .ai/skill-catalog/privacy-impact-assessment
+- name: github-metadata-management
+  description: Operate Issues, Discussions, labels, milestones, Projects, assignments, comments, and relationships after the exact GitHub evidence gate passes.
+  source: .ai/skill-catalog/github-metadata-management
+- name: github-branch-pr-operations
+  description: Operate branches, pull requests, reviews, merge queues, merges, and recovery after exact commit and evidence gates pass.
+  source: .ai/skill-catalog/github-branch-pr-operations
+- name: github-release-operations
+  description: Operate tags, signatures, releases, assets, attestations, and provenance after release evidence and independent review gates pass.
+  source: .ai/skill-catalog/github-release-operations
+- name: github-repository-administration
+  description: Administer repositories, rulesets, protections, integrations, collaborators, Apps, credentials, visibility, transfer, and deletion after high-impact gates pass.
+  source: .ai/skill-catalog/github-repository-administration

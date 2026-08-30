@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.example/schemas/ai-service-route-registry.schema.json",
+  "title": "OSHE AI Service Route Registry",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "registry_id",
+    "default_dispatch_policy",
+    "routes",
+    "enabled_route_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "registry_id": {
+      "const": "REG-AISR-001"
+    },
+    "default_dispatch_policy": {
+      "const": "DENY_UNLESS_EXACT_ROUTE_APPROVED"
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/route"
+      },
+      "minItems": 1
+    },
+    "enabled_route_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "route": {
+      "type": "object",
+      "required": [
+        "provider_route_id",
+        "provider_id",
+        "service_id",
+        "route_kind",
+        "model_record_id",
+        "approved_roles",
+        "allowed_data_classes",
+        "prohibited_data_classes",
+        "usage_controls",
+        "data_policy_review",
+        "evaluation",
+        "lifecycle",
+        "unknowns"
+      ],
+      "properties": {
+        "provider_route_id": {
+          "type": "string",
+          "minLength": 3
+        },
+        "provider_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "service_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "route_kind": {
+          "enum": [
+            "ONLINE_SERVICE",
+            "LOCAL_RUNTIME"
+          ]
+        },
+        "model_record_id": {
+          "type": "string"
+        },
+        "approved_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "allowed_data_classes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "CONFIDENTIAL",
+              "RESTRICTED",
+              "MEDICAL",
+              "SECURITY_CASE",
+              "LEGAL_PRIVILEGED",
+              "PRODUCTION_SECRET"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "prohibited_data_classes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "CONFIDENTIAL",
+              "RESTRICTED",
+              "MEDICAL",
+              "SECURITY_CASE",
+              "LEGAL_PRIVILEGED",
+              "PRODUCTION_SECRET"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "usage_controls": {
+          "type": "object",
+          "required": [
+            "cost_class",
+            "quota_profile_id",
+            "hard_stop"
+          ]
+        },
+        "data_policy_review": {
+          "type": "object",
+          "required": [
+            "review_id",
+            "status",
+            "allowed_data_classes"
+          ]
+        },
+        "evaluation": {
+          "type": "object",
+          "required": [
+            "status",
+            "ql_coverage",
+            "evidence_bundle_ids"
+          ]
+        },
+        "lifecycle": {
+          "type": "object",
+          "required": [
+            "status",
+            "dispatch_enabled",
+            "review_trigger"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "CANDIDATE",
+                "INTAKE_INCOMPLETE",
+                "UNDER_POLICY_REVIEW",
+                "UNDER_TECHNICAL_VALIDATION",
+                "UNDER_EVALUATION",
+                "PROVISIONAL",
+                "APPROVED_WITH_LIMITS",
+                "APPROVED",
+                "SUSPENDED",
+                "REQUALIFICATION_REQUIRED",
+                "REJECTED",
+                "DEPRECATED",
+                "RETIRED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lifecycle": {
+                "properties": {
+                  "dispatch_enabled": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "lifecycle": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "PROVISIONAL",
+                      "APPROVED_WITH_LIMITS",
+                      "APPROVED"
+                    ]
+                  }
+                }
+              },
+              "allowed_data_classes": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

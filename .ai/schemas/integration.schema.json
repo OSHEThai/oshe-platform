@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Integration Result",
+  "type": "object",
+  "required": [
+    "mission_id",
+    "integration_branch",
+    "base_commit",
+    "included_commits",
+    "checks",
+    "open_findings",
+    "ready_for_human"
+  ],
+  "properties": {
+    "mission_id": {
+      "type": "string"
+    },
+    "integration_branch": {
+      "type": "string"
+    },
+    "base_commit": {
+      "type": "string"
+    },
+    "included_commits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "open_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ready_for_human": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": true
+}

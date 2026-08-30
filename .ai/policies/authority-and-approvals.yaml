@@ -1,0 +1,37 @@
+schema_version: 1.0.0
+policy_id: POL-AUTHORITY-001
+title: Authority and Human Approval Policy
+lifecycle_status: UNDER_REVIEW
+authority_basis: ADR-0005
+sole_human_owner_retains:
+- project-mission-and-direction
+- protected-product-scope
+- residual-risk-and-exceptions
+- provider-route-activation
+- materially-expanded-data-tool-network-or-credential-access
+- destructive-action
+- non-github-production-deployment-without-separate-authorization
+- customer-data-and-production-data-use
+- legal-medical-certification-contractual-or-compliance-claims
+- final-safety-critical-operating-decision
+- material-recurring-cost-expansion
+agent_may:
+- prepare-bounded-artifacts
+- run-assigned-deterministic-checks
+- produce-evidence-and-recommendations
+- suspend-work-on-stop-condition
+- execute-full-github-operations-as-release-evidence-agent-with-github-manager-profile-after-adr-0006-gate-pass
+agent_may_not:
+- approve-own-output
+- accept-residual-risk
+- infer-approval-from-request-context
+- convert-static-or-synthetic-evidence-to-runtime-human-or-release-evidence
+- enable-provider-route
+standing_conditional_authorizations:
+  github-full-control:
+    decision_ref: ADR-0006
+    role_id: release-evidence-agent
+    specialist_profile_id: github-manager
+    policy_ref: .ai/policies/github-operations.yaml
+    condition: EXACT_OPERATION_GATE_PASS
+default_if_authority_unclear: STOP_AND_ESCALATE

@@ -1,0 +1,41 @@
+schema_version: 1.0.0
+registry_id: REG-RISK-001
+title: AI Agent Change Risk and Minimum Review Policy
+lifecycle_status: UNDER_REVIEW
+runtime_enforcement_status: NOT_IMPLEMENTED
+levels:
+  R0:
+    examples:
+    - documentation
+    - formatting
+    minimum_review: CI
+  R1:
+    examples:
+    - UI
+    - simple CRUD
+    minimum_review: writer plus reviewer
+  R2:
+    examples:
+    - domain feature
+    - workflow
+    minimum_review: different-model review plus human
+  R3:
+    examples:
+    - authorization
+    - migration
+    - sync
+    minimum_review: RFC, security review, human
+  R4:
+    examples:
+    - PTW
+    - LOTO
+    - medical
+    - legal
+    - emergency
+    minimum_review: independent professional gate plus pilot
+  RX:
+    examples:
+    - production secret
+    - destructive command
+    - protected final decision
+    minimum_review: prohibited for autonomous agent

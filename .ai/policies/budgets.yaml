@@ -1,0 +1,69 @@
+schema_version: 1.0.0
+registry_id: REG-USAGE-001
+title: AI Service Variable Usage and Concurrency Controls
+lifecycle_status: APPROVED
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL_RUNTIME_NOT_ENFORCED
+owner: project-management-agent
+co_owners:
+- security-privacy-product-safety-agent
+- release-evidence-agent
+human_approver: Sole Human Owner / Human Product and Release Authority
+effective_date: '2026-08-18'
+budget_model: VARIABLE_USAGE_BASED
+fixed_budget_established: false
+currency: UNKNOWN
+monthly_budget: null
+emergency_reserve:
+  enabled: false
+  amount: null
+  approval_required: true
+global_concurrency:
+  default_primary_change_producing_agents: 1
+  default_supporting_non_overlapping_agents: 1
+  default_independent_review_agents: 1
+  maximum_change_producing_agents_without_new_human_approval: 2
+  runtime_enforcement_status: NOT_IMPLEMENTED
+cost_classes:
+  C0: No incremental paid service or already-approved local capability.
+  C1: Low bounded usage within an existing approved route.
+  C2: Moderate repeated usage or paid feature requiring visible limits and Sole Human
+    Owner approval.
+  C3: New subscription, materially higher recurring use, external specialist service,
+    infrastructure expansion, or unclear cost exposure; explicit decision required.
+quota_states:
+  GREEN:
+    threshold: TBD_PER_ROUTE
+    behavior: Normal bounded dispatch within approved route.
+  YELLOW:
+    threshold: TBD_PER_ROUTE
+    behavior: Warn, reduce non-critical work, and prepare controlled stop or qualified
+      alternative.
+  RED:
+    threshold: TBD_PER_ROUTE
+    behavior: Block new dispatch unless the exact route manifest defines a human-approved
+      action.
+  UNKNOWN:
+    threshold: null
+    behavior: Use conservative bounded test mission or deny dispatch.
+route_usage_profiles: []
+usage_evidence:
+  required_fields_when_available:
+  - mission_id
+  - task_id
+  - assignment_id
+  - provider_route_id
+  - model_record_id
+  - request_count
+  - token_or_compute_units
+  - elapsed_time
+  - quota_state
+  - cost_class
+  - actual_cost
+  - evidence_ref
+  unknown_cost_rule: Record UNKNOWN; do not invent a monetary value.
+hard_rules:
+- No route may dispatch without quota or hard-stop behavior.
+- Availability or lower cost never permits weaker data, security, review, or evidence
+  controls.
+- Emergency reserve is disabled until explicitly approved.
+- Provider failover may not change the mission data class or authorization.

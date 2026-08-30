@@ -1,0 +1,27 @@
+schema_version: 1.0.0
+policy_id: POL-DELEGATION-001
+title: Visible Delegation and Session Registration Policy
+lifecycle_status: UNDER_REVIEW
+authority_basis: ADR-0005
+hidden_delegation: PROHIBITED
+provider_native_hidden_subagents: PROHIBITED
+unregistered_sessions: PROHIBITED
+specialist_profiles_may_spawn: false
+maximum_visible_delegation_depth: 2
+every_session_requires:
+- assignment_id
+- agent_session_id
+- canonical_role_id
+- optional_specialist_profile_id
+- provider_route_id
+- tool_profile_id
+- write_lease_id_or_null
+- reviewer_assignment_id_or_null
+- activation_and_expiry
+delegated_task_requires:
+- visible-parent-assignment
+- narrower-or-equal-authority
+- non-overlapping-write-scope
+- explicit-output-contract
+- independent-review-when-required
+violation_behavior: STOP_PRESERVE_EVIDENCE_AND_ESCALATE

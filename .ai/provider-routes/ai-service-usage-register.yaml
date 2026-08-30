@@ -1,0 +1,12 @@
+schema_version: 1.0.0
+registry_id: REG-AI-USAGE-001
+title: AI Service Usage Register
+registry_version: 1.0.0
+lifecycle_status: APPROVED
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL
+runtime_enforcement_status: NOT_IMPLEMENTED
+effective_date: '2026-08-18'
+source_of_truth: GOOGLE_DRIVE
+fixed_budget_status: NOT_ESTABLISHED
+cost_model: VARIABLE_USAGE_BASED
+entries: []

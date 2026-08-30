@@ -1,0 +1,176 @@
+schema_version: 1.0.0
+registry_id: REG-HERDR-ROLE-BUNDLE-001
+authority_basis:
+- ADR-0005
+- REG-HERDR-ROLE-001
+effective_date: '2026-08-18'
+lifecycle_status: UNDER_REVIEW
+runtime_enforcement_status: NOT_IMPLEMENTED
+skill_catalog_status: EXPANDED_REPOSITORY_BASELINE_UNDER_REVIEW;FUTURE_MISSIONS_MAY_REQUIRE_GOVERNED_ADDITIONS
+bundles:
+  project-management-agent:
+  - mission-intake
+  - task-graph
+  - agent-routing
+  - task-dispatch
+  - monitor-recover
+  - result-contract
+  - mission-integration
+  - human-handoff
+  - incident-response-preparation
+  - backup-restore-continuity
+  product-planning-agent:
+  - mission-intake
+  - task-graph
+  - repo-map
+  - test-plan
+  - checklist-workflow-authoring
+  - docs-from-diff
+  - human-handoff
+  - adr-decision-governance
+  - accessibility-usability-review
+  - localization-thai-english
+  architecture-agent:
+  - repo-map
+  - architecture-rfc
+  - task-graph
+  - permission-scope-review
+  - api-event-contract-change
+  - database-migration
+  - pwa-offline-change
+  - docs-from-diff
+  - adr-decision-governance
+  - schema-contract-validation
+  - dependency-supply-chain-review
+  - observability-telemetry-change
+  - performance-capacity-testing
+  - backup-restore-continuity
+  - infrastructure-deployment-change
+  engineering-agent:
+  - module-change
+  - database-migration
+  - api-event-contract-change
+  - mission-integration
+  - pwa-offline-change
+  - result-contract
+  - docs-from-diff
+  - schema-contract-validation
+  - ci-workflow-change
+  - dependency-supply-chain-review
+  - observability-telemetry-change
+  - performance-capacity-testing
+  - infrastructure-deployment-change
+  data-integration-agent:
+  - repo-map
+  - database-migration
+  - api-event-contract-change
+  - record-evidence-integrity
+  - permission-scope-review
+  - integration-e2e-testing
+  - result-contract
+  - schema-contract-validation
+  - backup-restore-continuity
+  - privacy-impact-assessment
+  security-privacy-product-safety-agent:
+  - security-review
+  - permission-scope-review
+  - record-evidence-integrity
+  - safety-critical-change
+  - pwa-offline-change
+  - database-migration
+  - api-event-contract-change
+  - code-review
+  - dependency-supply-chain-review
+  - incident-response-preparation
+  - privacy-impact-assessment
+  - backup-restore-continuity
+  test-quality-agent:
+  - test-plan
+  - integration-e2e-testing
+  - code-review
+  - permission-scope-review
+  - pwa-offline-change
+  - safety-critical-change
+  - result-contract
+  - record-evidence-integrity
+  - schema-contract-validation
+  - performance-capacity-testing
+  - accessibility-usability-review
+  - backup-restore-continuity
+  documentation-configuration-agent:
+  - docs-from-diff
+  - checklist-workflow-authoring
+  - record-evidence-integrity
+  - result-contract
+  - human-handoff
+  - repo-map
+  - adr-decision-governance
+  - schema-contract-validation
+  - localization-thai-english
+  - content-provenance-legal-citation
+  research-legal-content-agent:
+  - repo-map
+  - docs-from-diff
+  - record-evidence-integrity
+  - checklist-workflow-authoring
+  - safety-critical-change
+  - human-handoff
+  - localization-thai-english
+  - content-provenance-legal-citation
+  - privacy-impact-assessment
+  independent-review-challenge-agent:
+  - code-review
+  - architecture-rfc
+  - security-review
+  - permission-scope-review
+  - record-evidence-integrity
+  - safety-critical-change
+  - docs-from-diff
+  - test-plan
+  - adr-decision-governance
+  - schema-contract-validation
+  - dependency-supply-chain-review
+  - performance-capacity-testing
+  - privacy-impact-assessment
+  - accessibility-usability-review
+  - content-provenance-legal-citation
+  release-evidence-agent:
+  - result-contract
+  - mission-integration
+  - human-handoff
+  - github-pr-release
+  - docs-from-diff
+  - record-evidence-integrity
+  - code-review
+  - ci-workflow-change
+  - dependency-supply-chain-review
+  - observability-telemetry-change
+  - backup-restore-continuity
+  - incident-response-preparation
+  - github-metadata-management
+  - github-branch-pr-operations
+  - github-release-operations
+  - github-repository-administration
+  implementation-customer-success-planning-agent:
+  - mission-intake
+  - task-graph
+  - checklist-workflow-authoring
+  - test-plan
+  - integration-e2e-testing
+  - human-handoff
+  - docs-from-diff
+  - record-evidence-integrity
+  - accessibility-usability-review
+  - localization-thai-english
+  - content-provenance-legal-citation
+  - backup-restore-continuity
+  - incident-response-preparation
+  - privacy-impact-assessment
+legacy_bundle_resolution:
+  project-manager: project-management-agent
+  plan-lead: CONTEXTUAL:product-planning-agent|architecture-agent
+  code-lead: engineering-agent
+  review-lead: independent-review-challenge-agent
+  test-lead: test-quality-agent
+  security-lead: security-privacy-product-safety-agent
+  github-manager: release-evidence-agent

@@ -1,0 +1,489 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/agent-assignment.schema.json",
+  "title": "Herdr Agent Assignment",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "mission_id",
+    "task_id",
+    "agent_session_id",
+    "role",
+    "provider_route",
+    "skill_bundle",
+    "authority",
+    "contracts",
+    "review",
+    "usage",
+    "timing",
+    "human_approval",
+    "state"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "assignment_id": {
+      "type": "string",
+      "pattern": "^ASN-[A-Z0-9-]+$"
+    },
+    "mission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "type": "object",
+      "required": [
+        "role_id",
+        "role_version",
+        "role_card_ref"
+      ],
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "role_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "role_card_ref": {
+          "type": "string"
+        },
+        "specialist_profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "provider_route": {
+      "type": "object",
+      "required": [
+        "route_id",
+        "provider",
+        "model_or_runtime",
+        "cli_or_adapter",
+        "route_status"
+      ],
+      "properties": {
+        "route_id": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model_or_runtime": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cli_or_adapter": {
+          "type": "string"
+        },
+        "configuration_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "route_status": {
+          "enum": [
+            "APPROVED",
+            "APPROVED_WITH_LIMITS",
+            "DISABLED",
+            "UNKNOWN"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "skill_bundle": {
+      "type": "object",
+      "required": [
+        "bundle_id",
+        "skills"
+      ],
+      "properties": {
+        "bundle_id": {
+          "type": "string"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": [
+        "mode",
+        "data_classes",
+        "allowed_tools",
+        "forbidden_tools",
+        "allowed_artifacts",
+        "allowed_paths",
+        "forbidden_paths",
+        "network_mode",
+        "credential_profile_ref",
+        "write_lease_id"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "READ_ONLY",
+            "BOUNDED_WRITE",
+            "BOUNDED_DOCUMENT_WRITE",
+            "TEST_ONLY",
+            "METADATA_ONLY",
+            "CONTROL_STATE_WRITE",
+            "METADATA_AND_EVIDENCE_WRITE",
+            "GITHUB_FULL_CONTROL"
+          ]
+        },
+        "data_classes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "allowed_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "forbidden_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "allowed_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "allowed_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "forbidden_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "network_mode": {
+          "enum": [
+            "NONE",
+            "ALLOWLIST",
+            "STANDARD_APPROVED_ROUTE"
+          ]
+        },
+        "credential_profile_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "write_lease_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "contracts": {
+      "type": "object",
+      "required": [
+        "input_refs",
+        "output_schema_ref",
+        "acceptance_criteria",
+        "required_checks",
+        "stop_conditions"
+      ],
+      "properties": {
+        "input_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "output_schema_ref": {
+          "type": "string"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "required_checks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stop_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "required",
+        "reviewer_role_id",
+        "reviewer_assignment_id",
+        "read_only_preferred",
+        "independent_route_required"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reviewer_role_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewer_assignment_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "read_only_preferred": {
+          "type": "boolean"
+        },
+        "independent_route_required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "required": [
+        "cost_class",
+        "quota_ref",
+        "soft_warning",
+        "hard_stop"
+      ],
+      "properties": {
+        "cost_class": {
+          "enum": [
+            "C0",
+            "C1",
+            "C2",
+            "C3"
+          ]
+        },
+        "quota_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "soft_warning": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hard_stop": {
+          "type": "string"
+        },
+        "actual_usage_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "timing": {
+      "type": "object",
+      "required": [
+        "activated_at",
+        "expires_at",
+        "timeout_seconds"
+      ],
+      "properties": {
+        "activated_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "human_approval": {
+      "type": "object",
+      "required": [
+        "required",
+        "triggers",
+        "decision_ref"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "decision_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "state": {
+      "enum": [
+        "DRAFT",
+        "VALIDATED",
+        "APPROVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "EXPIRED",
+        "COMPLETED",
+        "REVOKED"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "BOUNDED_WRITE",
+                  "BOUNDED_DOCUMENT_WRITE",
+                  "TEST_ONLY",
+                  "METADATA_ONLY",
+                  "CONTROL_STATE_WRITE",
+                  "METADATA_AND_EVIDENCE_WRITE",
+                  "GITHUB_FULL_CONTROL"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "write_lease_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review": {
+            "properties": {
+              "required": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "review": {
+            "required": [
+              "reviewer_role_id"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

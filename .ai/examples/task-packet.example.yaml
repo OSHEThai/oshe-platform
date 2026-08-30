@@ -1,0 +1,20 @@
+id: V010-I016/skill-catalog
+mission_id: V010-T04
+role: documentation-configuration-agent
+mode: WRITE
+depends_on:
+- V010-I013/agent-contract
+allowed_paths:
+- .ai/skill-catalog/**
+- .ai/skill-registry.yaml
+forbidden_paths:
+- Plan/**
+- .ai/state/**
+- .ai/transcripts/**
+acceptance_criteria:
+- Every registered skill has a matching SKILL.md.
+- Every skill includes stop conditions and evaluation cases.
+required_checks:
+- python .ai/tools/validate_agent_os.py
+tool_profile: documentation-scoped
+output_schema: .ai/schemas/result.schema.json

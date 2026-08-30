@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.example/schemas/model-registry.schema.json",
+  "title": "OSHE Model and Runtime Registry",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "registry_id",
+    "models",
+    "enabled_model_record_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "registry_id": {
+      "const": "REG-MODEL-001"
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "model_record_id",
+          "provider_id",
+          "service_family",
+          "model_id",
+          "revision_or_digest",
+          "approval_status",
+          "dispatch_enabled",
+          "approved_roles",
+          "allowed_data_classes"
+        ],
+        "properties": {
+          "dispatch_enabled": {
+            "type": "boolean"
+          },
+          "approval_status": {
+            "enum": [
+              "CANDIDATE",
+              "INTAKE_INCOMPLETE",
+              "UNDER_POLICY_REVIEW",
+              "UNDER_TECHNICAL_VALIDATION",
+              "UNDER_EVALUATION",
+              "PROVISIONAL",
+              "APPROVED_WITH_LIMITS",
+              "APPROVED",
+              "SUSPENDED",
+              "REQUALIFICATION_REQUIRED",
+              "REJECTED",
+              "DEPRECATED",
+              "RETIRED"
+            ]
+          },
+          "allowed_data_classes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "PUBLIC",
+                "INTERNAL",
+                "CONFIDENTIAL",
+                "RESTRICTED",
+                "MEDICAL",
+                "SECURITY_CASE",
+                "LEGAL_PRIVILEGED",
+                "PRODUCTION_SECRET"
+              ]
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "enabled_model_record_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": true
+}

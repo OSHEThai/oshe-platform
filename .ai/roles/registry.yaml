@@ -1,0 +1,256 @@
+schema_version: 1.0.0
+registry_id: REG-HERDR-ROLE-001
+title: Herdr Canonical Role Registry
+document_version: 1.0.0
+lifecycle_status: APPROVED
+maturity: OPERATIONAL
+implementation_status: IMPLEMENTED
+runtime_enforcement_status: NOT_IMPLEMENTED
+effective_date: '2026-08-18'
+authority_basis:
+- ADR-0005
+- ADR-0006
+- DEC-008
+owner: sole-human-owner
+reviewers:
+- project-management-agent
+- independent-review-challenge-agent
+source_of_truth: GOOGLE_DRIVE_UNTIL_CONTROLLED_GITHUB_TRANSFER
+assignment_schema: .ai/schemas/agent-assignment.schema.json
+role_card_schema: .ai/schemas/role-card.schema.json
+global_controls:
+  self_approval: PROHIBITED
+  provider_native_hidden_subagents: PROHIBITED
+  unregistered_sessions: PROHIBITED
+  workers_may_spawn: false
+  maximum_visible_delegation_depth: 2
+  default_allowed_data_classes:
+  - PUBLIC
+  - INTERNAL
+  conditional_data_classes:
+  - CONFIDENTIAL
+  prohibited_without_explicit_human_approval:
+  - CUSTOMER
+  - MEDICAL
+  - INVESTIGATION
+  - PRODUCTION
+  - LIVE_SECRET
+  github_execution: STANDING_CONDITIONAL_FULL_AUTHORITY_ADR_0006
+  github_operation_gate: .ai/policies/github-operations.yaml
+  calendar_commitment: SOLE_HUMAN_OWNER_ONLY
+  fixed_budget: NOT_ESTABLISHED
+  cost_model: VARIABLE_USAGE_BASED
+assignment_required_fields:
+- assignment_id
+- mission_id
+- task_id
+- agent_session_id
+- role
+- provider_route
+- skill_bundle
+- authority
+- contracts
+- review
+- usage
+- timing
+- human_approval
+- state
+roles:
+- role_id: project-management-agent
+  display_name: Project Management Agent
+  version: 1.0.0
+  category: orchestration
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R4
+  default_mode: CONTROL_STATE_WRITE
+  role_card: .ai/roles/cards/project-management-agent.md
+  skill_bundle_id: project-management-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - project-manager
+- role_id: product-planning-agent
+  display_name: Product Planning Agent
+  version: 1.0.0
+  category: product-planning
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: BOUNDED_DOCUMENT_WRITE
+  role_card: .ai/roles/cards/product-planning-agent.md
+  skill_bundle_id: product-planning-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - plan-lead:product-scope
+- role_id: architecture-agent
+  display_name: Architecture Agent
+  version: 1.0.0
+  category: architecture
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R4
+  default_mode: BOUNDED_DOCUMENT_WRITE
+  role_card: .ai/roles/cards/architecture-agent.md
+  skill_bundle_id: architecture-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - plan-lead:architecture
+- role_id: engineering-agent
+  display_name: Engineering Agent
+  version: 1.0.0
+  category: engineering
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: BOUNDED_WRITE
+  role_card: .ai/roles/cards/engineering-agent.md
+  skill_bundle_id: engineering-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - code-lead
+- role_id: data-integration-agent
+  display_name: Data and Integration Agent
+  version: 1.0.0
+  category: data-integration
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: BOUNDED_WRITE
+  role_card: .ai/roles/cards/data-integration-agent.md
+  skill_bundle_id: data-integration-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - database-migration-worker
+  - api-event-contract-worker
+  - repo-domain-analyst:data
+- role_id: security-privacy-product-safety-agent
+  display_name: Security Privacy and Product Safety Agent
+  version: 1.0.0
+  category: assurance
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R4
+  default_mode: READ_ONLY_BY_DEFAULT
+  role_card: .ai/roles/cards/security-privacy-product-safety-agent.md
+  skill_bundle_id: security-privacy-product-safety-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - security-lead
+  - security-isolation-worker
+- role_id: test-quality-agent
+  display_name: Test and Quality Agent
+  version: 1.0.0
+  category: quality
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R4
+  default_mode: READ_ONLY_OR_TEST_ONLY
+  role_card: .ai/roles/cards/test-quality-agent.md
+  skill_bundle_id: test-quality-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - test-lead
+  - unit-property-test-worker
+  - integration-e2e-worker
+- role_id: documentation-configuration-agent
+  display_name: Documentation and Configuration Agent
+  version: 1.0.0
+  category: documentation-configuration
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R2
+  default_mode: BOUNDED_DOCUMENT_WRITE
+  role_card: .ai/roles/cards/documentation-configuration-agent.md
+  skill_bundle_id: documentation-configuration-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - docs-content-pack-worker
+- role_id: research-legal-content-agent
+  display_name: Research and Legal Content Agent
+  version: 1.0.0
+  category: research-legal-content
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: BOUNDED_DOCUMENT_WRITE
+  role_card: .ai/roles/cards/research-legal-content-agent.md
+  skill_bundle_id: research-legal-content-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - repo-domain-analyst:research
+  - docs-content-pack-worker:legal
+- role_id: independent-review-challenge-agent
+  display_name: Independent Review and Challenge Agent
+  version: 1.0.0
+  category: independent-review
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R4
+  default_mode: READ_ONLY
+  role_card: .ai/roles/cards/independent-review-challenge-agent.md
+  skill_bundle_id: independent-review-challenge-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - review-lead
+- role_id: release-evidence-agent
+  display_name: Release and Evidence Agent
+  version: 1.0.0
+  category: release-evidence
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: METADATA_AND_EVIDENCE_WRITE
+  conditional_modes:
+  - GITHUB_FULL_CONTROL
+  github_authority: FULL_WHEN_EVIDENCE_GATE_PASS
+  github_specialist_profile: github-manager
+  github_gate_schema: .ai/schemas/github-operation-gate.schema.json
+  role_card: .ai/roles/cards/release-evidence-agent.md
+  skill_bundle_id: release-evidence-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - github-manager
+- role_id: implementation-customer-success-planning-agent
+  display_name: Implementation and Customer Success Planning Agent
+  version: 1.0.0
+  category: implementation-customer-success
+  lifecycle_status: APPROVED
+  dispatch_status: APPROVED_FOR_CONTROLLED_PLANNING
+  runtime_enforcement_status: NOT_IMPLEMENTED
+  risk_ceiling: R3
+  default_mode: BOUNDED_DOCUMENT_WRITE
+  role_card: .ai/roles/cards/implementation-customer-success-planning-agent.md
+  skill_bundle_id: implementation-customer-success-planning-agent
+  requires_independent_review: true
+  legacy_aliases:
+  - implementation-planner
+  - customer-success-planner
+legacy_role_resolution:
+  project-manager: project-management-agent
+  plan-lead: CONTEXTUAL:product-planning-agent|architecture-agent
+  code-lead: engineering-agent
+  review-lead: independent-review-challenge-agent
+  test-lead: test-quality-agent
+  security-lead: security-privacy-product-safety-agent
+  github-manager: release-evidence-agent:SPECIALIST_PROFILE;FULL_WHEN_EVIDENCE_GATE_PASS_ADR_0006
+  repo-domain-analyst: CONTEXTUAL:architecture-agent|data-integration-agent|research-legal-content-agent
+  backend-dotnet-worker: engineering-agent:SPECIALIST_PROFILE
+  frontend-pwa-worker: engineering-agent:SPECIALIST_PROFILE
+  database-migration-worker: data-integration-agent:SPECIALIST_PROFILE
+  api-event-contract-worker: data-integration-agent:SPECIALIST_PROFILE
+  edge-offline-sync-worker: CONTEXTUAL:engineering-agent|data-integration-agent|test-quality-agent
+  unit-property-test-worker: test-quality-agent:SPECIALIST_PROFILE
+  integration-e2e-worker: test-quality-agent:SPECIALIST_PROFILE
+  security-isolation-worker: security-privacy-product-safety-agent:SPECIALIST_PROFILE
+  docs-content-pack-worker: CONTEXTUAL:documentation-configuration-agent|research-legal-content-agent

@@ -23,6 +23,8 @@ Thumbs.db
 **/backups/
 
 # Build and dependency outputs
+__pycache__/
+*.py[cod]
 bin/
 obj/
 node_modules/
@@ -35,6 +37,7 @@ __pycache__/
 *.py[cod]
 .tmp/
 .cache/
+.local-ci/
 
 # AI execution state
 .ai/runs/

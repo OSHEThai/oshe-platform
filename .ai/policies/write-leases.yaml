@@ -1,0 +1,34 @@
+schema_version: 1.0.0
+registry_id: REG-WRITE-LEASE-001
+title: Repository Write Lease Policy
+lifecycle_status: UNDER_REVIEW
+runtime_enforcement_status: NOT_IMPLEMENTED
+rules:
+  one_writer_per_path: true
+  lease_required_for_write: true
+  reviewers_read_only: true
+  unregistered_worktree_write: false
+  overlapping_active_leases: PROHIBITED
+  path_widening_by_agent: PROHIBITED
+  protected_branch_write: PROHIBITED
+  stale_lease_minutes: 120
+required_fields:
+- lease_id
+- repository
+- worktree
+- branch
+- assignment_id
+- agent_session_id
+- allowed_paths
+- forbidden_paths
+- activated_at
+- expires_at
+- state
+allowed_states: [DRAFT, ACTIVE, SUSPENDED, EXPIRED, RELEASED, REVOKED]
+violation_response:
+- stop-write
+- preserve-diff-and-command-evidence
+- suspend-assignment
+- revoke-or-correct-lease
+- inspect-for-cross-task-contamination
+- require-human-decision-if-material

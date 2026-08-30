@@ -1,0 +1,94 @@
+schema_version: 1.0.0
+registry_id: REG-PERMISSION-001
+title: Canonical Role Permission Envelopes
+lifecycle_status: UNDER_REVIEW
+authority_basis:
+- ADR-0005
+default_policy: DENY
+runtime_enforcement_status: NOT_IMPLEMENTED
+human_only_actions:
+- approve-protected-product-scope
+- approve-provider-route
+- approve-customer-or-production-data-use
+- approve-residual-risk-or-exception
+- reveal-or-export-live-secret
+- deploy-production
+- approve-legal-medical-certification-or-compliance-claim
+- manage-organization-ownership-billing-succession-or-account-recovery
+global_agent_prohibitions:
+- self-approve
+- widen-own-authority
+- spawn-hidden-subagent
+- use-unregistered-session
+- access-live-secret
+- access-customer-or-production-data-without-explicit-human-approved-route
+- bypass-required-review
+- delete-or-rewrite-evidence
+roles:
+  project-management-agent:
+    allowed_modes: [READ_ONLY, CONTROL_STATE_WRITE]
+    default_tool_profile: planning-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  product-planning-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: planning-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  architecture-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: planning-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  engineering-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_WRITE]
+    default_tool_profile: implement-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  data-integration-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_WRITE]
+    default_tool_profile: implement-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  security-privacy-product-safety-agent:
+    allowed_modes: [READ_ONLY, TEST_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: review-readonly
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  test-quality-agent:
+    allowed_modes: [READ_ONLY, TEST_ONLY]
+    default_tool_profile: test-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  documentation-configuration-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: documentation-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  research-legal-content-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: planning-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  independent-review-challenge-agent:
+    allowed_modes: [READ_ONLY]
+    default_tool_profile: review-readonly
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  release-evidence-agent:
+    allowed_modes: [READ_ONLY, METADATA_ONLY, METADATA_AND_EVIDENCE_WRITE, GITHUB_FULL_CONTROL]
+    default_tool_profile: evidence-scoped
+    conditional_tool_profiles: [github-metadata, github-full-control]
+    github_authority: FULL_WHEN_EVIDENCE_GATE_PASS_ADR_0006
+    github_operation_gate_required: true
+    high_impact_independent_review_required: true
+    maximum_data_classes: [PUBLIC, INTERNAL]
+  implementation-customer-success-planning-agent:
+    allowed_modes: [READ_ONLY, BOUNDED_DOCUMENT_WRITE]
+    default_tool_profile: planning-scoped
+    maximum_data_classes: [PUBLIC, INTERNAL]
+conditional_data_access:
+  CONFIDENTIAL:
+    requires_exact_route_approval: true
+    requires_human_decision_ref: true
+    requires_narrow_assignment: true
+  RESTRICTED:
+    default: DENY
+  MEDICAL:
+    default: PROHIBITED
+  SECURITY_CASE:
+    default: PROHIBITED
+  LEGAL_PRIVILEGED:
+    default: PROHIBITED
+  PRODUCTION_SECRET:
+    default: PROHIBITED

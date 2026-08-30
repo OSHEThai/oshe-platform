@@ -1,0 +1,212 @@
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import yaml
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+class AgentOsValidatorTests(unittest.TestCase):
+    def make_fixture(self, destination: Path) -> None:
+        shutil.copytree(REPO_ROOT / ".ai", destination / ".ai")
+        for name in ("AGENTS.md", "CLAUDE.md", "GEMINI.md", "QWEN.md"):
+            shutil.copy2(REPO_ROOT / name, destination / name)
+        adr_destination = destination / "docs" / "adr"
+        adr_destination.mkdir(parents=True)
+        shutil.copy2(
+            REPO_ROOT / "docs" / "adr" / "adr-0006-evidence-gated-full-github-operator-authority.md",
+            adr_destination / "adr-0006-evidence-gated-full-github-operator-authority.md",
+        )
+        shutil.copy2(
+            REPO_ROOT / "docs" / "adr" / "adr-0007-local-first-ci-and-repository-lifecycle.md",
+            adr_destination / "adr-0007-local-first-ci-and-repository-lifecycle.md",
+        )
+        ci_destination = destination / ".ci"
+        ci_destination.mkdir()
+        shutil.copy2(REPO_ROOT / ".ci" / "local-ci.json", ci_destination / "local-ci.json")
+        tools_destination = destination / "tools"
+        tools_destination.mkdir()
+        shutil.copy2(REPO_ROOT / "tools" / "run_local_ci.py", tools_destination / "run_local_ci.py")
+        tests_destination = destination / "tests"
+        tests_destination.mkdir()
+        shutil.copy2(REPO_ROOT / "tests" / "test_local_ci.py", tests_destination / "test_local_ci.py")
+
+    def run_validator(self, root: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(root / ".ai" / "tools" / "validate_agent_os.py")],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def approve_test_route_and_credential(self, root: Path) -> tuple[str, str]:
+        route_path = root / ".ai" / "provider-routes" / "ai-service-route-registry.yaml"
+        route_registry = yaml.safe_load(route_path.read_text(encoding="utf-8"))
+        route = route_registry["routes"][0]
+        route_id = route["provider_route_id"]
+        route_registry["approved_route_ids"] = [route_id]
+        route_registry["enabled_route_ids"] = [route_id]
+        route_registry["active_route_ids"] = [route_id]
+        route["lifecycle"]["status"] = "APPROVED"
+        route["lifecycle"]["dispatch_enabled"] = True
+        route_path.write_text(yaml.safe_dump(route_registry, sort_keys=False), encoding="utf-8")
+
+        credential_id = "github-test-credential"
+        credential_path = root / ".ai" / "policies" / "github-credential-profiles.yaml"
+        credential_registry = yaml.safe_load(credential_path.read_text(encoding="utf-8"))
+        credential_registry["approved_profile_ids"] = [credential_id]
+        credential_registry["profiles"] = [
+            {
+                "credential_profile_id": credential_id,
+                "approval_status": "APPROVED_FOR_TEST_FIXTURE",
+            }
+        ]
+        credential_path.write_text(yaml.safe_dump(credential_registry, sort_keys=False), encoding="utf-8")
+        return route_id, credential_id
+
+    def make_gate_record(
+        self,
+        root: Path,
+        now: datetime,
+        action_class: str = "METADATA",
+        independent_review: bool = False,
+    ) -> dict[str, object]:
+        policy = yaml.safe_load((root / ".ai" / "policies" / "github-operations.yaml").read_text(encoding="utf-8"))
+        route_id, credential_id = self.approve_test_route_and_credential(root)
+        evidence = {
+            name: {"satisfied": True, "refs": [f"EVD-{name}"]}
+            for name in policy["required_evidence_flags"]
+        }
+        return {
+            "schema_version": "1.0.0",
+            "gate_id": "GHG-TEST-001",
+            "assignment_id": "ASN-TEST-001",
+            "session_id": "SESSION-TEST-001",
+            "human_authority_ref": "ADR-0006",
+            "actor": {
+                "role_id": "release-evidence-agent",
+                "specialist_profile_id": "github-manager",
+                "provider_route_id": route_id,
+                "credential_profile_id": credential_id,
+            },
+            "scope": {
+                "organization": "OSHEThai",
+                "repository": "oshe-platform",
+                "action_class": action_class,
+                "action": "test-operation",
+                "target": "test-target",
+                "expected_pre_state_digest": "sha256:" + "0" * 64,
+                "expected_post_state": "Expected test state",
+                "exact_commit_or_configuration_identity": "test-identity",
+            },
+            "evidence": evidence,
+            "unresolved_blockers": [],
+            "independent_review": {
+                "reviewer_role_id": "independent-review-challenge-agent" if independent_review else None,
+                "reviewer_assignment_id": "ASN-REVIEW-TEST-001" if independent_review else None,
+                "disposition": "PASS" if independent_review else "NOT_REQUIRED",
+                "review_ref": "REV-TEST-001" if independent_review else None,
+            },
+            "requested_at": (now - timedelta(minutes=1)).isoformat(),
+            "expires_at": (now + timedelta(minutes=10)).isoformat(),
+            "external_authority_ref": None,
+        }
+
+    def run_gate(
+        self, root: Path, record: dict[str, object], now: datetime
+    ) -> subprocess.CompletedProcess[str]:
+        record_path = root / "gate.yaml"
+        record_path.write_text(yaml.safe_dump(record, sort_keys=False), encoding="utf-8")
+        return subprocess.run(
+            [
+                sys.executable,
+                str(root / ".ai" / "tools" / "evaluate_github_operation.py"),
+                str(record_path),
+                "--now",
+                now.isoformat(),
+            ],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_current_package_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            result = self.run_validator(root)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("provider_routes_enabled=0", result.stdout)
+
+    def test_unapproved_provider_route_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            route_path = root / ".ai" / "provider-routes" / "ai-service-route-registry.yaml"
+            text = route_path.read_text(encoding="utf-8")
+            text = text.replace("dispatch_enabled: false", "dispatch_enabled: true", 1)
+            route_path.write_text(text, encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Candidate route is unexpectedly enabled", result.stdout)
+
+    def test_complete_metadata_gate_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(root, now)
+            result = self.run_gate(root, record, now)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_incomplete_evidence_gate_denies(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(root, now)
+            record["evidence"]["required_checks_passed"]["satisfied"] = False
+            result = self.run_gate(root, record, now)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("evidence is not satisfied: required_checks_passed", result.stdout)
+
+    def test_high_impact_gate_requires_independent_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(root, now, action_class="MERGE")
+            result = self.run_gate(root, record, now)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("high-impact operation requires", result.stdout)
+
+    def test_high_impact_gate_passes_with_independent_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(root, now, action_class="MERGE", independent_review=True)
+            result = self.run_gate(root, record, now)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/specialist-profile.schema.json",
+  "title": "OSHE Specialist Agent Profile Metadata",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "version",
+    "lifecycle_status",
+    "category",
+    "parent_roles",
+    "default_tool_profile",
+    "dispatch_status"
+  ],
+  "properties": {
+    "profile_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "lifecycle_status": {
+      "enum": ["DRAFT", "UNDER_REVIEW", "APPROVED", "SUPERSEDED", "WITHDRAWN", "ARCHIVED"]
+    },
+    "category": {"const": "specialist_profile"},
+    "parent_roles": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "default_tool_profile": {"type": "string", "minLength": 1},
+    "dispatch_status": {
+      "enum": [
+        "NOT_DISPATCHABLE_WITHOUT_REGISTERED_ASSIGNMENT_AND_APPROVED_ROUTE",
+        "APPROVED_WITH_REGISTERED_ASSIGNMENT_AND_APPROVED_ROUTE",
+        "APPROVED_WITH_REGISTERED_ASSIGNMENT_APPROVED_ROUTE_AND_PASSING_OPERATION_GATE",
+        "SUSPENDED",
+        "RETIRED"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

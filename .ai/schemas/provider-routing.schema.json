@@ -1,0 +1,466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.example/schemas/provider-routing.schema.json",
+  "title": "OSHE Canonical Role-to-Provider Routing Policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "registry_id",
+    "default_policy",
+    "routing_status",
+    "role_routes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "registry_id": {
+      "const": "REG-ROUTING-001"
+    },
+    "default_policy": {
+      "const": "DENY_IF_NO_APPROVED_ROUTE"
+    },
+    "role_routes": {
+      "type": "object",
+      "required": [
+        "project-management-agent",
+        "product-planning-agent",
+        "architecture-agent",
+        "engineering-agent",
+        "data-integration-agent",
+        "security-privacy-product-safety-agent",
+        "test-quality-agent",
+        "documentation-configuration-agent",
+        "research-legal-content-agent",
+        "independent-review-challenge-agent",
+        "release-evidence-agent",
+        "implementation-customer-success-planning-agent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "project-management-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "product-planning-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "architecture-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "engineering-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "data-integration-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "security-privacy-product-safety-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "test-quality-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "documentation-configuration-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "research-legal-content-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "independent-review-challenge-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "release-evidence-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "implementation-customer-success-planning-agent": {
+          "type": "object",
+          "required": [
+            "primary_route_id",
+            "fallback_route_ids",
+            "selection_state",
+            "dispatch_enabled"
+          ],
+          "properties": {
+            "primary_route_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "fallback_route_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "selection_state": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED_PENDING_QUALIFICATION",
+                "ACTIVE",
+                "SUSPENDED"
+              ]
+            },
+            "dispatch_enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

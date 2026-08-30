@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.example/schemas/provider-data-policy-review.schema.json",
+  "title": "OSHE Provider Data Policy Review Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "provider_id",
+    "service_id",
+    "account_profile_id",
+    "region_or_host_profile",
+    "authoritative_sources",
+    "review_dimensions",
+    "allowed_data_classes",
+    "prohibited_data_classes",
+    "status",
+    "unresolved_questions",
+    "reviewers",
+    "human_approver",
+    "review_trigger"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "review_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "provider_id": {
+      "type": "string"
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "account_profile_id": {
+      "type": "string"
+    },
+    "region_or_host_profile": {
+      "type": "string"
+    },
+    "authoritative_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_type",
+          "reference",
+          "effective_or_accessed_date",
+          "status"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "review_dimensions": {
+      "type": "object",
+      "required": [
+        "input_output_handling",
+        "retention_and_deletion",
+        "training_and_service_improvement",
+        "regions_and_subprocessors",
+        "human_support_access",
+        "security_and_encryption",
+        "incident_and_change_notification",
+        "audit_and_export"
+      ]
+    },
+    "allowed_data_classes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "PUBLIC",
+          "INTERNAL",
+          "CONFIDENTIAL",
+          "RESTRICTED",
+          "MEDICAL",
+          "SECURITY_CASE",
+          "LEGAL_PRIVILEGED",
+          "PRODUCTION_SECRET"
+        ]
+      }
+    },
+    "prohibited_data_classes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "PUBLIC",
+          "INTERNAL",
+          "CONFIDENTIAL",
+          "RESTRICTED",
+          "MEDICAL",
+          "SECURITY_CASE",
+          "LEGAL_PRIVILEGED",
+          "PRODUCTION_SECRET"
+        ]
+      }
+    },
+    "status": {
+      "enum": [
+        "NOT_ASSESSED",
+        "IN_REVIEW",
+        "CHANGES_REQUIRED",
+        "APPROVED_WITH_LIMITS",
+        "APPROVED",
+        "SUSPENDED",
+        "EXPIRED"
+      ]
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "human_approver": {
+      "type": "string"
+    },
+    "review_trigger": {
+      "type": "string",
+      "minLength": 3
+    }
+  },
+  "additionalProperties": true
+}

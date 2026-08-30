@@ -1,0 +1,116 @@
+schema_version: 1.0.0
+registry_id: REG-ROUTING-001
+title: Canonical Role-to-Provider Routing Policy
+lifecycle_status: APPROVED
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL_RUNTIME_NOT_ENFORCED
+owner: project-management-agent
+co_owners:
+- security-privacy-product-safety-agent
+- data-integration-agent
+human_approver: Sole Human Owner / Human Product and Release Authority
+authority_refs:
+- ADR-0005
+- REG-AISR-001
+- REG-MODEL-001
+effective_date: '2026-08-18'
+default_policy: DENY_IF_NO_APPROVED_ROUTE
+routing_status: NO_APPROVED_ROUTES
+role_routes:
+  project-management-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  product-planning-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  architecture-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  engineering-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  data-integration-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  security-privacy-product-safety-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  test-quality-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  documentation-configuration-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  research-legal-content-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  independent-review-challenge-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  release-evidence-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+  implementation-customer-success-planning-agent:
+    primary_route_id: null
+    fallback_route_ids: []
+    selection_state: UNASSIGNED
+    dispatch_enabled: false
+    selection_rule: Resolve only to an APPROVED or explicitly bounded PROVISIONAL
+      route matching role, task, data class, risk, tools, quota, and review requirements.
+legacy_speculative_mappings:
+  status: SUPERSEDED_UNQUALIFIED_DO_NOT_DISPATCH
+  note: Prior brand-level primary/fallback mappings lacked exact route identity, data-policy
+    review, qualification evidence, and human approval.
+  aliases:
+  - qwen-local
+  - deepseek-flash
+  - gemini
+  - deepseek-pro
+  - codex
+  - claude
+  - deterministic-plus-qwen
+failover_rule: No automatic failover until both primary and fallback route IDs are
+  independently qualified for equivalent or stricter scope.

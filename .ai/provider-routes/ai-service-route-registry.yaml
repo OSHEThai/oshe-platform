@@ -1,0 +1,566 @@
+schema_version: 1.0.0
+registry_id: REG-AISR-001
+title: AI Service and Provider Route Registry
+registry_version: 1.0.0
+lifecycle_status: APPROVED
+maturity: OPERATIONAL
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL
+runtime_enforcement_status: NOT_IMPLEMENTED
+review_status: APPROVED
+effective_date: '2026-08-18'
+authority_basis:
+- ADR-0005
+- REL-V010-PQCP-001
+- REL-V010-BCR04-001
+- V010-I023
+- V010-I024
+owner: security-privacy-product-safety-agent
+co_owners:
+- project-management-agent
+- data-integration-agent
+approval_authority: Sole Human Owner / Human Product and Release Authority
+source_of_truth: GOOGLE_DRIVE
+dispatch_default: DENY
+fixed_budget_status: NOT_ESTABLISHED
+cost_model: VARIABLE_USAGE_BASED
+calendar_dates: INTENTIONALLY_UNASSIGNED
+registry_state: PLANNING_CONTROL_READY_ROUTE_SELECTION_PENDING
+active_route_ids: []
+approved_route_ids: []
+route_state_model:
+- CANDIDATE
+- INTAKE_INCOMPLETE
+- UNDER_POLICY_REVIEW
+- UNDER_TECHNICAL_VALIDATION
+- UNDER_EVALUATION
+- PROVISIONAL
+- APPROVED_WITH_LIMITS
+- APPROVED
+- SUSPENDED
+- REQUALIFICATION_REQUIRED
+- REJECTED
+- DEPRECATED
+- RETIRED
+global_controls:
+  unknown_value_behavior: FAIL_CLOSED
+  alias_without_resolved_identity: PROHIBITED
+  provider_brand_only_approval: PROHIBITED
+  hidden_subagents: PROHIBITED
+  self_qualification: PROHIBITED
+  failover_rule: Fallback must be separately qualified and may not weaken data, tool,
+    review, evidence, cost or human gates
+  data_class_resolution_order: Resolve data class before provider capability, convenience,
+    quota or price
+  credential_rule: No live credentials or secret values in this registry
+  activation_rule: Only an APPROVED or APPROVED_WITH_LIMITS route with current evidence
+    may be dispatch-enabled
+routes:
+- provider_route_id: route-qwen-local-candidate
+  provider_id: qwen
+  service_id: qwen-local
+  route_kind: LOCAL_RUNTIME
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-qwen-local-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: &id001
+  - PUBLIC
+  - INTERNAL
+  - CONFIDENTIAL
+  - RESTRICTED
+  - MEDICAL
+  - SECURITY_CASE
+  - LEGAL_PRIVILEGED
+  - PRODUCTION_SECRET
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-openai-codex-candidate
+  provider_id: openai
+  service_id: codex
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-openai-codex-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-google-gemini-candidate
+  provider_id: google
+  service_id: gemini
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-google-gemini-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-anthropic-claude-candidate
+  provider_id: anthropic
+  service_id: claude
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-anthropic-claude-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-deepseek-pro-api-candidate
+  provider_id: deepseek
+  service_id: deepseek-pro
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-deepseek-pro-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-deepseek-flash-api-candidate
+  provider_id: deepseek
+  service_id: deepseek-flash
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-deepseek-flash-candidate
+  cli:
+    cli_id: TBD
+    version: TBD
+    installation_source: TBD
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: TBD
+    status: NOT_ASSESSED
+    allowed_data_classes: []
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: INTAKE_INCOMPLETE
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Candidate service lane named in existing provider-planning artifacts;
+    no exact route is approved.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - exact_model_id
+  - model_revision_or_digest
+  - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+candidate_service_families:
+- route-qwen-local-candidate
+- route-openai-codex-candidate
+- route-google-gemini-candidate
+- route-anthropic-claude-candidate
+- route-deepseek-pro-api-candidate
+- route-deepseek-flash-api-candidate
+enabled_route_ids: []
+default_dispatch_policy: DENY_UNLESS_EXACT_ROUTE_APPROVED

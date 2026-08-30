@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/write-lease.schema.json",
+  "title": "Repository Write Lease",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "lease_id",
+    "repository",
+    "worktree",
+    "branch",
+    "assignment_id",
+    "agent_session_id",
+    "allowed_paths",
+    "forbidden_paths",
+    "activated_at",
+    "expires_at",
+    "state"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "lease_id": {"type": "string", "pattern": "^LEASE-[A-Z0-9-]+$"},
+    "repository": {"type": "string", "minLength": 1},
+    "worktree": {"type": "string", "minLength": 1},
+    "branch": {"type": "string", "minLength": 1},
+    "assignment_id": {"type": "string", "pattern": "^ASN-[A-Z0-9-]+$"},
+    "agent_session_id": {"type": "string", "pattern": "^SESSION-[A-Z0-9-]+$"},
+    "allowed_paths": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "forbidden_paths": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "activated_at": {"type": ["string", "null"], "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "state": {"enum": ["DRAFT", "ACTIVE", "SUSPENDED", "EXPIRED", "RELEASED", "REVOKED"]}
+  },
+  "additionalProperties": false
+}
