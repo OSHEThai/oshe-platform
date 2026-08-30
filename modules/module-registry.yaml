@@ -1,2 +1,38 @@
 schema_version: 1.0.0
-modules: []
+modules:
+  - id: MOD-ORG
+    name: Organization and Tenancy
+    path: modules/organization-tenancy
+    roadmap_topic: V020-T01
+  - id: MOD-IAM
+    name: Identity and Authorization
+    path: modules/identity-authorization
+    roadmap_topic: V020-T02
+  - id: MOD-EVD
+    name: Files and Evidence
+    path: modules/files-evidence
+    roadmap_topic: V020-T03
+  - id: MOD-REC
+    name: Records and Audit
+    path: modules/records-audit
+    roadmap_topic: V020-T03
+  - id: MOD-CFG
+    name: Configuration and Checklist
+    path: modules/configuration-checklist
+    roadmap_topic: V020-T04
+  - id: MOD-WFA
+    name: Workflow and Action
+    path: modules/workflow-action
+    roadmap_topic: V020-T04
+  - id: MOD-EVT
+    name: Events, Outbox and Jobs
+    path: modules/events-outbox-jobs
+    roadmap_topic: V020-T05
+  - id: MOD-REP
+    name: Reporting, Localization and Feature Control
+    path: modules/reporting-localization
+    roadmap_topic: V020-T06
+  - id: MOD-CTR
+    name: Contract and Migration Governance
+    path: modules/contract-migration-governance
+    roadmap_topic: V020-T07

@@ -9,6 +9,7 @@ The current repository contains structure and governance only. Product implement
 ## Primary Areas
 
 - `apps/` — deployable applications and processes
+- `products/` — composition manifests that assemble approved modules without copying source
 - `modules/` — domain-owned implementation modules
 - `packages/` — approved reusable packages
 - `contracts/` — public API, event, extension, and integration contracts
