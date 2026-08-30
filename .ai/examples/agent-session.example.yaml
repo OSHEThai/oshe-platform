@@ -1,0 +1,15 @@
+schema_version: 1.0.0
+session_id: SESSION-V010-EXAMPLE-001
+assignment_id: ASN-V010-EXAMPLE-001
+role_id: documentation-configuration-agent
+specialist_profile_id: docs-content-pack-worker
+provider_route_id: route-openai-codex-candidate
+cli_or_adapter: UNQUALIFIED
+tool_profile_id: documentation-scoped
+write_lease_id: LEASE-V010-EXAMPLE-001
+parent_session_id: null
+visible_to_control_plane: true
+hidden_delegation: false
+activated_at: null
+expires_at: null
+state: DRAFT

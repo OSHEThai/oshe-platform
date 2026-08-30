@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Human Handoff",
+  "type": "object",
+  "required": [
+    "mission_id",
+    "summary",
+    "scope_completed",
+    "scope_not_completed",
+    "human_decisions",
+    "risks",
+    "evidence",
+    "recommendation"
+  ],
+  "properties": {
+    "mission_id": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "scope_completed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scope_not_completed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "human_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendation": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,28 @@
+schema_version: 1.0.0
+policy_id: POL-REPOSITORY-BOUNDARY-001
+title: Repository and Source Boundary Policy
+lifecycle_status: UNDER_REVIEW
+repositories:
+  oshe-platform:
+    owns:
+    - applications
+    - business-modules
+    - contracts-and-schemas
+    - tests-and-deployment-definitions
+    - canonical-ai-agent-controls
+    - engineering-release-evidence
+  oshe-content:
+    owns:
+    - controlled-content-packages
+    - content-source-and-provenance-records
+    - content-validation-assets
+  Plan:
+    owns:
+    - local-planning-source-until-controlled-transfer
+    publish_to_github: false
+rules:
+- no-direct-cross-module-table-write
+- no-duplicate-canonical-ai-registry-across-repositories
+- repository-specific-adapters-may-reference-but-not-silently-fork-canonical-controls
+- generated-runtime-state-transcripts-credentials-and-customer-data-are-never-committed
+- cross-repository-change-requires-explicit-task-scope-and-separate-write-lease

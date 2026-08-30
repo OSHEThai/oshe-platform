@@ -1,0 +1,60 @@
+schema_version: 1.0.0
+record_id: AI-OS-READINESS-V010-001
+prepared_on_iso: '2026-08-30'
+prepared_on_display: 30-08-2026
+release: v0.1.0
+topic: V010-T04
+state: PREPARED_FOR_REVIEW_NOT_RUNTIME_READY
+source_authority:
+- ADR-0005
+- ADR-0006
+- ADR-0007
+- REG-HERDR-ROLE-001
+- REG-AISR-001
+prepared_inventory:
+  canonical_roles: 12
+  specialist_profiles: 17
+  skills: 41
+  policy_files_including_registry: 18
+  operational_runbooks: 15
+  contract_schemas_minimum: 20
+issue_split:
+- issue: V010-I013
+  github_issue: 16
+  intended_slice: agent-contract-and-context
+- issue: V010-I014
+  github_issue: 17
+  intended_slice: role-and-specialist-profile-registries
+- issue: V010-I015
+  github_issue: 18
+  intended_slice: contract-schemas-examples-and-validator
+- issue: V010-I016
+  github_issue: 19
+  intended_slice: skill-catalog-bundles-policies-and-runbooks
+completed_preparation:
+- canonical-12-role-cards-copied-and-referenced-repo-locally
+- legacy-role-aliases-retained-without-authority
+- specialist-profiles-modernized-and-expanded
+- skill-catalog-expanded-for-cross-cutting-project-needs
+- role-permissions-and-tool-profiles-mapped-to-canonical-roles
+- policy-and-runbook-gaps-filled
+- provider-and-model-routing-remains-fail-closed
+- static-cross-reference-and-schema-validation-added
+- adr-0006-standing-conditional-full-github-authority-recorded
+- github-operation-evidence-gate-schema-evaluator-and-regression-tests-added
+- adr-0007-local-first-ci-checkpoint-pr-branch-and-cleanup-policy-added
+- non-fail-fast-local-ci-runner-and-regression-tests-added
+runtime_blockers:
+- exact-provider-model-cli-and-adapter-identities-not-qualified
+- provider-data-policy-reviews-not-complete
+- exact-github-credential-profile-not-qualified-or-approved
+- route-quotas-cost-limits-and-expiry-not-approved
+- herdr-assignment-route-tool-data-and-write-lease-enforcement-not-implemented
+- hidden-delegation-and-session-registration-not-runtime-enforced
+- independent-review-route-separation-not-runtime-verified
+- reference-mission-runtime-evidence-not-produced
+- hosted-ci-and-clean-machine-evidence-not-produced-for-this-preparation
+dispatch_rule: DENY_UNTIL_EVERY_APPLICABLE_RUNTIME_BLOCKER_IS_RESOLVED_AND_HUMAN_APPROVAL_IS_RECORDED
+publication_status:
+  tracking_mode: LIVE_GITHUB_READBACK_REQUIRED
+  static_claim: NOT_ASSERTED_BY_THIS_READINESS_RECORD

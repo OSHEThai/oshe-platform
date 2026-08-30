@@ -1,0 +1,109 @@
+schema_version: 1.0.0
+policy_id: POL-GITHUB-OPS-001
+title: Evidence-Gated Full GitHub Operations Policy
+lifecycle_status: APPROVED
+implementation_status: IMPLEMENTED_FOR_STATIC_GATE_CONTROL
+runtime_enforcement_status: NOT_IMPLEMENTED
+authority_basis:
+- ADR-0005
+- ADR-0006
+- ADR-0007
+authorized_role_id: release-evidence-agent
+required_specialist_profile_id: github-manager
+authorization_mode: STANDING_CONDITIONAL_AUTHORIZATION
+organization_allowlist:
+- OSHEThai
+repository_scope: EXACT_ASSIGNMENT_ALLOWLIST_ONLY
+default_write_decision: DENY
+gate_schema: .ai/schemas/github-operation-gate.schema.json
+gate_evaluator: .ai/tools/evaluate_github_operation.py
+gate_validity_minutes: 30
+action_classes:
+  READ:
+    write: false
+    independent_review_required: false
+  METADATA:
+    examples: [issues, discussions, comments, labels, milestones, projects, assignments]
+    independent_review_required: false
+  BRANCH_PR:
+    examples: [branch-create, branch-push, pull-request-create, pull-request-update, review-request, mark-ready]
+    independent_review_required: false
+  WORKFLOW:
+    examples: [workflow-dispatch, rerun, cancel, artifact, cache, variable]
+    independent_review_required: false
+  MERGE:
+    examples: [merge, merge-queue, branch-delete-after-merge]
+    independent_review_required: true
+  RELEASE:
+    examples: [tag, signature, draft-release, publish-release, release-asset, attestation]
+    independent_review_required: true
+  REPOSITORY_ADMIN:
+    examples: [repository-create, settings, ruleset, protection, integration, webhook, collaborator, team, visibility, archive]
+    independent_review_required: true
+  CREDENTIAL:
+    examples: [secret-create, secret-rotate, secret-delete, deploy-key, app, environment-protection]
+    independent_review_required: true
+  SECURITY:
+    examples: [security-advisory, code-security-setting, dependency-security-setting]
+    independent_review_required: true
+  DESTRUCTIVE:
+    examples: [force-push, repository-transfer, repository-delete, history-rewrite, destructive-cache-or-artifact-removal]
+    independent_review_required: true
+  DEPLOYMENT_TRIGGER:
+    examples: [environment-approval, deployment-record, workflow-that-causes-external-deployment]
+    independent_review_required: true
+    separate_external_authority_required: true
+required_evidence_flags:
+- assignment_validated
+- visible_session_validated
+- approved_provider_route_validated
+- organization_and_repository_allowlisted
+- exact_action_and_target_validated
+- expected_pre_state_validated
+- expected_post_state_validated
+- exact_commit_or_configuration_identity_validated
+- scope_and_write_lease_validated
+- required_checks_passed
+- required_reviews_complete
+- unresolved_blockers_empty
+- rollback_backup_or_recovery_ready
+- credential_profile_approved
+- audit_capture_ready
+- post_operation_validation_ready
+- data_legal_safety_release_boundaries_validated
+- target_re_resolved_immediately_before_execution
+high_impact_action_classes:
+- MERGE
+- RELEASE
+- REPOSITORY_ADMIN
+- CREDENTIAL
+- SECURITY
+- DESTRUCTIVE
+- DEPLOYMENT_TRIGGER
+execution_rules:
+- applicable-local-ci-must-pass-before-github-ci-or-pull-request-publication
+- full-ci-is-permitted-only-for-milestone-closure-local-first-then-github
+- unchanged-passing-incremental-checks-may-use-state-bound-checkpoints
+- evaluator-pass-is-bound-to-exact-record-digest-target-pre-state-and-expiry
+- re-evaluate-immediately-before-execution
+- state-drift-invalidates-pass
+- no-provider-model-or-credential-substitution
+- no-ruleset-or-check-weakening-to-obtain-pass
+- destructive-target-must-be-resolved-again-immediately-before-action
+- secret-values-never-enter-command-output-log-evidence-or-repository
+- capture-operation-receipt-and-post-state
+- failed-or-partial-operation-invokes-github-operation-failure-runbook
+- merged-head-branch-is-deleted-and-absence-is-verified
+- closed-unmerged-or-abandoned-branch-is-deleted-only-after-active-and-recovery-reference-checks
+- unreferenced-worktrees-branches-caches-logs-downloads-and-failed-outputs-are-cleaned-after-task
+retained_human_only_boundaries:
+- organization-account-ownership
+- billing-and-subscription-ownership
+- succession-and-recovery-owner
+- residual-risk-and-policy-exception
+- customer-or-production-data-use
+- legal-medical-certification-compliance-and-final-safety-decisions
+- non-github-production-deployment-without-separate-authority
+revocation:
+  authority: Sole Human Owner / Human Product and Release Authority
+  behavior: IMMEDIATE_DENY_AND_REVOKE_CREDENTIAL_PROFILE

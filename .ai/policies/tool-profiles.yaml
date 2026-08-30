@@ -1,0 +1,73 @@
+schema_version: 1.0.0
+registry_id: REG-TOOL-PROFILE-001
+title: Agent Tool Profiles
+lifecycle_status: UNDER_REVIEW
+runtime_enforcement_status: NOT_IMPLEMENTED
+default_profile: discovery-readonly
+profiles:
+  discovery-readonly:
+    write: false
+    network: NONE
+    git: READ_ONLY
+    credentials: NONE
+  planning-scoped:
+    write: LEASED_DOCUMENT_PATHS
+    network: APPROVED_ROUTE_ONLY
+    git: LOCAL_BRANCH_NO_PUSH
+    credentials: NONE
+  review-readonly:
+    write: false
+    network: APPROVED_ROUTE_ONLY
+    git: READ_ONLY
+    credentials: NONE
+    independent_from_producer: true
+  implement-scoped:
+    write: LEASED_PATHS
+    network: EXPLICIT_ALLOWLIST
+    git: LOCAL_BRANCH_AND_LOCAL_COMMIT
+    credentials: NON_PRODUCTION_TASK_SCOPED_ONLY
+  test-scoped:
+    write: LEASED_TEST_AND_GENERATED_PATHS
+    network: EXPLICIT_ALLOWLIST
+    git: LOCAL_BRANCH_AND_LOCAL_COMMIT
+    credentials: SYNTHETIC_NON_PRODUCTION_ONLY
+  documentation-scoped:
+    write: LEASED_DOCUMENT_PATHS
+    network: APPROVED_RESEARCH_ALLOWLIST
+    git: LOCAL_BRANCH_AND_LOCAL_COMMIT
+    credentials: NONE
+  evidence-scoped:
+    write: LEASED_EVIDENCE_AND_METADATA_PATHS
+    network: APPROVED_ROUTE_ONLY
+    git: LOCAL_BRANCH_NO_MERGE
+    credentials: NONE
+  github-metadata:
+    write: APPROVED_GITHUB_METADATA_ONLY
+    network: GITHUB_ONLY
+    git: NO_PROTECTED_BRANCH_WRITE_OR_MERGE
+    credentials: HUMAN_PROVISIONED_LEAST_PRIVILEGE
+    standing_authority_ref: ADR-0006
+    requires_evidence_gate: true
+  github-full-control:
+    write: FULL_GITHUB_OPERATION_MATCHING_PASSING_GATE_ONLY
+    network: GITHUB_ONLY
+    git: FULL_WITHIN_EXACT_GATE_TARGET
+    credentials: APPROVED_GITHUB_APP_OR_FINE_GRAINED_PROFILE
+    standing_authority_ref: ADR-0006
+    requires_evidence_gate: true
+    high_impact_independent_review_required: true
+    secret_handling: WRITE_ROTATE_DELETE_BY_REFERENCE_NEVER_READ_EXPORT_OR_LOG
+    destructive_action: EXACT_TARGET_BACKUP_RECOVERY_AND_POST_VALIDATION_REQUIRED
+  incident-readonly:
+    write: INCIDENT_EVIDENCE_PATH_ONLY
+    network: NONE_UNLESS_HUMAN_AUTHORIZED
+    git: READ_ONLY
+    credentials: NONE
+global_forbidden_capabilities:
+- production-deploy
+- evidence-gate-bypass
+- protection-weakening-to-bypass-failed-gate
+- secret-export
+- customer-data-download
+- destructive-unbounded-filesystem-operation
+- hidden-delegation

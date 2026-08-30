@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.example/schemas/ai-service-usage-controls.schema.json",
+  "title": "OSHE AI Service Variable Usage and Concurrency Controls",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "registry_id",
+    "budget_model",
+    "fixed_budget_established",
+    "global_concurrency",
+    "cost_classes",
+    "quota_states"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "registry_id": {
+      "const": "REG-USAGE-001"
+    },
+    "budget_model": {
+      "const": "VARIABLE_USAGE_BASED"
+    },
+    "fixed_budget_established": {
+      "const": false
+    },
+    "global_concurrency": {
+      "type": "object",
+      "required": [
+        "default_primary_change_producing_agents",
+        "maximum_change_producing_agents_without_new_human_approval"
+      ]
+    },
+    "cost_classes": {
+      "type": "object",
+      "required": [
+        "C0",
+        "C1",
+        "C2",
+        "C3"
+      ]
+    },
+    "quota_states": {
+      "type": "object",
+      "required": [
+        "GREEN",
+        "YELLOW",
+        "RED",
+        "UNKNOWN"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

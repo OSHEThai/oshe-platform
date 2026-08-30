@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/ai-service-usage-register.schema.json",
+  "title": "OSHE AI Service Usage Register",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "registry_id",
+    "registry_version",
+    "fixed_budget_status",
+    "cost_model",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "registry_id": {
+      "const": "REG-AI-USAGE-001"
+    },
+    "registry_version": {
+      "type": "string"
+    },
+    "fixed_budget_status": {
+      "const": "NOT_ESTABLISHED"
+    },
+    "cost_model": {
+      "const": "VARIABLE_USAGE_BASED"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "usage_id",
+          "mission_id",
+          "task_id",
+          "assignment_id",
+          "route_id",
+          "model_entry_id",
+          "role_id",
+          "cost_class",
+          "usage_period",
+          "usage_measurements",
+          "quota_state",
+          "hard_stop_state",
+          "evidence_refs"
+        ]
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+incident_id: INC-V010-EXAMPLE-001
+category: REPOSITORY_BOUNDARY
+state: OPEN
+detected_at: '2026-08-30T00:00:00+07:00'
+affected_assignments:
+- ASN-V010-EXAMPLE-001
+affected_sessions:
+- SESSION-V010-EXAMPLE-001
+affected_repositories:
+- OSHEThai/oshe-platform
+data_classes:
+- INTERNAL
+containment_actions:
+- Suspend the example assignment and preserve the diff.
+evidence_refs: []
+unresolved_risks:
+- Example only; no real incident occurred.
+human_decision_ref: null

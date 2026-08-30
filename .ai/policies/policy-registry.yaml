@@ -1,0 +1,43 @@
+schema_version: 1.0.0
+registry_id: REG-POLICY-001
+title: AI Agent OS Policy Registry
+lifecycle_status: UNDER_REVIEW
+default_policy: DENY_ON_MISSING_UNKNOWN_INVALID_OR_CONFLICTING_CONTROL
+policies:
+- id: POL-AUTHORITY-001
+  path: .ai/policies/authority-and-approvals.yaml
+- id: REG-USAGE-001
+  path: .ai/policies/budgets.yaml
+- id: REG-DATA-CLASS-001
+  path: .ai/policies/data-classification.yaml
+- id: POL-DELEGATION-001
+  path: .ai/policies/delegation.yaml
+- id: POL-EVIDENCE-001
+  path: .ai/policies/evidence.yaml
+- id: POL-INCIDENT-001
+  path: .ai/policies/incident-handling.yaml
+- id: POL-GITHUB-OPS-001
+  path: .ai/policies/github-operations.yaml
+- id: REG-GITHUB-CREDENTIAL-001
+  path: .ai/policies/github-credential-profiles.yaml
+- id: REG-MODEL-001
+  path: .ai/policies/model-registry.yaml
+- id: REG-PERMISSION-001
+  path: .ai/policies/permissions.yaml
+- id: REG-ROUTING-001
+  path: .ai/policies/provider-routing.yaml
+- id: POL-REPOSITORY-WORKFLOW-CI-001
+  path: .ai/policies/repository-workflow-and-ci.yaml
+- id: POL-REPOSITORY-BOUNDARY-001
+  path: .ai/policies/repository-boundaries.yaml
+- id: POL-RETENTION-001
+  path: .ai/policies/retention.yaml
+- id: REG-RISK-001
+  path: .ai/policies/risk-levels.yaml
+- id: REG-TOOL-PROFILE-001
+  path: .ai/policies/tool-profiles.yaml
+- id: REG-WRITE-LEASE-001
+  path: .ai/policies/write-leases.yaml
+external_control_packages:
+- id: REG-AISR-001
+  path: .ai/provider-routes/ai-service-route-registry.yaml

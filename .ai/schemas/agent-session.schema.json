@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/agent-session.schema.json",
+  "title": "Visible Agent Session Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "session_id",
+    "assignment_id",
+    "role_id",
+    "specialist_profile_id",
+    "provider_route_id",
+    "cli_or_adapter",
+    "tool_profile_id",
+    "write_lease_id",
+    "parent_session_id",
+    "visible_to_control_plane",
+    "hidden_delegation",
+    "activated_at",
+    "expires_at",
+    "state"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "session_id": {"type": "string", "pattern": "^SESSION-[A-Z0-9-]+$"},
+    "assignment_id": {"type": "string", "pattern": "^ASN-[A-Z0-9-]+$"},
+    "role_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+    "specialist_profile_id": {"type": ["string", "null"]},
+    "provider_route_id": {"type": "string", "minLength": 1},
+    "cli_or_adapter": {"type": "string", "minLength": 1},
+    "tool_profile_id": {"type": "string", "minLength": 1},
+    "write_lease_id": {"type": ["string", "null"]},
+    "parent_session_id": {"type": ["string", "null"]},
+    "visible_to_control_plane": {"const": true},
+    "hidden_delegation": {"const": false},
+    "activated_at": {"type": ["string", "null"], "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "state": {"enum": ["DRAFT", "VALIDATED", "ACTIVE", "SUSPENDED", "EXPIRED", "COMPLETED", "REVOKED"]}
+  },
+  "additionalProperties": false
+}

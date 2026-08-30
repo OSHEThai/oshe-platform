@@ -1,0 +1,29 @@
+schema_version: 1.0.0
+policy_id: POL-INCIDENT-001
+title: Agent Security and Control Incident Policy
+lifecycle_status: UNDER_REVIEW
+incident_triggers:
+- secret-or-sensitive-data-exposure
+- write-lease-violation
+- hidden-or-unregistered-delegation
+- provider-route-policy-breach
+- protected-action-attempt
+- evidence-tampering-or-loss
+- unexplained-cross-repository-change
+immediate_actions:
+- stop-related-assignments
+- prevent-further-write-or-egress
+- preserve-minimum-safe-forensic-evidence
+- revoke-exposed-credentials-through-human-controlled-process
+- record-affected-repositories-paths-sessions-routes-and-data-classes
+- escalate-to-sole-human-owner
+prohibitions:
+- do-not-delete-evidence-to-hide-exposure
+- do-not-reuse-or-display-live-secret
+- do-not-resume-before-authorized-containment-and-recovery-decision
+closure_requires:
+- containment-evidence
+- impact-assessment
+- recovery-and-validation-evidence
+- unresolved-risk-record
+- sole-human-owner-decision

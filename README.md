@@ -6,6 +6,10 @@ This repository is the authoritative engineering source for platform application
 
 The current repository contains structure and governance only. Product implementation starts in later topics and releases.
 
+## Validation
+
+Install the pinned validation dependencies with `python -m pip install --disable-pip-version-check -r .ai/requirements-validation.txt`, then run `python tools/run_local_ci.py --mode incremental`. The ADR-0007 runner executes every applicable local check without fail-fast behavior and checkpoints only unchanged passing evidence. Use Full CI only for Milestone closure with `--mode full --milestone-close "<milestone>"`, locally before GitHub.
+
 ## Primary Areas
 
 - `apps/` — deployable applications and processes
@@ -26,4 +30,6 @@ The current repository contains structure and governance only. Product implement
 - No client-trusted tenant or scope authority.
 - No last-write-wins for protected records.
 - No production secrets or customer data in development.
-- No agent merge or production deployment.
+- GitHub merge, release, and administration require the ADR-0006 evidence gate; non-GitHub production deployment remains separately authorized.
+- Every change uses a pull request; directly authorized out-of-Issue work uses the PR as its primary audit record. Merged or safely abandoned branches and unreferenced task outputs are cleaned after completion under ADR-0007.
+- No provider or model route dispatch until exact qualification and Sole Human Owner approval are recorded.

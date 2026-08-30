@@ -1,0 +1,50 @@
+schema_version: 1.0.0
+gate_id: GHG-V010-EXAMPLE-001
+assignment_id: ASN-V010-EXAMPLE-001
+session_id: SESSION-V010-EXAMPLE-001
+human_authority_ref: ADR-0006
+actor:
+  role_id: release-evidence-agent
+  specialist_profile_id: github-manager
+  provider_route_id: route-example-not-approved
+  credential_profile_id: credential-example-not-approved
+scope:
+  organization: OSHEThai
+  repository: oshe-platform
+  action_class: METADATA
+  action: update-example-issue-label
+  target: issue/example
+  expected_pre_state_digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  expected_post_state: Example issue has the approved example label.
+  exact_commit_or_configuration_identity: NOT_APPLICABLE_METADATA_EXAMPLE
+evidence:
+  assignment_validated: &denied
+    satisfied: false
+    refs: [EXAMPLE_NOT_ACTUAL_EVIDENCE]
+  visible_session_validated: *denied
+  approved_provider_route_validated: *denied
+  organization_and_repository_allowlisted: *denied
+  exact_action_and_target_validated: *denied
+  expected_pre_state_validated: *denied
+  expected_post_state_validated: *denied
+  exact_commit_or_configuration_identity_validated: *denied
+  scope_and_write_lease_validated: *denied
+  required_checks_passed: *denied
+  required_reviews_complete: *denied
+  unresolved_blockers_empty: *denied
+  rollback_backup_or_recovery_ready: *denied
+  credential_profile_approved: *denied
+  audit_capture_ready: *denied
+  post_operation_validation_ready: *denied
+  data_legal_safety_release_boundaries_validated: *denied
+  target_re_resolved_immediately_before_execution: *denied
+unresolved_blockers:
+- Example only; no provider route or credential is approved.
+independent_review:
+  reviewer_role_id: null
+  reviewer_assignment_id: null
+  disposition: NOT_REQUIRED
+  review_ref: null
+requested_at: '2026-08-30T00:00:00+07:00'
+expires_at: '2026-08-30T00:30:00+07:00'
+external_authority_ref: null

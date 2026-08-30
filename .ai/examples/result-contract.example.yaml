@@ -1,0 +1,25 @@
+task_id: V010-I016/skill-catalog
+status: SUBMITTED
+agent:
+  provider: exact-approved-route-required
+  model: exact-qualified-model-required
+  role_version: documentation-configuration-agent@1.0.0
+  skills:
+  - docs-from-diff@0.1.0
+  - schema-contract-validation@0.1.0
+  assignment_id: ASN-V010-EXAMPLE-001
+git:
+  base_commit: abc123
+  branch: docs/v010-i016-skill-catalog
+  result_commit: def456
+changes:
+- .ai/skill-registry.yaml
+commands_run:
+- python .ai/tools/validate_agent_os.py
+tests:
+  passed: 1
+  failed: 0
+  evidence_class: STATIC
+assumptions: []
+risks: []
+decisions_needed: []

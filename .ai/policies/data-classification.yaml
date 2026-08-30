@@ -1,0 +1,38 @@
+schema_version: 1.0.0
+registry_id: REG-DATA-CLASS-001
+title: AI Route Data Classification Baseline
+authority_ref: REL-V010-PQCP-001
+effective_date: '2026-08-18'
+inheritance_rule: Prompts, outputs, attachments, logs, transcripts, embeddings, caches,
+  and derived artifacts inherit the highest applicable source classification unless
+  an authorized human process reclassifies them.
+classes:
+  PUBLIC:
+    external_route_default: DENY_UNTIL_ROUTE_APPROVED
+    v0_1_0_rule: May be used only on an exact qualified route.
+  INTERNAL:
+    external_route_default: DENY_UNTIL_EXPLICIT_POLICY_APPROVAL
+    v0_1_0_rule: No secrets, personal/customer operational data, protected configuration,
+      or unreleased restricted content.
+  CONFIDENTIAL:
+    external_route_default: DENY
+    v0_1_0_rule: Future explicit purpose-limited review and higher assurance required.
+  RESTRICTED:
+    external_route_default: DENY
+    v0_1_0_rule: Denied unless a later controlled decision changes scope.
+  MEDICAL:
+    external_route_default: PROHIBITED
+    v0_1_0_rule: No exception in general engineering routing.
+  SECURITY_CASE:
+    external_route_default: PROHIBITED
+    v0_1_0_rule: Case/investigation data remains prohibited.
+  LEGAL_PRIVILEGED:
+    external_route_default: PROHIBITED
+    v0_1_0_rule: Qualified human legal control required.
+  PRODUCTION_SECRET:
+    external_route_default: PROHIBITED
+    v0_1_0_rule: Must never enter general agent context, logs, transcripts, result
+      contracts, or provider calls.
+legacy_aliases:
+  CONFIDENTIAL_PERSONAL: CONFIDENTIAL
+  HIGHLY_RESTRICTED: RESTRICTED

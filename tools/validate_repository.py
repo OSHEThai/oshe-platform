@@ -5,6 +5,7 @@ import argparse
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 PLACEHOLDERS = tuple(
@@ -18,6 +19,10 @@ PLACEHOLDERS = tuple(
 )
 
 COMMON_REQUIRED = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "QWEN.md",
     ".github/CODEOWNERS",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/config.yml",
@@ -31,6 +36,8 @@ COMMON_REQUIRED = [
     "SECURITY.md",
     "CONTRIBUTING.md",
     "repo-manifest.yaml",
+    ".ci/local-ci.json",
+    "tools/run_local_ci.py",
 ]
 
 REPO_REQUIRED = {
@@ -116,6 +123,20 @@ def main() -> int:
     manifest = root / "repo-manifest.yaml"
     if manifest.exists() and "repository:" not in manifest.read_text(encoding="utf-8"):
         errors.append("repo-manifest.yaml lacks repository key")
+
+    if args.repo_kind == "platform":
+        ai_validator = root / ".ai" / "tools" / "validate_agent_os.py"
+        if not ai_validator.is_file():
+            errors.append("missing AI Agent OS validator: .ai/tools/validate_agent_os.py")
+        else:
+            completed = subprocess.run(
+                [sys.executable, str(ai_validator)],
+                cwd=root,
+                check=False,
+                text=True,
+            )
+            if completed.returncode != 0:
+                errors.append("AI Agent OS validation failed")
 
     if errors:
         for error in errors:

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/role-card.schema.json",
+  "title": "Herdr Role Card Metadata",
+  "type": "object",
+  "required": [
+    "role_id",
+    "display_name",
+    "version",
+    "lifecycle_status",
+    "maturity",
+    "implementation_status",
+    "runtime_enforcement_status",
+    "category",
+    "authority_basis",
+    "risk_ceiling",
+    "default_mode",
+    "requires_independent_review",
+    "source_of_truth",
+    "effective_date"
+  ],
+  "properties": {
+    "role_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]+$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 3
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "lifecycle_status": {
+      "enum": [
+        "DRAFT",
+        "UNDER_REVIEW",
+        "APPROVED",
+        "SUPERSEDED",
+        "WITHDRAWN",
+        "ARCHIVED"
+      ]
+    },
+    "maturity": {
+      "enum": [
+        "CONCEPT",
+        "BASELINE",
+        "DETAILED",
+        "OPERATIONAL",
+        "VERIFIED"
+      ]
+    },
+    "implementation_status": {
+      "enum": [
+        "NOT_STARTED",
+        "PLANNED",
+        "IN_PROGRESS",
+        "IMPLEMENTED",
+        "QUALIFIED",
+        "DEPRECATED",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "runtime_enforcement_status": {
+      "enum": [
+        "NOT_IMPLEMENTED",
+        "PARTIAL",
+        "IMPLEMENTED",
+        "QUALIFIED"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "authority_basis": {
+      "type": "string",
+      "const": "ADR-0005"
+    },
+    "risk_ceiling": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ]
+    },
+    "default_mode": {
+      "enum": [
+        "READ_ONLY",
+        "READ_ONLY_BY_DEFAULT",
+        "READ_ONLY_OR_TEST_ONLY",
+        "BOUNDED_DOCUMENT_WRITE",
+        "BOUNDED_WRITE",
+        "CONTROL_STATE_WRITE",
+        "METADATA_AND_EVIDENCE_WRITE",
+        "TEST_ONLY",
+        "METADATA_ONLY"
+      ]
+    },
+    "requires_independent_review": {
+      "type": "boolean",
+      "const": true
+    },
+    "source_of_truth": {
+      "type": "string"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "legacy_aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": true
+}

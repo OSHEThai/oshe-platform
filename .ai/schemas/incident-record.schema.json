@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/incident-record.schema.json",
+  "title": "Agent Control Incident Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "incident_id",
+    "category",
+    "state",
+    "detected_at",
+    "affected_assignments",
+    "affected_sessions",
+    "affected_repositories",
+    "data_classes",
+    "containment_actions",
+    "evidence_refs",
+    "unresolved_risks",
+    "human_decision_ref"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "incident_id": {"type": "string", "pattern": "^INC-[A-Z0-9-]+$"},
+    "category": {
+      "enum": ["SECRET_OR_DATA_EXPOSURE", "WRITE_LEASE_VIOLATION", "HIDDEN_DELEGATION", "ROUTE_POLICY_BREACH", "PROTECTED_ACTION_ATTEMPT", "EVIDENCE_INTEGRITY", "REPOSITORY_BOUNDARY", "OTHER"]
+    },
+    "state": {"enum": ["OPEN", "CONTAINED", "RECOVERING", "AWAITING_HUMAN_DECISION", "CLOSED"]},
+    "detected_at": {"type": "string", "format": "date-time"},
+    "affected_assignments": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "affected_sessions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "affected_repositories": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "data_classes": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "containment_actions": {"type": "array", "items": {"type": "string"}},
+    "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "unresolved_risks": {"type": "array", "items": {"type": "string"}},
+    "human_decision_ref": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

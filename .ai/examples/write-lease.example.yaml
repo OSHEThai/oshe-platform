@@ -1,0 +1,15 @@
+schema_version: 1.0.0
+lease_id: LEASE-V010-EXAMPLE-001
+repository: OSHEThai/oshe-platform
+worktree: Z:/OSHEThai/.worktrees/example
+branch: docs/v010-example
+assignment_id: ASN-V010-EXAMPLE-001
+agent_session_id: SESSION-V010-EXAMPLE-001
+allowed_paths:
+- .ai/examples/**
+forbidden_paths:
+- Plan/**
+- .git/**
+activated_at: null
+expires_at: null
+state: DRAFT

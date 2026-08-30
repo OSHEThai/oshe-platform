@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oshe.local/schemas/github-operation-gate.schema.json",
+  "title": "Evidence-Gated GitHub Operation Authorization",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "gate_id",
+    "assignment_id",
+    "session_id",
+    "human_authority_ref",
+    "actor",
+    "scope",
+    "evidence",
+    "unresolved_blockers",
+    "independent_review",
+    "requested_at",
+    "expires_at",
+    "external_authority_ref"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "gate_id": {"type": "string", "pattern": "^GHG-[A-Z0-9-]+$"},
+    "assignment_id": {"type": "string", "pattern": "^ASN-[A-Z0-9-]+$"},
+    "session_id": {"type": "string", "pattern": "^SESSION-[A-Z0-9-]+$"},
+    "human_authority_ref": {"const": "ADR-0006"},
+    "actor": {
+      "type": "object",
+      "required": ["role_id", "specialist_profile_id", "provider_route_id", "credential_profile_id"],
+      "properties": {
+        "role_id": {"const": "release-evidence-agent"},
+        "specialist_profile_id": {"const": "github-manager"},
+        "provider_route_id": {"type": "string", "minLength": 1},
+        "credential_profile_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "organization",
+        "repository",
+        "action_class",
+        "action",
+        "target",
+        "expected_pre_state_digest",
+        "expected_post_state",
+        "exact_commit_or_configuration_identity"
+      ],
+      "properties": {
+        "organization": {"const": "OSHEThai"},
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "action_class": {
+          "enum": ["METADATA", "BRANCH_PR", "WORKFLOW", "MERGE", "RELEASE", "REPOSITORY_ADMIN", "CREDENTIAL", "SECURITY", "DESTRUCTIVE", "DEPLOYMENT_TRIGGER"]
+        },
+        "action": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "expected_pre_state_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "expected_post_state": {"type": "string", "minLength": 1},
+        "exact_commit_or_configuration_identity": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "assignment_validated",
+        "visible_session_validated",
+        "approved_provider_route_validated",
+        "organization_and_repository_allowlisted",
+        "exact_action_and_target_validated",
+        "expected_pre_state_validated",
+        "expected_post_state_validated",
+        "exact_commit_or_configuration_identity_validated",
+        "scope_and_write_lease_validated",
+        "required_checks_passed",
+        "required_reviews_complete",
+        "unresolved_blockers_empty",
+        "rollback_backup_or_recovery_ready",
+        "credential_profile_approved",
+        "audit_capture_ready",
+        "post_operation_validation_ready",
+        "data_legal_safety_release_boundaries_validated",
+        "target_re_resolved_immediately_before_execution"
+      ],
+      "properties": {
+        "assignment_validated": {"$ref": "#/$defs/evidenceItem"},
+        "visible_session_validated": {"$ref": "#/$defs/evidenceItem"},
+        "approved_provider_route_validated": {"$ref": "#/$defs/evidenceItem"},
+        "organization_and_repository_allowlisted": {"$ref": "#/$defs/evidenceItem"},
+        "exact_action_and_target_validated": {"$ref": "#/$defs/evidenceItem"},
+        "expected_pre_state_validated": {"$ref": "#/$defs/evidenceItem"},
+        "expected_post_state_validated": {"$ref": "#/$defs/evidenceItem"},
+        "exact_commit_or_configuration_identity_validated": {"$ref": "#/$defs/evidenceItem"},
+        "scope_and_write_lease_validated": {"$ref": "#/$defs/evidenceItem"},
+        "required_checks_passed": {"$ref": "#/$defs/evidenceItem"},
+        "required_reviews_complete": {"$ref": "#/$defs/evidenceItem"},
+        "unresolved_blockers_empty": {"$ref": "#/$defs/evidenceItem"},
+        "rollback_backup_or_recovery_ready": {"$ref": "#/$defs/evidenceItem"},
+        "credential_profile_approved": {"$ref": "#/$defs/evidenceItem"},
+        "audit_capture_ready": {"$ref": "#/$defs/evidenceItem"},
+        "post_operation_validation_ready": {"$ref": "#/$defs/evidenceItem"},
+        "data_legal_safety_release_boundaries_validated": {"$ref": "#/$defs/evidenceItem"},
+        "target_re_resolved_immediately_before_execution": {"$ref": "#/$defs/evidenceItem"}
+      },
+      "additionalProperties": false
+    },
+    "unresolved_blockers": {"type": "array", "items": {"type": "string"}},
+    "independent_review": {
+      "type": "object",
+      "required": ["reviewer_role_id", "reviewer_assignment_id", "disposition", "review_ref"],
+      "properties": {
+        "reviewer_role_id": {"type": ["string", "null"]},
+        "reviewer_assignment_id": {"type": ["string", "null"]},
+        "disposition": {"enum": ["PASS", "FAIL", "NOT_REQUIRED", "INCOMPLETE"]},
+        "review_ref": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "requested_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "external_authority_ref": {"type": ["string", "null"]}
+  },
+  "$defs": {
+    "evidenceItem": {
+      "type": "object",
+      "required": ["satisfied", "refs"],
+      "properties": {
+        "satisfied": {"type": "boolean"},
+        "refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

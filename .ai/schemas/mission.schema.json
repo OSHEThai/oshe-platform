@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Mission",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "goal",
+    "non_goals",
+    "risk_class",
+    "base_commit",
+    "human_decisions"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "non_goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_class": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "RX"
+      ]
+    },
+    "base_commit": {
+      "type": "string"
+    },
+    "integration_branch": {
+      "type": "string"
+    },
+    "human_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "data_classification": {
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "RESTRICTED",
+        "CONFIDENTIAL_PERSONAL",
+        "HIGHLY_RESTRICTED"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

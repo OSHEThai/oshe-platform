@@ -1,0 +1,33 @@
+schema_version: 1.0.0
+policy_id: POL-EVIDENCE-001
+title: Evidence Classification and Integrity Policy
+lifecycle_status: UNDER_REVIEW
+evidence_classes:
+- STATIC
+- CONTRACT
+- SYNTHETIC
+- CI
+- RUNTIME
+- HUMAN
+- CLEAN_MACHINE
+- INDEPENDENT_REVIEW
+- RELEASE
+rules:
+- evidence-retains-its-original-class
+- passing-static-contract-synthetic-or-ci-evidence-does-not-prove-runtime
+- agent-review-does-not-replace-required-qualified-human-review
+- every-claim-links-exact-commit-artifact-command-environment-and-result
+- skipped-unknown-quarantined-or-inconclusive-is-not-pass
+- failed-rejected-and-superseded-evidence-remains-linked
+- timestamps-and-identities-must-be-attributable
+- sensitive-evidence-inherits-highest-source-data-class
+minimum_result_fields:
+- base_commit
+- result_commit_or_read_only_state
+- changed_paths
+- commands
+- tests_and_evidence_class
+- assumptions
+- risks
+- unresolved_findings
+- human_decisions_needed

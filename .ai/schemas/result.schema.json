@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Task Result",
+  "type": "object",
+  "required": [
+    "task_id",
+    "status",
+    "agent",
+    "git",
+    "changes",
+    "commands_run",
+    "tests",
+    "assumptions",
+    "risks",
+    "decisions_needed"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "SUBMITTED",
+        "BLOCKED",
+        "FAILED"
+      ]
+    },
+    "agent": {
+      "type": "object",
+      "required": [
+        "provider",
+        "model",
+        "role_version",
+        "skills"
+      ],
+      "additionalProperties": true
+    },
+    "git": {
+      "type": "object",
+      "required": [
+        "base_commit",
+        "branch"
+      ],
+      "additionalProperties": true
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "object"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decisions_needed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

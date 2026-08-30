@@ -1,0 +1,47 @@
+schema_version: 1.0.0
+registry_id: REG-PDR-001
+registry_version: 1.0.0
+lifecycle_status: APPROVED
+implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL
+runtime_enforcement_status: NOT_IMPLEMENTED
+owner: security-privacy-product-safety-agent
+approver: Sole Human Owner / Human Product and Release Authority
+effective_date: '2026-08-18'
+default_route_decision: DENY
+reviews:
+- review_id: PDR-OPENAI-CODEX-001
+  provider_family: OpenAI
+  route_ids:
+  - route-openai-codex-candidate
+  document: Provider Data Policy Review - OpenAI Codex.md
+  status: NOT_STARTED
+  route_decision: DENY
+- review_id: PDR-GOOGLE-GEMINI-001
+  provider_family: Google
+  route_ids:
+  - route-google-gemini-candidate
+  document: Provider Data Policy Review - Google Gemini.md
+  status: NOT_STARTED
+  route_decision: DENY
+- review_id: PDR-ANTHROPIC-CLAUDE-001
+  provider_family: Anthropic
+  route_ids:
+  - route-anthropic-claude-candidate
+  document: Provider Data Policy Review - Anthropic Claude.md
+  status: NOT_STARTED
+  route_decision: DENY
+- review_id: PDR-DEEPSEEK-001
+  provider_family: DeepSeek
+  route_ids:
+  - route-deepseek-pro-api-candidate
+  - route-deepseek-flash-api-candidate
+  document: Provider Data Policy Review - DeepSeek.md
+  status: NOT_STARTED
+  route_decision: DENY
+- review_id: PDR-QWEN-LOCAL-001
+  provider_family: Qwen
+  route_ids:
+  - route-qwen-local-candidate
+  document: Provider Data Policy Review - Qwen Local.md
+  status: NOT_STARTED
+  route_decision: DENY
