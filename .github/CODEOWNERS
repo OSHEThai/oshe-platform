@@ -1,0 +1,10 @@
+* @OSHEThai/engineering
+/docs/adr/ @OSHEThai/architecture
+/docs/rfc/ @OSHEThai/architecture
+/contracts/ @OSHEThai/architecture
+/schemas/ @OSHEThai/architecture
+/database/ @OSHEThai/engineering @OSHEThai/quality
+/deploy/ @OSHEThai/engineering @OSHEThai/security
+/.github/ @OSHEThai/engineering @OSHEThai/security
+/.ai/ @OSHEThai/engineering @OSHEThai/security
+/SECURITY.md @OSHEThai/security

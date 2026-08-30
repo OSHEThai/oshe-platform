@@ -1,0 +1,41 @@
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*~
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/secrets/
+**/*.pem
+**/*.key
+**/kubeconfig*
+**/terraform.tfstate*
+**/customer-data/
+**/medical-data/
+**/security-case-data/
+**/backups/
+
+# Build and dependency outputs
+bin/
+obj/
+node_modules/
+dist/
+build/
+coverage/
+TestResults/
+artifacts/
+.tmp/
+.cache/
+
+# AI execution state
+.ai/runs/
+.ai/state/
+.ai/transcripts/
+.worktrees/

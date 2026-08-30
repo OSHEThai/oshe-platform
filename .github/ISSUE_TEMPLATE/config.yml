@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/OSHEThai/oshe-platform/security/policy
+    about: Do not disclose vulnerabilities in a public issue.
+  - name: Project governance question
+    url: https://github.com/OSHEThai/oshe-platform/discussions
+    about: Use only after discussions are explicitly enabled.

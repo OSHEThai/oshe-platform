@@ -1,0 +1,25 @@
+schema_version: 1.0.0
+repository:
+  organization: OSHEThai
+  name: oshe-platform
+  description: OSHE platform applications, modules, contracts, schemas, tests, deployment
+    definitions, and engineering controls.
+  visibility: private
+  default_branch: main
+  authority: GITHUB_AFTER_INITIAL_MIGRATION
+  release: v0.1.0
+  topic: V010-T02
+merge_policy:
+  pull_request_required: true
+  required_human_approvals: 0
+  required_status_checks:
+  - foundation / validate
+  required_conversation_resolution: true
+  force_push_allowed: false
+  branch_deletion_allowed: false
+  merge_method: squash
+data_policy:
+  production_secrets: PROHIBITED
+  customer_data: PROHIBITED
+  medical_data: PROHIBITED
+  security_case_data: PROHIBITED

@@ -1,0 +1,30 @@
+name: Documentation or governance change
+description: Propose a controlled documentation, metadata, glossary, or governance change.
+title: "[Docs]: "
+labels: ["type:documentation", "state:triage"]
+body:
+  - type: input
+    id: artifact
+    attributes:
+      label: Artifact or register
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Required change
+    validations:
+      required: true
+  - type: textarea
+    id: authority
+    attributes:
+      label: Source of truth and decision basis
+    validations:
+      required: true
+  - type: checkboxes
+    id: integrity
+    attributes:
+      label: Integrity
+      options:
+        - label: Historical approval and supersession will be preserved.
+          required: true

@@ -1,0 +1,56 @@
+name: Feature or change request
+description: Propose a scoped product, engineering, or content change.
+title: "[Change]: "
+labels: ["type:change", "state:triage"]
+body:
+  - type: input
+    id: outcome
+    attributes:
+      label: Desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and evidence
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope and non-goals
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Initial change risk
+      options:
+        - R0
+        - R1
+        - R2
+        - R3
+        - R4
+        - RX or unknown
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: One observable criterion per line
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and decisions
+  - type: checkboxes
+    id: controls
+    attributes:
+      label: Control confirmation
+      options:
+        - label: I have not included production secrets or customer data.
+          required: true
+        - label: Protected human decisions remain human.
+          required: true

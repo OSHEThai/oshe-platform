@@ -1,0 +1,43 @@
+name: Architecture or contract change
+description: Propose a change requiring an ADR, RFC, public contract, schema, or data-authority review.
+title: "[Architecture]: "
+labels: ["type:architecture", "state:triage", "review:architecture"]
+body:
+  - type: input
+    id: decision
+    attributes:
+      label: Decision or contract affected
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and problem
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options and trade-offs
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Module, data, API, event, migration, deployment, and compatibility impact
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Initial change risk
+      options: [R2, R3, R4, RX or unknown]
+    validations:
+      required: true
+  - type: checkboxes
+    id: rfc
+    attributes:
+      label: Governance
+      options:
+        - label: An ADR or RFC will be created before implementation.
+          required: true
