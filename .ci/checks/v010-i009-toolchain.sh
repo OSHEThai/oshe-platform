@@ -75,7 +75,9 @@ identity_verification:
 '''
 
 ALIASES = frozenset({'latest', 'stable', 'edge', 'rolling', 'canary', 'main', 'master', 'dev', 'nightly'})
-IMAGE_ALIAS = re.compile(r'(?:^|/)registry/image:(?:latest|stable|edge|rolling|canary|main|master|dev|nightly)$', re.IGNORECASE)
+CONTAINER_TAG_ALIAS = re.compile(r'^[^\s/]+(?:/[^\s/]+)+:(?:latest|stable|edge|rolling|canary|main|master|dev|nightly)$', re.IGNORECASE)
+BARE_CONTAINER_REFERENCE = re.compile(r'^[^\s/@]+(?:/[^\s/@]+)+$')
+VERSION_RANGE = re.compile(r'^(?:>=|\^|~)\d+\.\d+\.\d+$|^\d+\.x$')
 UNVERIFIED = 'UNVERIFIED_NO_NETWORK'
 UNVERIFIED_PATHS = frozenset({
     'host_tools.docker_engine.observed_local_version',
@@ -162,8 +164,12 @@ def inspect_scalars(value, path=''):
     folded = value.casefold()
     if folded in ALIASES:
         raise ContractError(f'MUTABLE_SCALAR_ALIAS: {path}: {value}')
-    if IMAGE_ALIAS.search(value):
-        raise ContractError(f'MUTABLE_IMAGE_TAG_ALIAS: {path}: {value}')
+    if CONTAINER_TAG_ALIAS.fullmatch(value):
+        raise ContractError(f'MUTABLE_CONTAINER_TAG_ALIAS: {path}: {value}')
+    if '://' not in value and BARE_CONTAINER_REFERENCE.fullmatch(value):
+        raise ContractError(f'GENERIC_BARE_REFERENCE: {path}: {value}')
+    if VERSION_RANGE.fullmatch(value):
+        raise ContractError(f'GENERIC_VERSION_RANGE: {path}: {value}')
     if value == UNVERIFIED and path not in UNVERIFIED_PATHS:
         raise ContractError(f'MISPLACED_UNVERIFIED_NO_NETWORK: {path}')
     if value == PENDING and path != PENDING_PATH:
