@@ -28,7 +28,7 @@ allowed_states: [DRAFT, ACTIVE, SUSPENDED, EXPIRED, RELEASED, REVOKED]
 violation_response:
 - stop-write
 - preserve-diff-and-command-evidence
-- suspend-assignment
+- preserve-position-and-assignment; issue a corrected bounded task, or on a genuine external or owner-decision block move the same position to the next non-overlapping ready task
 - revoke-or-correct-lease
 - inspect-for-cross-task-contamination
 - require-human-decision-if-material
