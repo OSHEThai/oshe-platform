@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import unittest
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +36,24 @@ REQUIRED_PERMISSION_PROHIBITIONS = {
     "bypass-required-review",
 }
 
+REQUIRED_ROLE_CARD_FIELDS = (
+    "purpose",
+    "authority",
+    "prohibited_actions",
+    "inputs",
+    "outputs",
+    "escalation",
+)
+
+ROLE_CARD_FIELD_SECTIONS = {
+    "purpose": ("Purpose",),
+    "authority": ("Allowed Authority",),
+    "prohibited_actions": ("Prohibited Actions",),
+    "inputs": ("Required Inputs",),
+    "outputs": ("Required Outputs",),
+    "escalation": ("Human Approval Triggers", "Stop Conditions"),
+}
+
 
 def load_yaml(relative_path: str) -> dict[str, Any]:
     value = yaml.safe_load((REPO_ROOT / relative_path).read_text(encoding="utf-8"))
@@ -48,6 +67,36 @@ def load_json(relative_path: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise AssertionError(f"{relative_path}: expected a JSON object")
     return value
+
+
+def load_role_card(relative_path: Path) -> tuple[dict[str, Any], dict[str, str]]:
+    text = relative_path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        raise AssertionError(f"{relative_path}: missing YAML front matter")
+    _, front_matter, body = text.split("---", 2)
+    metadata = yaml.safe_load(front_matter)
+    if not isinstance(metadata, dict):
+        raise AssertionError(f"{relative_path}: role-card metadata must be a YAML object")
+
+    headings = list(re.finditer(r"^##\s+(.+?)\s*$", body, re.MULTILINE))
+    sections: dict[str, str] = {}
+    for index, heading in enumerate(headings):
+        start = heading.end()
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(body)
+        sections[heading.group(1).strip()] = body[start:end].strip()
+    return metadata, sections
+
+
+def role_card_paths() -> list[Path]:
+    cards_dir = REPO_ROOT / ".ai" / "roles" / "cards"
+    return sorted(path for path in cards_dir.glob("*.md") if path.name != "index.md")
+
+
+def schema_errors(document: Any, schema: dict[str, Any]) -> list[str]:
+    return [
+        error.message
+        for error in Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(document)
+    ]
 
 
 def require_equal(key: str, actual: Any, expected: Any) -> None:
@@ -170,6 +219,152 @@ def normalize_literal_path(value: str) -> str:
     return value.replace("\\", "/")
 
 
+def _glob_segment_tokens(segment: str) -> list[tuple[str, Any]]:
+    tokens: list[tuple[str, Any]] = []
+    index = 0
+    while index < len(segment):
+        char = segment[index]
+        if char == "*":
+            if not tokens or tokens[-1][0] != "star":
+                tokens.append(("star", None))
+            index += 1
+        elif char == "?":
+            tokens.append(("any", None))
+            index += 1
+        elif char == "[":
+            closing = segment.find("]", index + 1)
+            if closing == -1:
+                tokens.append(("literal", char))
+                index += 1
+                continue
+            expression = segment[index + 1 : closing]
+            negated = expression.startswith(("!", "^"))
+            if negated:
+                expression = expression[1:]
+            literals: set[str] = set()
+            ranges: list[tuple[str, str]] = []
+            cursor = 0
+            while cursor < len(expression):
+                if cursor + 2 < len(expression) and expression[cursor + 1] == "-":
+                    ranges.append((expression[cursor], expression[cursor + 2]))
+                    cursor += 3
+                else:
+                    literals.add(expression[cursor])
+                    cursor += 1
+            tokens.append(("class", (negated, literals, ranges)))
+            index = closing + 1
+        else:
+            tokens.append(("literal", char))
+            index += 1
+    return tokens
+
+
+def _class_matches(spec: tuple[bool, set[str], list[tuple[str, str]]], char: str) -> bool:
+    negated, literals, ranges = spec
+    matched = char in literals or any(start <= char <= end for start, end in ranges)
+    return not matched if negated else matched
+
+
+def _common_glob_character(left: tuple[str, Any], right: tuple[str, Any]) -> str | None:
+    left_kind, left_value = left
+    right_kind, right_value = right
+    candidates = list("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.")
+    if left_kind == "literal":
+        candidates.insert(0, left_value)
+    if right_kind == "literal":
+        candidates.insert(0, right_value)
+    if left_kind == "class":
+        candidates.extend(left_value[1])
+    if right_kind == "class":
+        candidates.extend(right_value[1])
+    seen: set[str] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        left_matches = (
+            left_kind == "any"
+            or (left_kind == "literal" and left_value == candidate)
+            or (left_kind == "class" and _class_matches(left_value, candidate))
+        )
+        right_matches = (
+            right_kind == "any"
+            or (right_kind == "literal" and right_value == candidate)
+            or (right_kind == "class" and _class_matches(right_value, candidate))
+        )
+        if left_matches and right_matches:
+            return candidate
+    return None
+
+
+def _glob_segment_intersects(left: str, right: str) -> bool:
+    left_tokens = _glob_segment_tokens(left)
+    right_tokens = _glob_segment_tokens(right)
+    pending = [(0, 0)]
+    visited: set[tuple[int, int]] = set()
+    while pending:
+        left_index, right_index = pending.pop()
+        state = (left_index, right_index)
+        if state in visited:
+            continue
+        visited.add(state)
+        if left_index == len(left_tokens) and right_index == len(right_tokens):
+            return True
+        if left_index < len(left_tokens) and left_tokens[left_index][0] == "star":
+            pending.append((left_index + 1, right_index))
+            if right_index < len(right_tokens) and right_tokens[right_index][0] != "star":
+                pending.append((left_index, right_index + 1))
+            continue
+        if right_index < len(right_tokens) and right_tokens[right_index][0] == "star":
+            pending.append((left_index, right_index + 1))
+            if left_index < len(left_tokens) and left_tokens[left_index][0] != "star":
+                pending.append((left_index + 1, right_index))
+            continue
+        if left_index < len(left_tokens) and right_index < len(right_tokens):
+            if _common_glob_character(left_tokens[left_index], right_tokens[right_index]) is not None:
+                pending.append((left_index + 1, right_index + 1))
+    return False
+
+
+def _scope_segments(value: str) -> tuple[str, ...]:
+    normalized = normalize_literal_path(value).strip("/")
+    return tuple(segment for segment in normalized.split("/") if segment)
+
+
+def _scope_patterns_overlap(left: str, right: str) -> bool:
+    left_segments = _scope_segments(left)
+    right_segments = _scope_segments(right)
+    pending = [(0, 0)]
+    visited: set[tuple[int, int]] = set()
+    while pending:
+        left_index, right_index = pending.pop()
+        state = (left_index, right_index)
+        if state in visited:
+            continue
+        visited.add(state)
+        if left_index == len(left_segments) and right_index == len(right_segments):
+            return True
+        left_globstar = left_index < len(left_segments) and left_segments[left_index] == "**"
+        right_globstar = right_index < len(right_segments) and right_segments[right_index] == "**"
+        if left_globstar:
+            pending.append((left_index + 1, right_index))
+            if right_index < len(right_segments) and not right_globstar:
+                if _glob_segment_intersects("*", right_segments[right_index]):
+                    pending.append((left_index, right_index + 1))
+            elif right_globstar:
+                pending.append((left_index, right_index + 1))
+            continue
+        if right_globstar:
+            pending.append((left_index, right_index + 1))
+            if left_index < len(left_segments) and _glob_segment_intersects(left_segments[left_index], "*"):
+                pending.append((left_index + 1, right_index))
+            continue
+        if left_index < len(left_segments) and right_index < len(right_segments):
+            if _glob_segment_intersects(left_segments[left_index], right_segments[right_index]):
+                pending.append((left_index + 1, right_index + 1))
+    return False
+
+
 def assert_no_exact_active_write_path_collisions(leases: list[dict[str, Any]]) -> None:
     active = [lease for lease in leases if lease.get("state") == "ACTIVE"]
     for index, left in enumerate(active):
@@ -194,15 +389,21 @@ def assert_no_exact_active_write_path_collisions(leases: list[dict[str, Any]]) -
                 right.get("worktree"),
                 right.get("branch"),
             )
-            duplicate_paths = {
-                normalize_literal_path(path) for path in left.get("allowed_paths") or []
-            } & {
-                normalize_literal_path(path) for path in right.get("allowed_paths") or []
-            }
-            if intervals_overlap and same_lease_domain and duplicate_paths:
-                duplicate = sorted(duplicate_paths)[0]
+            if not intervals_overlap or not same_lease_domain:
+                continue
+            collisions = [
+                (normalize_literal_path(left_path), normalize_literal_path(right_path))
+                for left_path in left.get("allowed_paths") or []
+                for right_path in right.get("allowed_paths") or []
+                if _scope_patterns_overlap(left_path, right_path)
+            ]
+            if collisions:
+                left_path, right_path = sorted(collisions)[0]
+                collision_kind = "exact" if left_path == right_path else "overlapping"
+                first_id, second_id = sorted((left_id, right_id))
                 raise AssertionError(
-                    f"allowed_paths: exact active collision for {duplicate!r} between {left_id} and {right_id}"
+                    f"allowed_paths: {collision_kind} active collision for "
+                    f"{left_path!r} with {right_path!r} between {first_id} and {second_id}"
                 )
 
 
@@ -216,6 +417,7 @@ class PermissionDelegationContractTests(unittest.TestCase):
         self.assignment = load_yaml(".ai/examples/agent-assignment.example.yaml")
         self.session = load_yaml(".ai/examples/agent-session.example.yaml")
         self.lease = load_yaml(".ai/examples/write-lease.example.yaml")
+        self.assignment_schema = load_json(".ai/schemas/agent-assignment.schema.json")
         self.session_schema = load_json(".ai/schemas/agent-session.schema.json")
         self.write_lease_schema = load_json(".ai/schemas/write-lease.schema.json")
 
@@ -245,8 +447,35 @@ class PermissionDelegationContractTests(unittest.TestCase):
         return lease
 
     def assert_lease_schema_valid(self, lease: dict[str, Any]) -> None:
-        errors = list(Draft202012Validator(self.write_lease_schema).iter_errors(lease))
-        self.assertEqual(errors, [], "\n".join(error.message for error in errors))
+        errors = schema_errors(lease, self.write_lease_schema)
+        self.assertEqual(errors, [], "\n".join(errors))
+
+    def test_current_role_cards_validate_with_required_contract_fields(self) -> None:
+        role_card_schema = load_json(".ai/schemas/role-card.schema.json")
+        cards = role_card_paths()
+        self.assertTrue(cards, "no current role cards discovered")
+        for card_path in cards:
+            with self.subTest(role_card=card_path.name):
+                metadata, sections = load_role_card(card_path)
+                self.assertEqual(schema_errors(metadata, role_card_schema), [])
+                self.assertEqual(metadata.get("role_id"), card_path.stem)
+                for field in REQUIRED_ROLE_CARD_FIELDS:
+                    required_sections = ROLE_CARD_FIELD_SECTIONS[field]
+                    self.assertTrue(
+                        all(sections.get(section, "").strip() for section in required_sections),
+                        f"{card_path}: missing required role-card field {field}",
+                    )
+
+    def test_current_assignment_session_and_lease_examples_validate(self) -> None:
+        examples = (
+            ("assignment", self.assignment, self.assignment_schema),
+            ("session", self.session, self.session_schema),
+            ("write lease", self.lease, self.write_lease_schema),
+        )
+        for name, document, schema in examples:
+            with self.subTest(example=name):
+                errors = schema_errors(document, schema)
+                self.assertEqual(errors, [], "\n".join(errors))
 
     def test_current_declared_delegation_contract_passes(self) -> None:
         self.assert_contract()
@@ -388,6 +617,27 @@ class PermissionDelegationContractTests(unittest.TestCase):
         for lease in leases:
             self.assert_lease_schema_valid(lease)
         assert_no_exact_active_write_path_collisions(leases)
+
+    def test_nested_glob_active_write_paths_are_rejected_in_both_orders(self) -> None:
+        pairs = (
+            ("tests/**", "tests/unit/**"),
+            ("tests/*", "tests/unit/**"),
+        )
+        for left_path, right_path in pairs:
+            for paths in ((left_path, right_path), (right_path, left_path)):
+                with self.subTest(paths=paths):
+                    leases = [
+                        self.make_active_lease(
+                            "LEASE-I014-TEST-A", "ASN-I014-TEST-A", "SESSION-I014-TEST-A", paths[0]
+                        ),
+                        self.make_active_lease(
+                            "LEASE-I014-TEST-B", "ASN-I014-TEST-B", "SESSION-I014-TEST-B", paths[1]
+                        ),
+                    ]
+                    for lease in leases:
+                        self.assert_lease_schema_valid(lease)
+                    with self.assertRaisesRegex(AssertionError, "overlapping active collision"):
+                        assert_no_exact_active_write_path_collisions(leases)
 
 
 if __name__ == "__main__":
