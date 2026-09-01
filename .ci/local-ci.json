@@ -9,6 +9,7 @@
         "-m",
         "unittest",
         "tests.test_validate_agent_os",
+        "tests.test_permission_delegation",
         "tests.test_local_ci"
       ]
     },
