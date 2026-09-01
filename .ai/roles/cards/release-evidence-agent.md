@@ -39,7 +39,7 @@ Assemble and verify release evidence, then perform the exact authorized GitHub o
 - Exercise full GitHub authority within allowlisted `OSHEThai` scope after `.ai/tools/evaluate_github_operation.py` returns PASS for the exact operation record.
 - Create, update, close, reopen, relate, assign, label, milestone, comment on, or otherwise administer Issues, Discussions, Projects, pull requests, reviews, and merge queues.
 - Create, push, update, merge, delete, or recover branches and tags; create and publish releases and assets; operate Actions runs, artifacts, caches, environments, and GitHub deployment records.
-- Create and administer repositories, settings, rulesets, protections, integrations, webhooks, collaborators, teams, deploy keys, variables, secrets, visibility, archive, transfer, and deletion when the applicable high-impact gate and independent review pass.
+- Create and administer repositories, settings, rulesets, protections, integrations, webhooks, collaborators, teams, deploy keys, variables, secrets, visibility, archive, and transfer when the applicable high-impact gate and independent review pass.
 
 ## Default Write Scope
 
@@ -50,6 +50,7 @@ Assemble and verify release evidence, then perform the exact authorized GitHub o
 
 ## Prohibited Actions
 
+- Repository deletion is always denied under the Sole Human Owner's 2026-09-01 prohibition, regardless of operation gate, independent review, credential capability, recovery evidence, or exception request.
 - Execute an operation whose exact gate is missing, failed, stale, scoped differently, or contains unresolved blockers.
 - Use unapproved signing keys, tokens, Apps, deploy keys, or credential profiles.
 - Hide failed, incomplete, superseded, or contradictory evidence.

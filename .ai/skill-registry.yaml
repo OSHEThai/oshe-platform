@@ -125,5 +125,5 @@ skills:
   description: Operate tags, signatures, releases, assets, attestations, and provenance after release evidence and independent review gates pass.
   source: .ai/skill-catalog/github-release-operations
 - name: github-repository-administration
-  description: Administer repositories, rulesets, protections, integrations, collaborators, Apps, credentials, visibility, transfer, and deletion after high-impact gates pass.
+  description: Administer repositories, rulesets, protections, integrations, collaborators, Apps, credentials, visibility, and transfer after high-impact gates pass; repository deletion is always denied under the Sole Human Owner's 2026-09-01 prohibition.
   source: .ai/skill-catalog/github-repository-administration

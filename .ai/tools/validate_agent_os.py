@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 import urllib.parse
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,16 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AI_ROOT = REPO_ROOT / ".ai"
+ALWAYS_PROHIBITED_ACTION_ALIASES = frozenset(
+    {
+        "repository-delete",
+        "delete-repository",
+        "repo-delete",
+    }
+)
+ACTION_SEPARATOR_PATTERN = re.compile(
+    r"[\s_\-\u2010-\u2015\u2043\u2212\ufe58\ufe63\uff0d]+"
+)
 
 EXPECTED_ROLES = {
     "project-management-agent",
@@ -76,6 +87,11 @@ REQUIRED_LAYOUT = (
     "docs/adr/adr-0006-evidence-gated-full-github-operator-authority.md",
     "docs/adr/adr-0007-local-first-ci-and-repository-lifecycle.md",
 )
+
+
+def normalize_action(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold().strip()
+    return ACTION_SEPARATOR_PATTERN.sub("-", normalized).strip("-")
 
 
 class Validation:
@@ -353,6 +369,17 @@ def validate_github_authority(validation: Validation) -> None:
         validation.error("GitHub operations must deny writes by default")
     if policy.get("organization_allowlist") != ["OSHEThai"]:
         validation.error("GitHub organization allowlist must be exactly OSHEThai")
+
+    if policy.get("prohibited_actions") != ["repository-delete"]:
+        validation.error("GitHub prohibited actions must be exactly repository-delete")
+    allowed_examples = {
+        normalize_action(str(example))
+        for action_class in (policy.get("action_classes") or {}).values()
+        if isinstance(action_class, dict)
+        for example in (action_class.get("examples") or [])
+    }
+    if ALWAYS_PROHIBITED_ACTION_ALIASES & allowed_examples:
+        validation.error("repository-delete must not appear in allowed GitHub action examples")
 
     required_high_impact = {"MERGE", "RELEASE", "REPOSITORY_ADMIN", "CREDENTIAL", "SECURITY", "DESTRUCTIVE", "DEPLOYMENT_TRIGGER"}
     if set(policy.get("high_impact_action_classes") or []) != required_high_impact:

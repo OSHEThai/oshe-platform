@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,17 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AI_ROOT = REPO_ROOT / ".ai"
+REQUIRED_POLICY_PROHIBITED_ACTIONS = frozenset({"repository-delete"})
+ALWAYS_PROHIBITED_ACTION_ALIASES = frozenset(
+    {
+        "repository-delete",
+        "delete-repository",
+        "repo-delete",
+    }
+)
+ACTION_SEPARATOR_PATTERN = re.compile(
+    r"[\s_\-\u2010-\u2015\u2043\u2212\ufe58\ufe63\uff0d]+"
+)
 
 
 def load_yaml(path: Path) -> Any:
@@ -41,6 +54,11 @@ def canonical_digest(record: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def normalize_action(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold().strip()
+    return ACTION_SEPARATOR_PATTERN.sub("-", normalized).strip("-")
+
+
 def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
     errors: list[str] = []
     policy = load_yaml(AI_ROOT / "policies" / "github-operations.yaml")
@@ -49,6 +67,22 @@ def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
 
     schema = load_json(AI_ROOT / "schemas" / "github-operation-gate.schema.json")
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
+
+    configured_values = policy.get("prohibited_actions")
+    configured_prohibited_actions = {
+        normalize_action(value)
+        for value in configured_values
+        if isinstance(value, str)
+    } if isinstance(configured_values, list) else set()
+    if configured_prohibited_actions != REQUIRED_POLICY_PROHIBITED_ACTIONS:
+        errors.append("GitHub prohibited action policy diverges from the hard-coded safety baseline")
+
+    prohibited_actions = ALWAYS_PROHIBITED_ACTION_ALIASES | configured_prohibited_actions
+    scope = record.get("scope")
+    action = scope.get("action") if isinstance(scope, dict) else None
+    if isinstance(action, str) and normalize_action(action) in prohibited_actions:
+        errors.append("GitHub action is always prohibited: repository-delete")
+
     for error in sorted(validator.iter_errors(record), key=lambda item: list(item.path)):
         location = "/".join(str(part) for part in error.path) or "<root>"
         errors.append(f"schema {location}: {error.message}")

@@ -149,6 +149,34 @@ class AgentOsValidatorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("provider_routes_enabled=0", result.stdout)
 
+    def test_validator_requires_exact_repository_delete_prohibition(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            policy_path = root / ".ai" / "policies" / "github-operations.yaml"
+            policy = yaml.safe_load(policy_path.read_text(encoding="utf-8"))
+            policy["prohibited_actions"] = []
+            policy_path.write_text(yaml.safe_dump(policy, sort_keys=False), encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("GitHub prohibited actions must be exactly repository-delete", result.stdout)
+
+    def test_validator_rejects_repository_delete_allowed_example(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            policy_path = root / ".ai" / "policies" / "github-operations.yaml"
+            policy = yaml.safe_load(policy_path.read_text(encoding="utf-8"))
+            policy["action_classes"]["DESTRUCTIVE"]["examples"].append(
+                "  ＤＥＬＥＴＥ _ \u2011 REPOSITORY  "
+            )
+            policy_path.write_text(yaml.safe_dump(policy, sort_keys=False), encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("repository-delete must not appear in allowed GitHub action examples", result.stdout)
+
     def test_unapproved_provider_route_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -206,6 +234,77 @@ class AgentOsValidatorTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_repository_delete_aliases_and_format_variants_are_always_denied(self) -> None:
+        variants = (
+            "repository-delete",
+            "delete-repository",
+            "repo-delete",
+            "RePoSiToRy_DeLeTe",
+            "  delete   repository  ",
+            "ＲＥＰＯＳＩＴＯＲＹ－ＤＥＬＥＴＥ",
+            "repo\u2011delete",
+        )
+
+        for action in variants:
+            with self.subTest(action=action), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                now = datetime.now(timezone.utc)
+                record = self.make_gate_record(
+                    root,
+                    now,
+                    action_class="DESTRUCTIVE",
+                    independent_review=True,
+                )
+                record["scope"]["action"] = action
+                result = self.run_gate(root, record, now)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("GitHub action is always prohibited: repository-delete", result.stdout)
+                self.assertNotIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_force_push_passes_with_complete_independent_reviewed_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(
+                root,
+                now,
+                action_class="DESTRUCTIVE",
+                independent_review=True,
+            )
+            record["scope"]["action"] = "force-push"
+            result = self.run_gate(root, record, now)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_gate_evaluator_denies_prohibited_action_policy_divergence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_gate_record(
+                root,
+                now,
+                action_class="DESTRUCTIVE",
+                independent_review=True,
+            )
+            record["scope"]["action"] = "force-push"
+            policy_path = root / ".ai" / "policies" / "github-operations.yaml"
+            policy = yaml.safe_load(policy_path.read_text(encoding="utf-8"))
+            policy["prohibited_actions"] = []
+            policy_path.write_text(yaml.safe_dump(policy, sort_keys=False), encoding="utf-8")
+            result = self.run_gate(root, record, now)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "GitHub prohibited action policy diverges from the hard-coded safety baseline",
+            result.stdout,
+        )
+        self.assertNotIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
 
 
 if __name__ == "__main__":
