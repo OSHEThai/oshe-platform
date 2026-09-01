@@ -46,8 +46,23 @@ ci:
       - GITHUB_EXACT_CANDIDATE_PASS
     checkpoint_skip: DENY
 branch_lifecycle:
+  protected_long_lived_branches:
+    - main
+  release_version_branches:
+    naming_pattern: release/v<major>.<minor>.<patch>
+    create_at: RELEASE_CANDIDATE_CUT
+    retain_after_release: true
+    purpose: BACKPORT_SECURITY_AND_CRITICAL_FIXES_TO_RELEASED_VERSION
+    ordinary_deletion: DENY
+    exceptional_deletion: SOLE_HUMAN_OWNER_DECISION_WITH_RELEASE_AND_RECOVERY_REVIEW
   delete_head_branch_after_merge: true
   delete_closed_unmerged_or_abandoned_branch: true
+  deletion_exclusions:
+    - main
+    - RELEASE_VERSION_BRANCH
+    - ACTIVE_ASSIGNMENT_OR_WORKTREE
+    - UNRECOVERED_COMMIT
+    - RELEASE_OR_EVIDENCE_REFERENCE
   deletion_preconditions:
     - NO_OPEN_PULL_REQUEST
     - NO_ACTIVE_ASSIGNMENT_OR_WORKTREE
