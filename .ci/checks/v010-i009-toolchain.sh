@@ -15,19 +15,81 @@ if [ ! -f "$lock_path" ]; then
 fi
 
 if awk '
+function trim(value) {
+  sub(/^[[:space:]]+/, "", value)
+  sub(/[[:space:]]+$/, "", value)
+  return value
+}
+function normalize(value, first, last, double_quote, single_quote) {
+  value = trim(value)
+  double_quote = sprintf("%c", 34)
+  single_quote = sprintf("%c", 39)
+  first = substr(value, 1, 1)
+  last = substr(value, length(value), 1)
+  if ((first == double_quote && last == double_quote) ||
+      (first == single_quote && last == single_quote)) {
+    value = substr(value, 2, length(value) - 2)
+  }
+  return value
+}
+function is_mutable_alias(value) {
+  value = tolower(normalize(value))
+  return value == "latest" || value == "stable" || value == "edge" ||
+         value == "rolling" || value == "canary" || value == "main" ||
+         value == "master" || value == "dev" || value == "nightly"
+}
+function inspect_scalar(value, first, last, body, count, i, item, separator, pairs) {
+  value = trim(value)
+  first = substr(value, 1, 1)
+  last = substr(value, length(value), 1)
+  if (first == "{" && last == "}") {
+    body = substr(value, 2, length(value) - 2)
+    count = split(body, pairs, ",")
+    for (i = 1; i <= count; i++) {
+      item = trim(pairs[i])
+      separator = index(item, ":")
+      if (separator > 0) {
+        inspect_scalar(substr(item, separator + 1))
+      }
+    }
+    return
+  }
+  if (first == "[" && last == "]") {
+    body = substr(value, 2, length(value) - 2)
+    count = split(body, pairs, ",")
+    for (i = 1; i <= count; i++) {
+      inspect_scalar(pairs[i])
+    }
+    return
+  }
+  if (is_mutable_alias(value)) {
+    found = normalize(value)
+  }
+}
 {
   line = $0
   sub(/[[:space:]]+#.*/, "", line)
-  count = split(line, tokens, /[^[:alnum:]_+-]+/)
-  for (i = 1; i <= count; i++) {
-    if (tolower(tokens[i]) == "latest") {
-      found = 1
-    }
+  if (line ~ /^[[:space:]]*$/) {
+    next
+  }
+  if (line ~ /^[[:space:]]*(\-?[[:space:]]*)?[A-Za-z0-9_-]+:/) {
+    match(line, /[A-Za-z0-9_-]+:/)
+    inspect_scalar(substr(line, RSTART + RLENGTH))
+    next
+  }
+  if (line ~ /^[[:space:]]*-[[:space:]]*.+$/) {
+    sub(/^[[:space:]]*-[[:space:]]*/, "", line)
+    inspect_scalar(line)
   }
 }
-END { exit(found ? 0 : 1) }
+END {
+  if (found != "") {
+    print "Mutable scalar alias is prohibited: " found > "/dev/stderr"
+    exit 0
+  }
+  exit 1
+}
 ' "$lock_path"; then
-  echo 'Floating latest alias is prohibited' >&2
   exit 1
 fi
 

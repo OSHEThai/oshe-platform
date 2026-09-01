@@ -12,11 +12,6 @@ if (-not (Test-Path -LiteralPath $LockPath -PathType Leaf)) {
     throw "Toolchain lock was not found: $LockPath"
 }
 $LockPath = (Resolve-Path -LiteralPath $LockPath).Path
-$content = Get-Content -Raw -LiteralPath $LockPath
-
-if ($content -match '(?im)(?:^|[:=,{\[])\s*["'']?latest["'']?\s*(?:[,}\]]|#|$)') {
-    throw 'Floating latest alias is prohibited'
-}
 
 function Add-ObservedValue {
     param(
@@ -43,6 +38,35 @@ function Normalize-Value {
     return $normalized
 }
 
+$mutableAliases = @('latest', 'stable', 'edge', 'rolling', 'canary', 'main', 'master', 'dev', 'nightly')
+$scalarValues = [System.Collections.Generic.List[string]]::new()
+
+function Add-ScalarValue {
+    param(
+        [System.Collections.Generic.List[string]]$Values,
+        [string]$Value
+    )
+    $normalized = Normalize-Value $Value
+    if (($normalized.StartsWith('{')) -and ($normalized.EndsWith('}'))) {
+        $body = $normalized.Substring(1, $normalized.Length - 2)
+        foreach ($part in ($body -split ',')) {
+            $separator = $part.IndexOf(':')
+            if ($separator -ge 0) {
+                Add-ScalarValue -Values $Values -Value ($part.Substring($separator + 1))
+            }
+        }
+        return
+    }
+    if (($normalized.StartsWith('[')) -and ($normalized.EndsWith(']'))) {
+        $body = $normalized.Substring(1, $normalized.Length - 2)
+        foreach ($item in ($body -split ',')) {
+            Add-ScalarValue -Values $Values -Value $item
+        }
+        return
+    }
+    [void]$Values.Add($normalized)
+}
+
 $observed = @{}
 $section = $null
 foreach ($rawLine in (Get-Content -LiteralPath $LockPath)) {
@@ -53,6 +77,9 @@ foreach ($rawLine in (Get-Content -LiteralPath $LockPath)) {
         $indent = $matches['indent'].Length
         $key = $matches['key']
         $rest = if ($null -eq $matches['rest']) { '' } else { $matches['rest'].Trim() }
+        if ($rest -ne '') {
+            Add-ScalarValue -Values $scalarValues -Value $rest
+        }
 
         if ($indent -eq 0) {
             $section = $key
@@ -74,6 +101,22 @@ foreach ($rawLine in (Get-Content -LiteralPath $LockPath)) {
         }
         else {
             Add-ObservedValue -Table $observed -Path "$section.$key" -Value (Normalize-Value $rest)
+        }
+    }
+    elseif ($line -match '^\s*-\s*(?<item>.+)$') {
+        Add-ScalarValue -Values $scalarValues -Value $matches['item']
+    }
+}
+
+foreach ($scalarValue in $scalarValues) {
+    if ($mutableAliases -contains $scalarValue) {
+        throw "Mutable scalar alias is prohibited: $scalarValue"
+    }
+}
+foreach ($observedEntry in $observed.GetEnumerator()) {
+    foreach ($observedValue in @($observedEntry.Value)) {
+        if ($mutableAliases -contains $observedValue) {
+            throw "Mutable scalar alias is prohibited: $observedValue"
         }
     }
 }
