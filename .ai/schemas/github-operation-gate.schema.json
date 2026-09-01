@@ -26,11 +26,13 @@
     "human_authority_ref": {"const": "ADR-0006"},
     "actor": {
       "type": "object",
-      "required": ["role_id", "specialist_profile_id", "provider_route_id", "credential_profile_id"],
+      "required": ["role_id", "specialist_profile_id", "credential_profile_id"],
       "properties": {
         "role_id": {"const": "release-evidence-agent"},
         "specialist_profile_id": {"const": "github-manager"},
-        "provider_route_id": {"type": "string", "minLength": 1},
+        "execution_route_kind": {"enum": ["AI_PROVIDER", "DIRECT_GH_CLI"]},
+        "execution_route_id": {"type": "string", "minLength": 1},
+        "provider_route_id": {"type": ["string", "null"], "minLength": 1},
         "credential_profile_id": {"type": "string", "minLength": 1}
       },
       "additionalProperties": false
@@ -61,12 +63,24 @@
       },
       "additionalProperties": false
     },
+    "execution": {
+      "type": "object",
+      "required": ["command", "command_digest"],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 4,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "command_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
     "evidence": {
       "type": "object",
       "required": [
         "assignment_validated",
         "visible_session_validated",
-        "approved_provider_route_validated",
         "organization_and_repository_allowlisted",
         "exact_action_and_target_validated",
         "expected_pre_state_validated",
@@ -87,6 +101,7 @@
         "assignment_validated": {"$ref": "#/$defs/evidenceItem"},
         "visible_session_validated": {"$ref": "#/$defs/evidenceItem"},
         "approved_provider_route_validated": {"$ref": "#/$defs/evidenceItem"},
+        "approved_execution_route_validated": {"$ref": "#/$defs/evidenceItem"},
         "organization_and_repository_allowlisted": {"$ref": "#/$defs/evidenceItem"},
         "exact_action_and_target_validated": {"$ref": "#/$defs/evidenceItem"},
         "expected_pre_state_validated": {"$ref": "#/$defs/evidenceItem"},
@@ -121,6 +136,33 @@
     "expires_at": {"type": "string", "format": "date-time"},
     "external_authority_ref": {"type": ["string", "null"]}
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"actor": {"properties": {"execution_route_kind": {"const": "DIRECT_GH_CLI"}}, "required": ["execution_route_kind"]}}
+      },
+      "then": {
+        "required": ["execution"],
+        "properties": {
+          "actor": {
+            "required": ["execution_route_id", "provider_route_id"],
+            "properties": {"provider_route_id": {"type": "null"}}
+          },
+          "execution": {"required": ["command", "command_digest"]},
+          "evidence": {"required": ["approved_execution_route_validated"]}
+        }
+      },
+      "else": {
+        "properties": {
+          "actor": {
+            "required": ["provider_route_id"],
+            "properties": {"provider_route_id": {"type": "string", "minLength": 1}}
+          },
+          "evidence": {"required": ["approved_provider_route_validated"]}
+        }
+      }
+    }
+  ],
   "$defs": {
     "evidenceItem": {
       "type": "object",

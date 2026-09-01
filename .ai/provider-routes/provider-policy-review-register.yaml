@@ -14,8 +14,10 @@ reviews:
   route_ids:
   - route-openai-codex-candidate
   document: Provider Data Policy Review - OpenAI Codex.md
-  status: NOT_STARTED
+  status: IN_REVIEW
   route_decision: DENY
+  source_of_truth: LOCAL_REPOSITORY
+  independent_review_status: REQUIRED_NOT_COMPLETED
 - review_id: PDR-GOOGLE-GEMINI-001
   provider_family: Google
   route_ids:

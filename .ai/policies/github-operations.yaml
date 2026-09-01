@@ -3,7 +3,7 @@ policy_id: POL-GITHUB-OPS-001
 title: Evidence-Gated Full GitHub Operations Policy
 lifecycle_status: APPROVED
 implementation_status: IMPLEMENTED_FOR_STATIC_GATE_CONTROL
-runtime_enforcement_status: NOT_IMPLEMENTED
+runtime_enforcement_status: GOVERNED_PROCEDURAL_DIRECT_GH_EXECUTOR
 authority_basis:
 - ADR-0005
 - ADR-0006
@@ -15,8 +15,11 @@ organization_allowlist:
 - OSHEThai
 repository_scope: EXACT_ASSIGNMENT_ALLOWLIST_ONLY
 default_write_decision: DENY
+prohibited_actions:
+- repository-delete
 gate_schema: .ai/schemas/github-operation-gate.schema.json
 gate_evaluator: .ai/tools/evaluate_github_operation.py
+direct_gh_gate_executor: .ai/tools/execute_github_operation.py
 gate_validity_minutes: 30
 action_classes:
   READ:
@@ -47,7 +50,7 @@ action_classes:
     examples: [security-advisory, code-security-setting, dependency-security-setting]
     independent_review_required: true
   DESTRUCTIVE:
-    examples: [force-push, repository-transfer, repository-delete, history-rewrite, destructive-cache-or-artifact-removal]
+    examples: [force-push, repository-transfer, history-rewrite, destructive-cache-or-artifact-removal]
     independent_review_required: true
   DEPLOYMENT_TRIGGER:
     examples: [environment-approval, deployment-record, workflow-that-causes-external-deployment]
@@ -56,7 +59,6 @@ action_classes:
 required_evidence_flags:
 - assignment_validated
 - visible_session_validated
-- approved_provider_route_validated
 - organization_and_repository_allowlisted
 - exact_action_and_target_validated
 - expected_pre_state_validated
@@ -72,6 +74,28 @@ required_evidence_flags:
 - post_operation_validation_ready
 - data_legal_safety_release_boundaries_validated
 - target_re_resolved_immediately_before_execution
+execution_route_evidence_flags:
+  AI_PROVIDER: approved_provider_route_validated
+  DIRECT_GH_CLI: approved_execution_route_validated
+direct_gh_execution_routes:
+- execution_route_id: direct-gh-cli-oshethai-two-repo-v1
+  lifecycle_status: APPROVED_ACTIVE
+  authority_ref: HDEC-GITHUB-DIRECT-GH-008
+  executor_role_id: release-evidence-agent
+  required_specialist_profile_id: github-manager
+  credential_profile_id: gh-cli-oshethai-two-repo-full-v1
+  organization_allowlist:
+  - OSHEThai
+  repository_allowlist:
+  - OSHEThai/oshe-platform
+  - OSHEThai/oshe-content
+  activated_at: '2026-09-01T15:17:55Z'
+  expires_at: '2026-10-01T15:17:55Z'
+  route_separation: Direct gh CLI route; it is not an AI provider route and does not depend on a ChatGPT data-control setting.
+  agent_enforcement_mode: GOVERNED_PROCEDURAL_EXECUTOR_REQUIRED
+  residual_risk_acceptance_ref: HDEC-GITHUB-DIRECT-GH-009
+  prohibited_actions:
+  - repository-delete
 high_impact_action_classes:
 - MERGE
 - RELEASE
@@ -85,9 +109,12 @@ execution_rules:
 - full-ci-is-permitted-only-for-milestone-closure-local-first-then-github
 - unchanged-passing-incremental-checks-may-use-state-bound-checkpoints
 - evaluator-pass-is-bound-to-exact-record-digest-target-pre-state-and-expiry
+- direct-gh-cli-writes-must-use-the-direct-gh-gate-executor-with-the-gate-embedded-exact-command
+- direct-gh-cli-gate-command-must-have-one-exact-repository-and-a-classification-matching-action-and-action-class
 - re-evaluate-immediately-before-execution
 - state-drift-invalidates-pass
 - no-provider-model-or-credential-substitution
+- direct-gh-cli-route-must-never-be-represented-as-an-ai-provider-route
 - no-ruleset-or-check-weakening-to-obtain-pass
 - destructive-target-must-be-resolved-again-immediately-before-action
 - secret-values-never-enter-command-output-log-evidence-or-repository

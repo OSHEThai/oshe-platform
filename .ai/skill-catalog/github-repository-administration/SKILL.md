@@ -1,7 +1,7 @@
 ---
 name: github-repository-administration
 description: >
-  Administer repositories, rulesets, protections, integrations, collaborators, Apps, credentials, visibility, transfer, and deletion after high-impact ADR-0006 gates pass.
+  Administer repositories, rulesets, protections, integrations, collaborators, Apps, credentials, visibility, and transfer after high-impact ADR-0006 gates pass. Repository deletion is always denied under the Sole Human Owner's 2026-09-01 prohibition.
 license: Proprietary
 metadata:
   oshe-version: "0.1.0"
@@ -11,7 +11,7 @@ metadata:
 
 ## Objective
 
-Perform exact GitHub administrative or destructive operations with independent review, recovery evidence, secret safety, and post-state verification.
+Perform exact allowed GitHub administrative or destructive operations with independent review, recovery evidence, secret safety, and post-state verification. Repository deletion is never an allowed operation.
 
 ## Required Inputs
 
@@ -33,6 +33,7 @@ Redacted pre/post configuration, target identity, operation receipt, independent
 
 ## Stop Conditions
 
+- repository deletion is requested, regardless of gate, review, credential, backup, reconstruction, or recovery evidence;
 - exact target, ownership, impact, backup, recovery, credential, or independent review is missing;
 - state changes after gate evaluation;
 - an external production, customer-data, billing, ownership, legal, or safety boundary lacks separate authority.
@@ -40,4 +41,4 @@ Redacted pre/post configuration, target identity, operation receipt, independent
 ## Evaluation Cases
 
 - accept an exact independently reviewed ruleset or credential rotation with redacted evidence;
-- reject repository deletion without reconstruction evidence or any operation that exposes a secret.
+- reject repository deletion unconditionally and reject any operation that exposes a secret.
