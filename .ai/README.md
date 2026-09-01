@@ -1,10 +1,23 @@
 # AI Agent Operating System
 
-This directory is the repository-ready control plane for the OSHE role-agent operating model approved by ADR-0005. It contains the canonical role catalog, specialist profiles, skills, contracts, policies, runbooks, provider-route records, examples, and static validation.
+This directory is the repository-ready control plane for the OSHE role-agent operating model. It contains role and position records, specialist profiles, skills, contracts, policies, runbooks, provider-route records, examples, and static validation.
+
+## Current Team Layout
+
+The current operating layout has **36 named positions**:
+
+- 1 Project Manager and 1 PM Secretary;
+- 9 Leads: Product and Planning, Architecture and Data, Engineering, AI and Automation, Security Privacy and Safety, Quality and Independent Review, Documentation Standards and Legal, DevOps Release and Evidence, and Implementation and Customer Success;
+- 20 permanent Workers; and
+- 5 temporary Free Agents, including `free-mercury`.
+
+Routine reporting follows `Worker -> Lead -> PM Secretary -> Project Manager`. The Project Manager directs Leads; a Lead reviews Worker output before the PM Secretary records a completion. A Free Agent receives a named, time-bounded assignment from a Lead and has no standing authority.
+
+The `roles/registry.yaml` catalog and its 12 role cards are a retained **legacy authority catalog**. They are not the current team topology and must not be used to infer current reporting lines, position counts, or agent assignment. Their controlled migration to the 36-position layout remains tracked work; until then, the active team layout and reporting model in this README govern operational interpretation.
 
 ## Layout
 
-- `roles/` — 12 canonical authority roles and their machine-readable registry.
+- `roles/` — legacy 12-card authority catalog retained for controlled migration; not the current team layout.
 - `agents/` — narrower specialist profiles; profiles never grant authority independently of a canonical role assignment.
 - `bundles/` and `skill-catalog/` — role-to-skill mappings and reusable capability procedures.
 - `schemas/` and `examples/` — mission, task, assignment, result, review, integration, handoff, and provider-control contracts.
