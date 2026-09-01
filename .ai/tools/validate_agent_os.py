@@ -447,12 +447,34 @@ def validate_repository_workflow(validation: Validation) -> None:
         validation.error("Full CI must not skip checks from checkpoints")
 
     branch_lifecycle = policy.get("branch_lifecycle", {})
+    if branch_lifecycle.get("protected_long_lived_branches") != ["main"]:
+        validation.error("main must be the protected long-lived branch")
+    release_version_branches = branch_lifecycle.get("release_version_branches", {})
+    expected_release_version_branch_policy = {
+        "naming_pattern": "release/v<major>.<minor>.<patch>",
+        "create_at": "RELEASE_CANDIDATE_CUT",
+        "retain_after_release": True,
+        "purpose": "BACKPORT_SECURITY_AND_CRITICAL_FIXES_TO_RELEASED_VERSION",
+        "ordinary_deletion": "DENY",
+        "exceptional_deletion": "SOLE_HUMAN_OWNER_DECISION_WITH_RELEASE_AND_RECOVERY_REVIEW",
+    }
+    if release_version_branches != expected_release_version_branch_policy:
+        validation.error("Release version branches must be retained for reviewed backport fixes")
     if branch_lifecycle.get("delete_head_branch_after_merge") is not True:
         validation.error("Merged head branches must be deleted")
     if branch_lifecycle.get("delete_closed_unmerged_or_abandoned_branch") is not True:
         validation.error("Closed-unmerged or abandoned branches must be cleaned after safety checks")
     if branch_lifecycle.get("postcondition") != "BRANCH_ABSENCE_VERIFIED":
         validation.error("Branch cleanup must require absence readback")
+    expected_deletion_exclusions = {
+        "main",
+        "RELEASE_VERSION_BRANCH",
+        "ACTIVE_ASSIGNMENT_OR_WORKTREE",
+        "UNRECOVERED_COMMIT",
+        "RELEASE_OR_EVIDENCE_REFERENCE",
+    }
+    if set(branch_lifecycle.get("deletion_exclusions") or []) != expected_deletion_exclusions:
+        validation.error("Branch cleanup exclusions must preserve main, version, and recovery branches")
 
     config = validation.load_json(REPO_ROOT / ".ci" / "local-ci.json") or {}
     checks = config.get("checks") or []

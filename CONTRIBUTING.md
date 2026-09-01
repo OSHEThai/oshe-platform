@@ -5,13 +5,13 @@ All changes enter through a pull request. Link an existing governing Issue when 
 ## Minimum Flow
 
 1. Link the governing Issue, or state the direct out-of-Issue authorization in the pull request.
-2. Use a short-lived branch or controlled Herdr worktree.
+2. Use a short-lived branch or controlled Herdr worktree. `main` is permanent. At each release candidate cut, retain `release/v<major>.<minor>.<patch>` as the long-lived backport branch for security and critical fixes to that released version.
 3. Respect allowed paths and module ownership.
 4. Run `python tools/run_local_ci.py --mode incremental`; it runs all applicable checks without fail-fast behavior and checkpoints unchanged passes.
 5. Fix the complete failure set together, rerun locally, and open or update the pull request only after the applicable local batch passes.
 6. Complete the pull-request template and let GitHub CI verify the exact head.
 7. Resolve review findings and required checks. Use Full CI only for Milestone closure, locally first and then on GitHub.
-8. Merge only through the ADR-0006 evidence gate. Delete the merged head branch and clean unreferenced worktrees, branches, caches, logs, downloads, and failed outputs.
+8. Merge only through the ADR-0006 evidence gate. Delete only the merged short-lived head branch, then verify its absence. Never delete `main` or a `release/v*` branch through ordinary cleanup; version-branch deletion requires a Sole Human Owner decision with release and recovery review.
 
 ## Prohibited
 
