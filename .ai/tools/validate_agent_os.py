@@ -81,6 +81,7 @@ REQUIRED_LAYOUT = (
     ".ai/policies/repository-workflow-and-ci.yaml",
     ".ai/schemas/github-operation-gate.schema.json",
     ".ai/tools/evaluate_github_operation.py",
+    ".ai/tools/execute_github_operation.py",
     ".ci/local-ci.json",
     "tools/run_local_ci.py",
     "tests/test_local_ci.py",

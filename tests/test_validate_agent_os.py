@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -86,6 +88,10 @@ class AgentOsValidatorTests(unittest.TestCase):
             name: {"satisfied": True, "refs": [f"EVD-{name}"]}
             for name in policy["required_evidence_flags"]
         }
+        evidence[policy["execution_route_evidence_flags"]["AI_PROVIDER"]] = {
+            "satisfied": True,
+            "refs": ["EVD-provider-route"],
+        }
         return {
             "schema_version": "1.0.0",
             "gate_id": "GHG-TEST-001",
@@ -139,6 +145,58 @@ class AgentOsValidatorTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
+
+    def run_direct_gh_executor(
+        self, root: Path, record: dict[str, object], now: datetime, dry_run: bool = True
+    ) -> subprocess.CompletedProcess[str]:
+        record_path = root / "direct-gate.yaml"
+        record_path.write_text(yaml.safe_dump(record, sort_keys=False), encoding="utf-8")
+        return subprocess.run(
+            [
+                sys.executable,
+                str(root / ".ai" / "tools" / "execute_github_operation.py"),
+                str(record_path),
+                "--now",
+                now.isoformat(),
+                *( ["--dry-run"] if dry_run else [] ),
+            ],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def make_direct_gh_gate_record(self, root: Path, now: datetime) -> dict[str, object]:
+        policy_path = root / ".ai" / "policies" / "github-operations.yaml"
+        policy = yaml.safe_load(policy_path.read_text(encoding="utf-8"))
+        direct_route = policy["direct_gh_execution_routes"][0]
+        direct_route["activated_at"] = (now - timedelta(minutes=1)).isoformat()
+        direct_route["expires_at"] = (now + timedelta(days=1)).isoformat()
+        policy_path.write_text(yaml.safe_dump(policy, sort_keys=False), encoding="utf-8")
+        credential_path = root / ".ai" / "policies" / "github-credential-profiles.yaml"
+        credentials = yaml.safe_load(credential_path.read_text(encoding="utf-8"))
+        profile = next(item for item in credentials["profiles"] if item["credential_profile_id"] == direct_route["credential_profile_id"])
+        profile["expires_at"] = (now + timedelta(days=1)).isoformat()
+        credential_path.write_text(yaml.safe_dump(credentials, sort_keys=False), encoding="utf-8")
+        command = ["gh", "issue", "comment", "--repo", "OSHEThai/oshe-platform", "1", "--body", "test"]
+        evidence = {name: {"satisfied": True, "refs": [f"EVD-{name}"]} for name in policy["required_evidence_flags"]}
+        evidence[policy["execution_route_evidence_flags"]["DIRECT_GH_CLI"]] = {"satisfied": True, "refs": ["EVD-direct-gh-route"]}
+        return {
+            "schema_version": "1.0.0",
+            "gate_id": "GHG-DIRECT-GH-001",
+            "assignment_id": "ASN-DIRECT-GH-001",
+            "session_id": "SESSION-DIRECT-GH-001",
+            "human_authority_ref": "ADR-0006",
+            "actor": {"role_id": "release-evidence-agent", "specialist_profile_id": "github-manager", "execution_route_kind": "DIRECT_GH_CLI", "execution_route_id": direct_route["execution_route_id"], "provider_route_id": None, "credential_profile_id": direct_route["credential_profile_id"]},
+            "scope": {"organization": "OSHEThai", "repository": "oshe-platform", "action_class": "METADATA", "action": "issue-comment", "target": "test-target", "expected_pre_state_digest": "sha256:" + "0" * 64, "expected_post_state": "Expected test state", "exact_commit_or_configuration_identity": "test-identity"},
+            "execution": {"command": command, "command_digest": "sha256:" + hashlib.sha256(json.dumps(command, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()},
+            "evidence": evidence,
+            "unresolved_blockers": [],
+            "independent_review": {"reviewer_role_id": None, "reviewer_assignment_id": None, "disposition": "NOT_REQUIRED", "review_ref": None},
+            "requested_at": (now - timedelta(minutes=1)).isoformat(),
+            "expires_at": (now + timedelta(minutes=10)).isoformat(),
+            "external_authority_ref": None,
+        }
 
     def test_current_package_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -200,6 +258,112 @@ class AgentOsValidatorTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_direct_gh_gate_does_not_require_ai_provider_route(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            policy_path = root / ".ai" / "policies" / "github-operations.yaml"
+            policy = yaml.safe_load(policy_path.read_text(encoding="utf-8"))
+            direct_route = policy["direct_gh_execution_routes"][0]
+            direct_route["activated_at"] = (now - timedelta(minutes=1)).isoformat()
+            direct_route["expires_at"] = (now + timedelta(days=1)).isoformat()
+            policy_path.write_text(yaml.safe_dump(policy, sort_keys=False), encoding="utf-8")
+
+            credential_path = root / ".ai" / "policies" / "github-credential-profiles.yaml"
+            credentials = yaml.safe_load(credential_path.read_text(encoding="utf-8"))
+            profile = next(item for item in credentials["profiles"] if item["credential_profile_id"] == direct_route["credential_profile_id"])
+            profile["expires_at"] = (now + timedelta(days=1)).isoformat()
+            credential_path.write_text(yaml.safe_dump(credentials, sort_keys=False), encoding="utf-8")
+
+            evidence = {
+                name: {"satisfied": True, "refs": [f"EVD-{name}"]}
+                for name in policy["required_evidence_flags"]
+            }
+            evidence[policy["execution_route_evidence_flags"]["DIRECT_GH_CLI"]] = {
+                "satisfied": True,
+                "refs": ["EVD-direct-gh-route"],
+            }
+            record = {
+                "schema_version": "1.0.0",
+                "gate_id": "GHG-DIRECT-GH-001",
+                "assignment_id": "ASN-DIRECT-GH-001",
+                "session_id": "SESSION-DIRECT-GH-001",
+                "human_authority_ref": "ADR-0006",
+                "actor": {
+                    "role_id": "release-evidence-agent",
+                    "specialist_profile_id": "github-manager",
+                    "execution_route_kind": "DIRECT_GH_CLI",
+                    "execution_route_id": direct_route["execution_route_id"],
+                    "provider_route_id": None,
+                    "credential_profile_id": direct_route["credential_profile_id"],
+                },
+                "scope": {
+                    "organization": "OSHEThai",
+                    "repository": "oshe-platform",
+                    "action_class": "METADATA",
+                    "action": "issue-comment",
+                    "target": "test-target",
+                    "expected_pre_state_digest": "sha256:" + "0" * 64,
+                    "expected_post_state": "Expected test state",
+                    "exact_commit_or_configuration_identity": "test-identity",
+                },
+                "execution": {
+                    "command": ["gh", "issue", "comment", "--repo", "OSHEThai/oshe-platform", "1", "--body", "test"],
+                    "command_digest": "sha256:" + hashlib.sha256(
+                        json.dumps(
+                            ["gh", "issue", "comment", "--repo", "OSHEThai/oshe-platform", "1", "--body", "test"],
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        ).encode("utf-8")
+                    ).hexdigest(),
+                },
+                "evidence": evidence,
+                "unresolved_blockers": [],
+                "independent_review": {"reviewer_role_id": None, "reviewer_assignment_id": None, "disposition": "NOT_REQUIRED", "review_ref": None},
+                "requested_at": (now - timedelta(minutes=1)).isoformat(),
+                "expires_at": (now + timedelta(minutes=10)).isoformat(),
+                "external_authority_ref": None,
+            }
+            result = self.run_gate(root, record, now)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+    def test_direct_gh_gate_denies_action_class_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_direct_gh_gate_record(root, now)
+            record["scope"]["action_class"] = "MERGE"
+            result = self.run_gate(root, record, now)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("direct gh scope action class does not match the exact command", result.stdout)
+
+    def test_direct_gh_executor_requires_passing_embedded_command_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_direct_gh_gate_record(root, now)
+            result = self.run_direct_gh_executor(root, record, now)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("DIRECT_GH_EXECUTION_DRY_RUN_PASS", result.stdout)
+
+    def test_direct_gh_executor_denies_clock_override_for_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            now = datetime.now(timezone.utc)
+            record = self.make_direct_gh_gate_record(root, now)
+            result = self.run_direct_gh_executor(root, record, now, dry_run=False)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("--now is permitted only with --dry-run", result.stderr)
 
     def test_incomplete_evidence_gate_denies(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
