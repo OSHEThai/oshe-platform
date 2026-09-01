@@ -19,7 +19,7 @@ co_owners:
 - project-management-agent
 - data-integration-agent
 approval_authority: Sole Human Owner / Human Product and Release Authority
-source_of_truth: GOOGLE_DRIVE
+source_of_truth: LOCAL_REPOSITORY
 dispatch_default: DENY
 fixed_budget_status: NOT_ESTABLISHED
 cost_model: VARIABLE_USAGE_BASED
@@ -148,6 +148,15 @@ routes:
 - provider_route_id: route-openai-codex-candidate
   provider_id: openai
   service_id: codex
+  candidate_selection:
+    selected_candidate: OpenAI Codex / ChatGPT Codex Connector
+    selection_status: OWNER_SELECTED_FOR_POLICY_REVIEW
+    evidence:
+      provenance: OWNER_SUPPLIED
+      observation: Chrome-observed ChatGPT Codex Connector installation
+      identifier: '141917362'
+      independent_verification_status: NOT_PERFORMED
+    identity_resolution_status: UNRESOLVED
   route_kind: ONLINE_SERVICE
   account_profile_id: TBD
   service_tier: TBD
@@ -168,6 +177,15 @@ routes:
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
+  proposed_data_scope:
+    data_classes:
+    - PUBLIC
+    limitation: REPOSITORY_METADATA_ONLY
+    approval_status: NOT_APPROVED
+    explicit_exclusions:
+    - SECRETS
+    - CUSTOMER_DATA
+    - PRODUCTION_DATA
   prohibited_data_classes: *id001
   maximum_change_risk: TBD
   minimum_assurance: TBD
@@ -190,9 +208,12 @@ routes:
     actual_usage_evidence_required: true
   fallback_route_ids: []
   data_policy_review:
-    review_id: TBD
-    status: NOT_ASSESSED
+    review_id: PDR-OPENAI-CODEX-001
+    status: IN_REVIEW
     allowed_data_classes: []
+    source_of_truth: LOCAL_REPOSITORY
+    route_decision: DENY
+    independent_review_status: REQUIRED_NOT_COMPLETED
     review_trigger: Complete before any provider submission or route activation
   evaluation:
     status: NOT_STARTED
@@ -200,7 +221,7 @@ routes:
     aft_case_ids: []
     evidence_bundle_ids: []
   lifecycle:
-    status: INTAKE_INCOMPLETE
+    status: UNDER_POLICY_REVIEW
     dispatch_enabled: false
     effective_date: null
     review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
@@ -210,8 +231,9 @@ routes:
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
-  source_basis: Candidate service lane named in existing provider-planning artifacts;
-    no exact route is approved.
+  source_basis: Direct Sole Human Owner candidate selection recorded in the local
+    repository; owner-supplied Chrome observation is intake evidence only and no
+    exact route identity or dispatch authority is approved.
   unknowns:
   - account_profile_id
   - service_tier
