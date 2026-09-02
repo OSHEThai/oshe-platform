@@ -90,6 +90,11 @@ SECRET_PATTERNS = [
     re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     re.compile(r"(?i)(password|secret|token)\s*[:=]\s*[\"'][^\"']{8,}[\"']"),
+    re.compile(
+        r"(?m)^[ \t]*(?:export[ \t]+)?(?:[A-Z][A-Z0-9_]*_)?"
+        r"(?:PASSWORD|SECRET|TOKEN)(?:_(?:VALUE|KEY))?[ \t]*=[ \t]*"
+        r"(?![\"']|\$\{|<)[^\s#]{8,}[ \t]*(?:#.*)?$"
+    ),
 ]
 
 OUTER_YAML_PATHS = (
