@@ -58,6 +58,23 @@ class StrictReferenceGrammarTests(unittest.TestCase):
                         "postgis/postgis:17-3.6-alpine", "local_services.postgis.image_ref"
                     )
 
+    def test_all_local_service_images_are_digest_pinned(self) -> None:
+        services = {
+            "postgresql": ("postgres:17.11-alpine", "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73"),
+            "meilisearch": ("getmeili/meilisearch:v1.51.0", "sha256:a9eb29ee09ab4943db3b4c68620bd6f3382e6b2b0ac4431c0e607b48dbcd4c14"),
+            "valkey": ("valkey/valkey:9.1.1-alpine", "sha256:15568b9cb7eb67f4aed4de018c23f13d344e0e6437b31fe8fb8823dc81ebb3a9"),
+            "seaweedfs": ("chrislusf/seaweedfs:4.29", "sha256:d47c7ee99fcb951351d7194915f4e3a5ea604a8e8871183d713907dec4fb9bf5"),
+            "nats_jetstream": ("nats:2.14.5-alpine", "sha256:d4ac35882ac65aff236cd65b9d3fa4d24332c681e1a85f94eedccd3cdd65b1da"),
+        }
+        for service, (tag_ref, digest) in services.items():
+            pinned = f"{tag_ref}@{digest}"
+            for name, checker in self.checkers.items():
+                with self.subTest(checker=name, service=service):
+                    checker["inspect_scalars"](pinned, f"local_services.{service}.image_ref")
+                    checker["inspect_scalars"]("linux/amd64", f"local_services.{service}.platform")
+                    with self.assertRaises(checker["ContractError"]):
+                        checker["inspect_scalars"](tag_ref, f"local_services.{service}.image_ref")
+
 
 if __name__ == "__main__":
     unittest.main()
