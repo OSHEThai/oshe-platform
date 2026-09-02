@@ -77,7 +77,15 @@ identity_verification:
 ALIASES = frozenset({'latest', 'stable', 'edge', 'rolling', 'canary', 'main', 'master', 'dev', 'nightly'})
 CONTAINER_TAG_ALIAS = re.compile(r'^[^\s/]+(?:/[^\s/]+)+:(?:latest|stable|edge|rolling|canary|main|master|dev|nightly)$', re.IGNORECASE)
 BARE_CONTAINER_REFERENCE = re.compile(r'^[^\s/@]+(?:/[^\s/@]+)+$')
-VERSION_RANGE = re.compile(r'^(?:>=|\^|~)\d+\.\d+\.\d+$|^\d+\.x$')
+VERSION_RANGE = re.compile(r'^(?:>=|\^|~)\d+\.\d+\.\d+$|^\d+\.x$|^\*$|^\d+\.\*$|^\d+\.\d+\.(?:\*|x)$', re.IGNORECASE)
+SINGLE_COMPONENT_OCI_REFERENCE = re.compile(r'^[a-z0-9][a-z0-9._-]*$', re.IGNORECASE)
+TAGGED_SINGLE_COMPONENT_OCI_REFERENCE = re.compile(r'^[a-z0-9][a-z0-9._-]*:[^\s/@]+$', re.IGNORECASE)
+OCI_REFERENCE_FIELD_NAMES = frozenset({
+    'image', 'image_ref', 'oci_image', 'oci_reference', 'container_image', 'container_reference',
+})
+FIXED_VALUE_ALLOWLIST = {
+    'local_services.seaweedfs': frozenset({'4.29'}),
+}
 UNVERIFIED = 'UNVERIFIED_NO_NETWORK'
 UNVERIFIED_PATHS = frozenset({
     'host_tools.docker_engine.observed_local_version',
@@ -150,6 +158,11 @@ def child_path(path, key):
     return f'{path}.{key}' if path else str(key)
 
 
+def is_oci_reference_path(path):
+    field_name = re.sub(r'\[\d+\]$', '', path.rsplit('.', 1)[-1])
+    return field_name in OCI_REFERENCE_FIELD_NAMES
+
+
 def inspect_scalars(value, path=''):
     if isinstance(value, dict):
         for key in sorted(value, key=key_sort):
@@ -161,11 +174,17 @@ def inspect_scalars(value, path=''):
         return
     if not isinstance(value, str):
         return
+    if value in FIXED_VALUE_ALLOWLIST.get(path, frozenset()):
+        return
     folded = value.casefold()
     if folded in ALIASES:
         raise ContractError(f'MUTABLE_SCALAR_ALIAS: {path}: {value}')
     if CONTAINER_TAG_ALIAS.fullmatch(value):
         raise ContractError(f'MUTABLE_CONTAINER_TAG_ALIAS: {path}: {value}')
+    if is_oci_reference_path(path) and TAGGED_SINGLE_COMPONENT_OCI_REFERENCE.fullmatch(value):
+        raise ContractError(f'UNPINNED_TAGGED_SINGLE_COMPONENT_OCI_REFERENCE: {path}: {value}')
+    if is_oci_reference_path(path) and SINGLE_COMPONENT_OCI_REFERENCE.fullmatch(value):
+        raise ContractError(f'UNPINNED_SINGLE_COMPONENT_OCI_REFERENCE: {path}: {value}')
     if '://' not in value and BARE_CONTAINER_REFERENCE.fullmatch(value):
         raise ContractError(f'GENERIC_BARE_REFERENCE: {path}: {value}')
     if VERSION_RANGE.fullmatch(value):
