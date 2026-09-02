@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "evidenceId": "EVD-V010-I014-DELEGATION-CONTRACT-TEST-EXECUTION-004",
+  "observedUtc": "2026-09-02T11:34:57.808500900Z",
+  "assignment": {
+    "assignmentId": "ASN-V010-I014-PR906-REMEDIATION-004",
+    "path": ".oshe-agent-control/assignments/V010-I014-pr906-review-remediation-004.yaml",
+    "mode": "PR906_REVIEW_REMEDIATION"
+  },
+  "lease": {
+    "leaseId": "LEASE-V010-I014-PR906-REMEDIATION-004",
+    "worktree": "Z:/OSHEThai/.worktrees/v010-i014-local-ci-registration",
+    "branch": "test/v010-i014-local-ci-registration-r3",
+    "head": "4c88340e37524c2913d2465b1c001448965a82c3"
+  },
+  "command": "python -B -m unittest tests.test_permission_delegation",
+  "cwd": "Z:/OSHEThai/.worktrees/v010-i014-local-ci-registration",
+  "exitCode": 0,
+  "output": "Ran 27 tests in 0.821s\n\nOK",
+  "result": "PASS",
+  "bytecodeSuppressed": true,
+  "changedPaths": [
+    "tests/test_permission_delegation.py",
+    ".ci/evidence/V010-I014/delegation-contract-test-execution-004.json"
+  ],
+  "findingsResolution": [
+    {
+      "finding": "nested / intersecting write-scope collision coverage",
+      "resolution": "Replaced the order-dependent _glob_segment_intersects token walk with a symmetric NFA product search (_token_matches_char, _epsilon_closure, _advance, _candidate_characters) so prefix/suffix and class/any intersections are detected regardless of argument order. Added test_intersecting_glob_active_write_paths_are_rejected_in_both_orders covering tests/a* vs tests/*b (common path tests/ab), tests/[ab]* vs tests/[bc]*, and tests/a? vs tests/?b, each in both orderings, asserted as 'overlapping active collision'."
+    },
+    {
+      "finding": "role-card / registry / assignment / session / lease schema and required-field coverage",
+      "resolution": "Added required-field negative coverage against the existing loaded schemas and fixtures: test_assignment_schema_requires_each_required_field, test_session_schema_requires_each_required_field, test_write_lease_schema_requires_each_required_field, test_role_card_schema_requires_each_required_field (removing each schema 'required' key and asserting schema_errors non-empty), plus registry structural coverage test_role_registry_entries_require_role_id_and_resolve_role_cards and test_specialist_registry_profiles_require_required_fields using the existing self.roles and self.agents fixtures."
+    },
+    {
+      "finding": "independently readable focused-test execution evidence",
+      "resolution": "This evidence JSON records the exact command, cwd, bytecode suppression, exit code, full unittest summary, changed paths, and per-finding resolution so an independent reviewer can reproduce and read the result without re-deriving it."
+    }
+  ],
+  "scopeAccounting": {
+    "testFileEdited": true,
+    "evidenceFileWritten": true,
+    "ciLocalJsonMutated": false,
+    "aiMutated": false,
+    "commitOrPush": false,
+    "githubAction": false
+  }
+}

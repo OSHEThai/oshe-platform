@@ -265,64 +265,89 @@ def _class_matches(spec: tuple[bool, set[str], list[tuple[str, str]]], char: str
     return not matched if negated else matched
 
 
-def _common_glob_character(left: tuple[str, Any], right: tuple[str, Any]) -> str | None:
-    left_kind, left_value = left
-    right_kind, right_value = right
-    candidates = list("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.")
-    if left_kind == "literal":
-        candidates.insert(0, left_value)
-    if right_kind == "literal":
-        candidates.insert(0, right_value)
-    if left_kind == "class":
-        candidates.extend(left_value[1])
-    if right_kind == "class":
-        candidates.extend(right_value[1])
-    seen: set[str] = set()
-    for candidate in candidates:
-        if candidate in seen:
+def _token_matches_char(token: tuple[str, Any], char: str) -> bool:
+    kind, value = token
+    if kind == "any":
+        return True
+    if kind == "literal":
+        return value == char
+    if kind == "class":
+        return _class_matches(value, char)
+    return False
+
+
+def _epsilon_closure(tokens: list[tuple[str, Any]], states: set[int]) -> set[int]:
+    closure = set(states)
+    stack = list(states)
+    while stack:
+        index = stack.pop()
+        if index < len(tokens) and tokens[index][0] == "star":
+            following = index + 1
+            if following not in closure:
+                closure.add(following)
+                stack.append(following)
+    return closure
+
+
+def _advance(tokens: list[tuple[str, Any]], states: set[int], char: str) -> set[int]:
+    following: set[int] = set()
+    for index in states:
+        if index >= len(tokens):
             continue
-        seen.add(candidate)
-        left_matches = (
-            left_kind == "any"
-            or (left_kind == "literal" and left_value == candidate)
-            or (left_kind == "class" and _class_matches(left_value, candidate))
-        )
-        right_matches = (
-            right_kind == "any"
-            or (right_kind == "literal" and right_value == candidate)
-            or (right_kind == "class" and _class_matches(right_value, candidate))
-        )
-        if left_matches and right_matches:
-            return candidate
-    return None
+        if tokens[index][0] == "star":
+            following.add(index)
+        if _token_matches_char(tokens[index], char):
+            following.add(index + 1)
+    return following
+
+
+def _candidate_characters(
+    left_tokens: list[tuple[str, Any]], right_tokens: list[tuple[str, Any]]
+) -> list[str]:
+    characters: set[str] = set()
+    for kind, value in left_tokens + right_tokens:
+        if kind == "literal":
+            characters.add(value)
+        elif kind == "class":
+            _, literals, ranges = value
+            characters.update(literals)
+            for start, end in ranges:
+                characters.add(start)
+                characters.add(end)
+    for filler in "0123456789":
+        if filler not in characters:
+            characters.add(filler)
+            break
+    return sorted(characters)
 
 
 def _glob_segment_intersects(left: str, right: str) -> bool:
     left_tokens = _glob_segment_tokens(left)
     right_tokens = _glob_segment_tokens(right)
-    pending = [(0, 0)]
-    visited: set[tuple[int, int]] = set()
+    left_accept = len(left_tokens)
+    right_accept = len(right_tokens)
+    characters = _candidate_characters(left_tokens, right_tokens)
+
+    start = (
+        frozenset(_epsilon_closure(left_tokens, {0})),
+        frozenset(_epsilon_closure(right_tokens, {0})),
+    )
+    if left_accept in start[0] and right_accept in start[1]:
+        return True
+
+    pending = [start]
+    visited = {start}
     while pending:
-        left_index, right_index = pending.pop()
-        state = (left_index, right_index)
-        if state in visited:
-            continue
-        visited.add(state)
-        if left_index == len(left_tokens) and right_index == len(right_tokens):
-            return True
-        if left_index < len(left_tokens) and left_tokens[left_index][0] == "star":
-            pending.append((left_index + 1, right_index))
-            if right_index < len(right_tokens) and right_tokens[right_index][0] != "star":
-                pending.append((left_index, right_index + 1))
-            continue
-        if right_index < len(right_tokens) and right_tokens[right_index][0] == "star":
-            pending.append((left_index, right_index + 1))
-            if left_index < len(left_tokens) and left_tokens[left_index][0] != "star":
-                pending.append((left_index + 1, right_index))
-            continue
-        if left_index < len(left_tokens) and right_index < len(right_tokens):
-            if _common_glob_character(left_tokens[left_index], right_tokens[right_index]) is not None:
-                pending.append((left_index + 1, right_index + 1))
+        left_states, right_states = pending.pop()
+        for char in characters:
+            next_left = frozenset(_epsilon_closure(left_tokens, _advance(left_tokens, left_states, char)))
+            next_right = frozenset(_epsilon_closure(right_tokens, _advance(right_tokens, right_states, char)))
+            if left_accept in next_left and right_accept in next_right:
+                return True
+            state = (next_left, next_right)
+            if state not in visited:
+                visited.add(state)
+                pending.append(state)
     return False
 
 
@@ -638,6 +663,96 @@ class PermissionDelegationContractTests(unittest.TestCase):
                         self.assert_lease_schema_valid(lease)
                     with self.assertRaisesRegex(AssertionError, "overlapping active collision"):
                         assert_no_exact_active_write_path_collisions(leases)
+    def test_intersecting_glob_active_write_paths_are_rejected_in_both_orders(self) -> None:
+        pairs = (
+            ("tests/a*", "tests/*b"),
+            ("tests/[ab]*", "tests/[bc]*"),
+            ("tests/a?", "tests/?b"),
+        )
+        for left_path, right_path in pairs:
+            for paths in ((left_path, right_path), (right_path, left_path)):
+                with self.subTest(paths=paths):
+                    leases = [
+                        self.make_active_lease(
+                            "LEASE-I014-TEST-A", "ASN-I014-TEST-A", "SESSION-I014-TEST-A", paths[0]
+                        ),
+                        self.make_active_lease(
+                            "LEASE-I014-TEST-B", "ASN-I014-TEST-B", "SESSION-I014-TEST-B", paths[1]
+                        ),
+                    ]
+                    for lease in leases:
+                        self.assert_lease_schema_valid(lease)
+                    with self.assertRaisesRegex(AssertionError, "overlapping active collision"):
+                        assert_no_exact_active_write_path_collisions(leases)
+
+    def test_assignment_schema_requires_each_required_field(self) -> None:
+        for field in self.assignment_schema["required"]:
+            with self.subTest(field=field):
+                hostile = copy.deepcopy(self.assignment)
+                hostile.pop(field, None)
+                self.assertTrue(
+                    schema_errors(hostile, self.assignment_schema),
+                    f"agent-assignment schema should require {field}",
+                )
+
+    def test_session_schema_requires_each_required_field(self) -> None:
+        for field in self.session_schema["required"]:
+            with self.subTest(field=field):
+                hostile = copy.deepcopy(self.session)
+                hostile.pop(field, None)
+                self.assertTrue(
+                    schema_errors(hostile, self.session_schema),
+                    f"agent-session schema should require {field}",
+                )
+
+    def test_write_lease_schema_requires_each_required_field(self) -> None:
+        for field in self.write_lease_schema["required"]:
+            with self.subTest(field=field):
+                hostile = copy.deepcopy(self.lease)
+                hostile.pop(field, None)
+                self.assertTrue(
+                    schema_errors(hostile, self.write_lease_schema),
+                    f"write-lease schema should require {field}",
+                )
+
+    def test_role_card_schema_requires_each_required_field(self) -> None:
+        role_card_schema = load_json(".ai/schemas/role-card.schema.json")
+        cards = role_card_paths()
+        self.assertTrue(cards, "no current role cards discovered")
+        metadata, _ = load_role_card(cards[0])
+        for field in role_card_schema["required"]:
+            with self.subTest(field=field):
+                hostile = copy.deepcopy(metadata)
+                hostile.pop(field, None)
+                self.assertTrue(
+                    schema_errors(hostile, role_card_schema),
+                    f"role-card schema should require {field}",
+                )
+
+    def test_role_registry_entries_require_role_id_and_resolve_role_cards(self) -> None:
+        entries = self.roles.get("roles") or []
+        self.assertTrue(entries, "no role registry entries discovered")
+        for entry in entries:
+            with self.subTest(role_id=entry.get("role_id")):
+                role_id = entry.get("role_id")
+                self.assertTrue(role_id, "role entry missing role_id")
+                card_ref = entry.get("role_card")
+                self.assertTrue(card_ref, f"{role_id}: role entry missing role_card")
+                card_path = REPO_ROOT / card_ref
+                self.assertTrue(card_path.is_file(), f"{role_id}: role_card not found: {card_ref}")
+                metadata, _ = load_role_card(card_path)
+                self.assertEqual(metadata.get("role_id"), role_id)
+
+    def test_specialist_registry_profiles_require_required_fields(self) -> None:
+        profiles = self.agents.get("profiles") or []
+        self.assertTrue(profiles, "no specialist profiles discovered")
+        for profile in profiles:
+            with self.subTest(profile_id=profile.get("profile_id")):
+                self.assertTrue(profile.get("profile_id"), "profile missing profile_id")
+                self.assertTrue(
+                    profile.get("default_tool_profile"), "profile missing default_tool_profile"
+                )
+                self.assertTrue(profile.get("parent_roles"), "profile missing parent_roles")
 
 
 if __name__ == "__main__":
