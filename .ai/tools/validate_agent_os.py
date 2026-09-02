@@ -89,6 +89,103 @@ REQUIRED_LAYOUT = (
     "docs/adr/adr-0007-local-first-ci-and-repository-lifecycle.md",
 )
 
+PROVIDER_NOTE_IDENTITIES = {
+    "codex": {
+        "provider_name": "Codex",
+        "supported_context_entry_points": ["AGENTS.md", ".ai/provider-notes/codex.md"],
+        "reserved_root_file": "CODEX.md",
+        "reserved_root_file_status": "RESERVED_OPTIONAL_NOT_CREATED",
+    },
+    "claude": {
+        "provider_name": "Claude",
+        "supported_context_entry_points": ["AGENTS.md", "CLAUDE.md", ".ai/provider-notes/claude.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "gemini": {
+        "provider_name": "Gemini",
+        "supported_context_entry_points": ["AGENTS.md", "GEMINI.md", ".ai/provider-notes/gemini.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "qwen": {
+        "provider_name": "Qwen",
+        "supported_context_entry_points": ["AGENTS.md", "QWEN.md", ".ai/provider-notes/qwen.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "deepseek": {
+        "provider_name": "DeepSeek",
+        "supported_context_entry_points": ["AGENTS.md", ".ai/provider-notes/deepseek.md"],
+        "reserved_root_file": "DEEPSEEK.md",
+        "reserved_root_file_status": "RESERVED_OPTIONAL_NOT_CREATED",
+    },
+}
+
+PROVIDER_NOTE_STATIC_FIELDS = {
+    "note_mode": "STATIC_FAIL_CLOSED",
+    "output_result_boundary": "ASSIGNED_OUTPUT_CONTRACT_ONLY_NO_AUTHORITY",
+    "secret_handling": "PROHIBITED",
+    "customer_data_handling": "PROHIBITED",
+    "route_status": "DEFAULT_DENY_NO_APPROVED_ROUTE",
+    "unsupported_invocation": "FAIL_CLOSED_NO_DISPATCH",
+    "approved_credential": "NONE",
+    "model_alias_selection": "NONE",
+    "retention_promise": "NONE",
+    "numeric_budget": "DEFERRED_BY_HDEC_037",
+    "smoke_test_claim": "NONE",
+}
+
+PROVIDER_NOTE_ACTIVE_BEHAVIOR_OWNERS = {
+    "adapter_runtime": "V010-I022",
+    "provider_model_data_policy_route": "V010-I023",
+    "quota_budget_failover": "V010-I024",
+}
+
+PROVIDER_NOTE_REQUIRED_HEADINGS = (
+    "## Identity and supported context",
+    "## Output and data boundary",
+    "## Default-deny behavior",
+    "## Later active-behavior owners",
+    "## Prohibited static claims",
+    "## Reserved root-file boundary",
+)
+
+PROVIDER_NOTE_FORBIDDEN_BODY_PATTERNS = (
+    (
+        "active route or dispatch claim",
+        re.compile(
+            r"(?im)^\s*(?:[-*]\s*)?(?:the\s+)?(?:route(?:\s+status)?|dispatch)\s*(?:is|=|:)\s*(?:active|approved|enabled|allowed)\b"
+        ),
+    ),
+    (
+        "adapter or runtime activation claim",
+        re.compile(
+            r"(?im)^\s*(?:[-*]\s*)?(?:the\s+)?(?:adapter(?:\s+(?:runtime|activation))?|runtime(?:\s+activation)?)\s*(?:is|=|:)\s*(?:active|approved|enabled|allowed)\b"
+        ),
+    ),
+    (
+        "approved credential claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?approved\s+credential\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "selected model alias claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?model\s+alias\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "retention promise claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?retention\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "numeric budget claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?(?:numeric\s+)?budget\s*(?:is|=|:)\s*\d+\b"),
+    ),
+    (
+        "smoke-test claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?smoke\s+test\s*(?:is|=|:)\s*(?:pass|passed|successful)\b"),
+    ),
+)
+
 
 def normalize_action(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value).casefold().strip()
@@ -170,6 +267,55 @@ def validate_required_layout(validation: Validation) -> None:
     for provider in ("codex", "claude", "gemini", "deepseek", "qwen"):
         if not (AI_ROOT / "provider-notes" / f"{provider}.md").is_file():
             validation.error(f"Missing provider note: {provider}.md")
+
+
+def validate_provider_notes(validation: Validation) -> None:
+    expected_keys = {
+        "provider_id",
+        "provider_name",
+        "note_mode",
+        "supported_context_entry_points",
+        "output_result_boundary",
+        "secret_handling",
+        "customer_data_handling",
+        "route_status",
+        "unsupported_invocation",
+        "active_behavior_owners",
+        "approved_credential",
+        "model_alias_selection",
+        "retention_promise",
+        "numeric_budget",
+        "smoke_test_claim",
+        "reserved_root_file",
+        "reserved_root_file_status",
+    }
+    for provider_id, identity in PROVIDER_NOTE_IDENTITIES.items():
+        path = AI_ROOT / "provider-notes" / f"{provider_id}.md"
+        if not path.is_file():
+            continue
+        metadata = validation.frontmatter(path)
+        if set(metadata) != expected_keys:
+            validation.error(f"Provider note {provider_id} metadata keys mismatch")
+        if metadata.get("provider_id") != provider_id:
+            validation.error(f"Provider note {provider_id} provider_id mismatch")
+        for field, expected in identity.items():
+            if metadata.get(field) != expected:
+                validation.error(f"Provider note {provider_id} field {field} must be {expected}")
+        for field, expected in PROVIDER_NOTE_STATIC_FIELDS.items():
+            if metadata.get(field) != expected:
+                validation.error(f"Provider note {provider_id} field {field} must be {expected}")
+        if metadata.get("active_behavior_owners") != PROVIDER_NOTE_ACTIVE_BEHAVIOR_OWNERS:
+            validation.error(f"Provider note {provider_id} active behavior owners mismatch")
+
+        text = path.read_text(encoding="utf-8-sig")
+        for heading in PROVIDER_NOTE_REQUIRED_HEADINGS:
+            if heading not in text:
+                validation.error(f"Provider note {provider_id} is missing section {heading}")
+        body_parts = text.split("---", 2)
+        body = body_parts[2] if len(body_parts) == 3 else text
+        for claim, pattern in PROVIDER_NOTE_FORBIDDEN_BODY_PATTERNS:
+            if pattern.search(body):
+                validation.error(f"Provider note {provider_id} contains forbidden {claim}")
 
 
 def validate_parse_all(validation: Validation) -> None:
@@ -575,6 +721,7 @@ def main() -> int:
         return 1
 
     validate_required_layout(validation)
+    validate_provider_notes(validation)
     validate_parse_all(validation)
     validate_local_markdown_links(validation)
     validate_json_schemas(validation)

@@ -207,6 +207,82 @@ class AgentOsValidatorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("provider_routes_enabled=0", result.stdout)
 
+    def test_static_provider_note_set_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            result = self.run_validator(root)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("Provider note", result.stdout)
+
+    def test_provider_notes_reject_missing_required_statements(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            codex_path = root / ".ai" / "provider-notes" / "codex.md"
+            codex_text = codex_path.read_text(encoding="utf-8")
+            codex_path.write_text(
+                codex_text.replace('unsupported_invocation: "FAIL_CLOSED_NO_DISPATCH"\n', "", 1),
+                encoding="utf-8",
+            )
+            qwen_path = root / ".ai" / "provider-notes" / "qwen.md"
+            qwen_text = qwen_path.read_text(encoding="utf-8")
+            qwen_path.write_text(
+                qwen_text.replace("## Output and data boundary", "## Removed section", 1),
+                encoding="utf-8",
+            )
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Provider note codex metadata keys mismatch", result.stdout)
+        self.assertIn("Provider note codex field unsupported_invocation", result.stdout)
+        self.assertIn("Provider note qwen is missing section ## Output and data boundary", result.stdout)
+
+    def test_provider_notes_reject_forbidden_frontmatter_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            claude_path = root / ".ai" / "provider-notes" / "claude.md"
+            claude_text = claude_path.read_text(encoding="utf-8")
+            claude_text = claude_text.replace(
+                'route_status: "DEFAULT_DENY_NO_APPROVED_ROUTE"',
+                'route_status: "ACTIVE"',
+                1,
+            ).replace(
+                'model_alias_selection: "NONE"',
+                'model_alias_selection: "latest"',
+                1,
+            )
+            claude_path.write_text(claude_text, encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Provider note claude field route_status must be DEFAULT_DENY_NO_APPROVED_ROUTE", result.stdout)
+        self.assertIn("Provider note claude field model_alias_selection must be NONE", result.stdout)
+
+    def test_provider_notes_reject_forbidden_body_claims(self) -> None:
+        cases = (
+            ("route_dispatch", "Dispatch: enabled", "active route or dispatch claim"),
+            ("adapter_runtime", "Adapter runtime: enabled", "adapter or runtime activation claim"),
+            ("credential", "Approved credential: provider-production", "approved credential claim"),
+            ("model_alias", "Model alias: latest", "selected model alias claim"),
+            ("retention", "Retention: 30 days", "retention promise claim"),
+            ("numeric_budget", "Numeric budget: 4096", "numeric budget claim"),
+            ("smoke_test", "Smoke test: PASSED", "smoke-test claim"),
+        )
+        for case_name, body_claim, expected_claim in cases:
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                note_path = root / ".ai" / "provider-notes" / "codex.md"
+                with note_path.open("a", encoding="utf-8") as stream:
+                    stream.write(f"\n{body_claim}\n")
+                result = self.run_validator(root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"Provider note codex contains forbidden {expected_claim}", result.stdout)
+
     def test_validator_requires_exact_repository_delete_prohibition(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
