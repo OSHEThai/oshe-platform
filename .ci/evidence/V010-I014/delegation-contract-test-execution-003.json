@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "EVD-V010-I014-DELEGATION-CONTRACT-TEST-EXECUTION-003",
+  "assignment_id": "ASN-V010-I014-PR906-LOCAL-CI-REMEDIATION-001",
+  "lease_id": "LEASE-V010-I014-PR906-LOCAL-CI-REMEDIATION-001",
+  "classification": "STATIC_LOCAL_SOURCE_VALIDATION_ONLY",
+  "worktree": "Z:/OSHEThai/.worktrees/v010-i014-local-ci-registration",
+  "branch": "test/v010-i014-local-ci-registration-r3",
+  "head_commit": "7f50f61a276043fb344a6677a5ac5fb423128ccc",
+  "command": "python tools/run_local_ci.py --mode incremental",
+  "exit_status": 0,
+  "output_transcript": [
+    "......................................",
+    "----------------------------------------------------------------------",
+    "Ran 38 tests in 13.734s",
+    "",
+    "OK",
+    "AI Agent OS validation PASSED",
+    "roles=12 profiles>=17 skills=41 policies>=18 runbooks>=15 schemas>=20",
+    "parsed_or_checked_files=127 provider_routes_enabled=0",
+    "Foundation validation passed for platform.",
+    "CI mode: incremental",
+    "Repository input digest: 6e829ea98c66ee067c9fdcd19854c6f86103bcca1c9c647454ea6c44ba20b1ac",
+    "Base commit: 0ae4d1f617e1e1d2077208e50ca0bdc661d0997e",
+    "RUN  agent-os-regression: python -m unittest tests.test_validate_agent_os tests.test_permission_delegation tests.test_local_ci",
+    "PASS agent-os-regression",
+    "RUN  foundation-validation: python tools/validate_repository.py --repo-kind platform",
+    "PASS foundation-validation",
+    "CI summary: passed=2 skipped=0 failed=0"
+  ],
+  "test_counts": {
+    "unittest_tests_run": 38,
+    "unittest_duration_seconds": 13.734,
+    "registered_checks_passed": 2,
+    "registered_checks_skipped": 0,
+    "registered_checks_failed": 0
+  },
+  "agent_os_regression": {
+    "status": "PASS",
+    "command": "python -m unittest tests.test_validate_agent_os tests.test_permission_delegation tests.test_local_ci",
+    "includes_tests_test_permission_delegation": true
+  },
+  "base_head_recheck": {
+    "expected_branch": "test/v010-i014-local-ci-registration-r3",
+    "observed_branch": "test/v010-i014-local-ci-registration-r3",
+    "expected_head": "7f50f61a276043fb344a6677a5ac5fb423128ccc",
+    "observed_head": "7f50f61a276043fb344a6677a5ac5fb423128ccc",
+    "runner_exists": true,
+    "checkpoint_scope": ".local-ci/checkpoints.json",
+    "result": "PASS"
+  },
+  "no_credit_boundaries": {
+    "implementation_credit": false,
+    "runtime_credit": false,
+    "provider_credit": false,
+    "github_credit": false,
+    "release_credit": false,
+    "merge_credit": false,
+    "deployment_credit": false,
+    "ac1_claim": false,
+    "ac3_claim": false,
+    "issue_closure_claim": false
+  },
+  "notes": [
+    "The runner output reports its own Base commit 0ae4d1f617e1e1d2077208e50ca0bdc661d0997e; this is recorded as runner output and is distinct from the pre-run checked-out HEAD.",
+    "Expected checkpoint writes are limited to .local-ci/ under the active lease."
+  ]
+}
