@@ -4,16 +4,15 @@ This directory is the repository-ready control plane for the OSHE role-agent ope
 
 ## Current Team Layout
 
-The current operating layout has **36 named positions**:
+The current operating layout has **18 named positions**:
 
 - 1 Project Manager and 1 PM Secretary;
 - 9 Leads: Product and Planning, Architecture and Data, Engineering, AI and Automation, Security Privacy and Safety, Quality and Independent Review, Documentation Standards and Legal, DevOps Release and Evidence, and Implementation and Customer Success;
-- 20 permanent Workers; and
-- 5 temporary Free Agents, including `free-mercury`.
+- 7 Free Workers, including `free-mercury`.
 
-Routine reporting follows `Worker -> Lead -> PM Secretary -> Project Manager`. The Project Manager directs Leads; a Lead reviews Worker output before the PM Secretary records a completion. A Free Agent receives a named, time-bounded assignment from a Lead and has no standing authority.
+Permanent Worker positions are retired. Routine reporting follows `Free Worker -> Lead -> PM Secretary -> Project Manager`. The Project Manager directs Leads; a Lead reviews Free Worker output before the PM Secretary records a Lead-approved completion. A Free Worker receives a named, time-bounded assignment from a Lead and has no standing authority.
 
-The `roles/registry.yaml` catalog and its 12 role cards are a retained **legacy authority catalog**. They are not the current team topology and must not be used to infer current reporting lines, position counts, or agent assignment. Their controlled migration to the 36-position layout remains tracked work; until then, the active team layout and reporting model in this README govern operational interpretation.
+The `roles/registry.yaml` catalog and its 12 role cards are a retained **legacy authority catalog**. They are not the current team topology and must not be used to infer current reporting lines, position counts, or agent assignment. Their controlled migration to the 18-position lean topology remains tracked work; until then, the active team layout and reporting model in this README govern operational interpretation.
 
 ## Layout
 
