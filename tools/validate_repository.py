@@ -182,6 +182,7 @@ def _strip_yaml_comment_and_count_markers(line: str) -> tuple[str, int, int]:
     """
     quote: str | None = None
     escaped = False
+    github_expression_depth = 0
     anchors = 0
     aliases = 0
     result: list[str] = []
@@ -201,9 +202,18 @@ def _strip_yaml_comment_and_count_markers(line: str) -> tuple[str, int, int]:
                 quote = None
             result.append(char)
             continue
-        if quote is None and char == "#" and (index == 0 or line[index - 1].isspace()):
+        if quote is None and line.startswith("${{", index):
+            github_expression_depth += 1
+        elif quote is None and github_expression_depth and line.startswith("}}", index):
+            github_expression_depth -= 1
+        if (
+            quote is None
+            and github_expression_depth == 0
+            and char == "#"
+            and (index == 0 or line[index - 1].isspace())
+        ):
             break
-        if quote is None and char in ("&", "*"):
+        if quote is None and github_expression_depth == 0 and char in ("&", "*"):
             next_char = line[index + 1] if index + 1 < len(line) else ""
             if next_char and not next_char.isspace():
                 if char == "&":

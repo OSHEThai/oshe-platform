@@ -69,6 +69,13 @@ class ValidateRepositoryYamlLimitTests(unittest.TestCase):
         with self.assertRaises(validate_repository.YamlLimitError):
             validate_repository.analyze_yaml_preconstruction("key: *named\n")
 
+    def test_github_actions_boolean_and_is_not_a_yaml_anchor(self) -> None:
+        metrics = validate_repository.analyze_yaml_preconstruction(
+            "REQUESTED_CI_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.ci_mode || 'incremental' }}\n"
+        )
+        self.assertEqual(metrics.anchors, 0)
+        self.assertEqual(metrics.aliases, 0)
+
     def test_outer_corpus_is_exact_and_excludes_delegated_ai_yaml(self) -> None:
         self.assertEqual(len(validate_repository.OUTER_YAML_PATHS), 8)
         self.assertFalse(any(path.startswith(".ai/") for path in validate_repository.OUTER_YAML_PATHS))
