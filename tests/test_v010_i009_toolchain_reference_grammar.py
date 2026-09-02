@@ -46,6 +46,18 @@ class StrictReferenceGrammarTests(unittest.TestCase):
             with self.subTest(checker=name):
                 checker["inspect_scalars"]("4.29", "local_services.seaweedfs")
 
+    def test_postgis_image_identity_is_digest_pinned(self) -> None:
+        digest = "sha256:a8ffa9afeea4ad6eada171fa2afdb57cd3eb90f92ce20156aa2cb8411d70e0cd"
+        pinned = f"postgis/postgis:17-3.6-alpine@{digest}"
+        for name, checker in self.checkers.items():
+            with self.subTest(checker=name):
+                checker["inspect_scalars"](pinned, "local_services.postgis.image_ref")
+                checker["inspect_scalars"]("linux/amd64", "local_services.postgis.platform")
+                with self.assertRaises(checker["ContractError"]):
+                    checker["inspect_scalars"](
+                        "postgis/postgis:17-3.6-alpine", "local_services.postgis.image_ref"
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -58,7 +58,13 @@ frontend_dependencies:
   vitest: 4.1.11
 local_services:
   postgresql: 17.11
-  postgis: {selected_version: 3.6.4, optional_when_spatial_features_enabled: true}
+  postgis:
+    selected_version: 3.6.4
+    optional_when_spatial_features_enabled: true
+    image_ref: postgis/postgis:17-3.6-alpine@sha256:a8ffa9afeea4ad6eada171fa2afdb57cd3eb90f92ce20156aa2cb8411d70e0cd
+    platform: linux/amd64
+    platform_manifest_digest: sha256:7ce143dbc804dc08a8f1dcf9067724f9b6e4ded48711e9d884487967acb442b3
+    index_digest: sha256:a8ffa9afeea4ad6eada171fa2afdb57cd3eb90f92ce20156aa2cb8411d70e0cd
   meilisearch: 1.51.0
   valkey: 9.1.1
   seaweedfs: 4.29
@@ -86,6 +92,12 @@ OCI_REFERENCE_FIELD_NAMES = frozenset({
 FIXED_VALUE_ALLOWLIST = {
     'local_services.seaweedfs': frozenset({'4.29'}),
 }
+DIGEST_PINNED_OCI_PATHS = frozenset({
+    'local_services.postgis.image_ref',
+})
+PLATFORM_PATHS = frozenset({
+    'local_services.postgis.platform',
+})
 UNVERIFIED = 'UNVERIFIED_NO_NETWORK'
 UNVERIFIED_PATHS = frozenset({
     'host_tools.docker_engine.observed_local_version',
@@ -176,6 +188,10 @@ def inspect_scalars(value, path=''):
         return
     if value in FIXED_VALUE_ALLOWLIST.get(path, frozenset()):
         return
+    if path in PLATFORM_PATHS:
+        return
+    if path in DIGEST_PINNED_OCI_PATHS and '@sha256:' not in value:
+        raise ContractError(f'MUTABLE_TAGGED_IMAGE: {path}: {value}')
     folded = value.casefold()
     if folded in ALIASES:
         raise ContractError(f'MUTABLE_SCALAR_ALIAS: {path}: {value}')
