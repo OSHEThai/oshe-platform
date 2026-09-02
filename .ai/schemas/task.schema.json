@@ -3,70 +3,74 @@
   "title": "Agent Task",
   "type": "object",
   "required": [
+    "contract_type",
+    "contract_version",
     "id",
     "mission_id",
     "role",
     "mode",
     "depends_on",
     "allowed_paths",
+    "forbidden_paths",
     "acceptance_criteria",
     "required_checks",
     "output_schema"
   ],
   "properties": {
-    "id": {
-      "type": "string"
+    "contract_type": { "const": "task" },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "const": "1.0.0"
     },
-    "mission_id": {
-      "type": "string"
-    },
-    "role": {
-      "type": "string"
-    },
-    "mode": {
-      "enum": [
-        "READ_ONLY",
-        "WRITE",
-        "TEST_ONLY",
-        "GITHUB_METADATA"
-      ]
-    },
+    "id": { "$ref": "#/$defs/non_empty_string" },
+    "mission_id": { "$ref": "#/$defs/non_empty_string" },
+    "role": { "$ref": "#/$defs/non_empty_string" },
+    "mode": { "enum": ["READ_ONLY", "WRITE", "TEST_ONLY", "GITHUB_METADATA"] },
     "depends_on": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_empty_string" }
     },
     "allowed_paths": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/repo_path_rule" }
     },
     "forbidden_paths": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/repo_path_rule" }
     },
     "acceptance_criteria": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_empty_string" }
     },
     "required_checks": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_empty_string" }
     },
-    "output_schema": {
-      "type": "string"
-    },
-    "tool_profile": {
-      "type": "string"
-    }
+    "output_schema": { "$ref": "#/$defs/repo_path_rule" },
+    "tool_profile": { "$ref": "#/$defs/non_empty_string" },
+    "extensions": { "$ref": "#/$defs/extensions" }
   },
-  "additionalProperties": true
+  "additionalProperties": false,
+  "$defs": {
+    "non_empty_string": { "type": "string", "minLength": 1 },
+    "repo_path_rule": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "extensions": {
+      "type": "object",
+      "properties": {},
+      "maxProperties": 0,
+      "additionalProperties": false
+    }
+  }
 }

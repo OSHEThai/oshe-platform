@@ -1,0 +1,14 @@
+contract_type: mission
+contract_version: "1.0.0"
+id: V010-T04
+title: Synthetic agent contract-suite mission
+goal: Validate the selected versioned and closed lifecycle contracts.
+non_goals:
+- Provider activation
+- Production or customer-data processing
+risk_class: R2
+base_commit: 4a4e0bd0def63f442a2f892b56fdac1792d0034f
+integration_branch: content/v010-i015-contract-suite
+human_decisions:
+- HDEC-V010-I013-I015-PROTECTED-SEMANTICS-SELECTION-037
+data_classification: INTERNAL

@@ -1,0 +1,15 @@
+contract_type: integration
+contract_version: "1.0.0"
+mission_id: V010-T04
+integration_branch: content/v010-i015-contract-suite
+base_commit: 4a4e0bd0def63f442a2f892b56fdac1792d0034f
+included_commits: []
+checks:
+- id: schema-validation
+  command: python -B .ai/tools/validate_agent_os.py
+  outcome: PASS
+  exit_code: 0
+  evidence:
+  - EVD-SYNTHETIC-I015-SCHEMA-001
+open_findings: []
+ready_for_human: true
