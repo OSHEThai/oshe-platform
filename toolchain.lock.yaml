@@ -1,0 +1,48 @@
+schema_version: 1.0.0
+lock_id: V010-I009-TOOLCHAIN-LOCK-001
+lifecycle_status: DRAFT_SELECTED_BASELINE_PENDING_IDENTITY_VERIFICATION
+authority:
+  decision_ref: HDEC-V010-I009-H010-003
+  source_adr: Plan/10 Engineering and GitHub/06 ADR RFC API Event Schema and Database Migration Governance/05 Architecture Decision Records/ADR-0006 - Go Search First and Locale Configurable Platform Stack.md
+  no_provider_network_envelope: HDEC-NO-SPEND-DISPATCH-013
+host_tools:
+  go: {selected_version: 1.26.5, observed_local_version: 1.26.5}
+  node: {selected_version: 24.20.0, observed_local_version: 24.20.0}
+  pnpm: {selected_version: 11.24.0, observed_local_version: 11.24.0}
+  python: {selected_version: 3.14.7, observed_local_version: 3.14.7}
+  docker_engine: {selected_version: 29.7.2, observed_local_version: UNVERIFIED_NO_NETWORK}
+  docker_compose: {selected_version: 5.4.0, observed_local_version: UNVERIFIED_NO_NETWORK}
+backend_dependencies:
+  chi: 5.3.2
+  pgx: 5.10.0
+  goose: 3.27.3
+  opentelemetry_go: 1.46.0
+frontend_dependencies:
+  react: 19.2.8
+  typescript: 7.0.2
+  vite: 8.2.2
+  tailwind_css: 4.3.3
+  motion: 13.1.1
+  tanstack_query: 5.102.8
+  react_hook_form: 7.87.0
+  zod: 4.5.4
+  i18next: 26.4.1
+  react_i18next: 17.0.13
+  vite_plugin_pwa: 1.3.0
+  vitest: 4.1.11
+local_services:
+  postgresql: 17.11
+  postgis: {selected_version: 3.6.4, optional_when_spatial_features_enabled: true}
+  meilisearch: 1.51.0
+  valkey: 9.1.1
+  seaweedfs: 4.29
+  nats_jetstream: 2.14.5
+identity_verification:
+  status: PENDING_NO_NETWORK
+  required_before_clean_install_or_container_claim:
+  - official acquisition provenance
+  - package checksum_or_integrity
+  - OCI_image_digest
+  - action_commit_sha
+  - Windows_Linux_resolution_evidence
+  prohibited: [latest_alias, unpinned_image, unverified_package_lock]
