@@ -1,20 +1,24 @@
-id: V010-I016/skill-catalog
+contract_type: task
+contract_version: "1.0.0"
+id: V010-I015/contract-suite
 mission_id: V010-T04
-role: documentation-configuration-agent
+role: architecture-agent
 mode: WRITE
 depends_on:
-- V010-I013/agent-contract
+- V010-I013/static-provider-notes
 allowed_paths:
-- .ai/skill-catalog/**
-- .ai/skill-registry.yaml
+- .ai/schemas/**
+- .ai/examples/**
+- .ai/tools/validate_agent_os.py
+- tests/test_validate_agent_os.py
 forbidden_paths:
 - Plan/**
 - .ai/state/**
 - .ai/transcripts/**
 acceptance_criteria:
-- Every registered skill has a matching SKILL.md.
-- Every skill includes stop conditions and evaluation cases.
+- All six contract examples validate against the selected closed schemas.
+- Cross-contract ownership and commit evidence remain consistent.
 required_checks:
-- python .ai/tools/validate_agent_os.py
-tool_profile: documentation-scoped
+- schema-validation
+tool_profile: architecture-scoped
 output_schema: .ai/schemas/result.schema.json

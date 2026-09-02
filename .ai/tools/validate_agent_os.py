@@ -8,6 +8,7 @@ import re
 import sys
 import unicodedata
 import urllib.parse
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,121 @@ REQUIRED_LAYOUT = (
     "docs/adr/adr-0006-evidence-gated-full-github-operator-authority.md",
     "docs/adr/adr-0007-local-first-ci-and-repository-lifecycle.md",
 )
+
+PROVIDER_NOTE_IDENTITIES = {
+    "codex": {
+        "provider_name": "Codex",
+        "supported_context_entry_points": ["AGENTS.md", ".ai/provider-notes/codex.md"],
+        "reserved_root_file": "CODEX.md",
+        "reserved_root_file_status": "RESERVED_OPTIONAL_NOT_CREATED",
+    },
+    "claude": {
+        "provider_name": "Claude",
+        "supported_context_entry_points": ["AGENTS.md", "CLAUDE.md", ".ai/provider-notes/claude.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "gemini": {
+        "provider_name": "Gemini",
+        "supported_context_entry_points": ["AGENTS.md", "GEMINI.md", ".ai/provider-notes/gemini.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "qwen": {
+        "provider_name": "Qwen",
+        "supported_context_entry_points": ["AGENTS.md", "QWEN.md", ".ai/provider-notes/qwen.md"],
+        "reserved_root_file": "NONE",
+        "reserved_root_file_status": "NOT_APPLICABLE",
+    },
+    "deepseek": {
+        "provider_name": "DeepSeek",
+        "supported_context_entry_points": ["AGENTS.md", ".ai/provider-notes/deepseek.md"],
+        "reserved_root_file": "DEEPSEEK.md",
+        "reserved_root_file_status": "RESERVED_OPTIONAL_NOT_CREATED",
+    },
+}
+
+PROVIDER_NOTE_STATIC_FIELDS = {
+    "note_mode": "STATIC_FAIL_CLOSED",
+    "output_result_boundary": "ASSIGNED_OUTPUT_CONTRACT_ONLY_NO_AUTHORITY",
+    "secret_handling": "PROHIBITED",
+    "customer_data_handling": "PROHIBITED",
+    "route_status": "DEFAULT_DENY_NO_APPROVED_ROUTE",
+    "unsupported_invocation": "FAIL_CLOSED_NO_DISPATCH",
+    "approved_credential": "NONE",
+    "model_alias_selection": "NONE",
+    "retention_promise": "NONE",
+    "numeric_budget": "DEFERRED_BY_HDEC_037",
+    "smoke_test_claim": "NONE",
+}
+
+PROVIDER_NOTE_ACTIVE_BEHAVIOR_OWNERS = {
+    "adapter_runtime": "V010-I022",
+    "provider_model_data_policy_route": "V010-I023",
+    "quota_budget_failover": "V010-I024",
+}
+
+PROVIDER_NOTE_REQUIRED_HEADINGS = (
+    "## Identity and supported context",
+    "## Output and data boundary",
+    "## Default-deny behavior",
+    "## Later active-behavior owners",
+    "## Prohibited static claims",
+    "## Reserved root-file boundary",
+)
+
+PROVIDER_NOTE_FORBIDDEN_BODY_PATTERNS = (
+    (
+        "active route or dispatch claim",
+        re.compile(
+            r"(?im)^\s*(?:[-*]\s*)?(?:the\s+)?(?:route(?:\s+status)?|dispatch)\s*(?:is|=|:)\s*(?:active|approved|enabled|allowed)\b"
+        ),
+    ),
+    (
+        "adapter or runtime activation claim",
+        re.compile(
+            r"(?im)^\s*(?:[-*]\s*)?(?:the\s+)?(?:adapter(?:\s+(?:runtime|activation))?|runtime(?:\s+activation)?)\s*(?:is|=|:)\s*(?:active|approved|enabled|allowed)\b"
+        ),
+    ),
+    (
+        "approved credential claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?approved\s+credential\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "selected model alias claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?model\s+alias\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "retention promise claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?retention\s*(?:is|=|:)\s*(?!none\b)\S+"),
+    ),
+    (
+        "numeric budget claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?(?:numeric\s+)?budget\s*(?:is|=|:)\s*\d+\b"),
+    ),
+    (
+        "smoke-test claim",
+        re.compile(r"(?im)^\s*(?:[-*]\s*)?smoke\s+test\s*(?:is|=|:)\s*(?:pass|passed|successful)\b"),
+    ),
+)
+
+I015_CONTRACT_EXAMPLES = {
+    "mission": ("mission.example.yaml", "mission.schema.json"),
+    "task": ("task-packet.example.yaml", "task.schema.json"),
+    "result": ("result-contract.example.yaml", "result.schema.json"),
+    "review": ("review.example.yaml", "review.schema.json"),
+    "integration": ("integration.example.yaml", "integration.schema.json"),
+    "handoff": ("handoff.example.yaml", "handoff.schema.json"),
+}
+
+I015_VERSION_PATTERN = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
+I015_GLOB_MAGIC_PATTERN = re.compile(r"[*?[]")
+
+I015_EMPTY_EXTENSION_REGISTRY = {
+    "schema_version": "1.0.0",
+    "registry_status": "EMPTY_NO_REGISTERED_EXTENSIONS",
+    "registered_extensions": [],
+}
 
 
 def normalize_action(value: str) -> str:
@@ -170,6 +286,55 @@ def validate_required_layout(validation: Validation) -> None:
     for provider in ("codex", "claude", "gemini", "deepseek", "qwen"):
         if not (AI_ROOT / "provider-notes" / f"{provider}.md").is_file():
             validation.error(f"Missing provider note: {provider}.md")
+
+
+def validate_provider_notes(validation: Validation) -> None:
+    expected_keys = {
+        "provider_id",
+        "provider_name",
+        "note_mode",
+        "supported_context_entry_points",
+        "output_result_boundary",
+        "secret_handling",
+        "customer_data_handling",
+        "route_status",
+        "unsupported_invocation",
+        "active_behavior_owners",
+        "approved_credential",
+        "model_alias_selection",
+        "retention_promise",
+        "numeric_budget",
+        "smoke_test_claim",
+        "reserved_root_file",
+        "reserved_root_file_status",
+    }
+    for provider_id, identity in PROVIDER_NOTE_IDENTITIES.items():
+        path = AI_ROOT / "provider-notes" / f"{provider_id}.md"
+        if not path.is_file():
+            continue
+        metadata = validation.frontmatter(path)
+        if set(metadata) != expected_keys:
+            validation.error(f"Provider note {provider_id} metadata keys mismatch")
+        if metadata.get("provider_id") != provider_id:
+            validation.error(f"Provider note {provider_id} provider_id mismatch")
+        for field, expected in identity.items():
+            if metadata.get(field) != expected:
+                validation.error(f"Provider note {provider_id} field {field} must be {expected}")
+        for field, expected in PROVIDER_NOTE_STATIC_FIELDS.items():
+            if metadata.get(field) != expected:
+                validation.error(f"Provider note {provider_id} field {field} must be {expected}")
+        if metadata.get("active_behavior_owners") != PROVIDER_NOTE_ACTIVE_BEHAVIOR_OWNERS:
+            validation.error(f"Provider note {provider_id} active behavior owners mismatch")
+
+        text = path.read_text(encoding="utf-8-sig")
+        for heading in PROVIDER_NOTE_REQUIRED_HEADINGS:
+            if heading not in text:
+                validation.error(f"Provider note {provider_id} is missing section {heading}")
+        body_parts = text.split("---", 2)
+        body = body_parts[2] if len(body_parts) == 3 else text
+        for claim, pattern in PROVIDER_NOTE_FORBIDDEN_BODY_PATTERNS:
+            if pattern.search(body):
+                validation.error(f"Provider note {provider_id} contains forbidden {claim}")
 
 
 def validate_parse_all(validation: Validation) -> None:
@@ -531,13 +696,223 @@ def validate_provider_routes_fail_closed(validation: Validation, role_ids: set[s
             validation.error(f"Provider review document is missing: {review.get('document')}")
 
 
+def validate_i015_contract_header(
+    validation: Validation,
+    instance: Any,
+    expected_type: str,
+    context: str,
+) -> bool:
+    if not isinstance(instance, dict):
+        validation.error(f"I015 contract {context} is not an object")
+        return False
+    contract_type = instance.get("contract_type")
+    if contract_type != expected_type:
+        validation.error(
+            f"I015 contract {context} contract_type must be {expected_type}; no discriminator fallback is permitted"
+        )
+        return False
+    contract_version = instance.get("contract_version")
+    if not isinstance(contract_version, str) or not I015_VERSION_PATTERN.fullmatch(contract_version):
+        validation.error(
+            f"I015 contract {context} has missing or malformed top-level contract_version; no fallback is permitted"
+        )
+        return False
+    if contract_version != "1.0.0":
+        validation.error(
+            f"I015 contract {context} uses unsupported contract_version {contract_version}; no fallback is permitted"
+        )
+        return False
+    return True
+
+
+def validate_i015_extension_registry(validation: Validation) -> None:
+    path = AI_ROOT / "schemas" / "extensions" / "registry.yaml"
+    registry = validation.load_yaml(path)
+    if registry != I015_EMPTY_EXTENSION_REGISTRY:
+        validation.error(
+            "I015 extension registry must remain the exact empty governed registry; no extension name is selected"
+        )
+
+
+def i015_path_rules_may_overlap(first: str, second: str) -> bool:
+    """Conservatively identify literal or unresolved glob-rule overlap."""
+    if first == second:
+        return True
+    first_match = I015_GLOB_MAGIC_PATTERN.search(first)
+    second_match = I015_GLOB_MAGIC_PATTERN.search(second)
+    if first_match is None:
+        return fnmatchcase(first, second)
+    if second_match is None:
+        return fnmatchcase(second, first)
+    first_prefix = first[: first_match.start()]
+    second_prefix = second[: second_match.start()]
+    return first_prefix.startswith(second_prefix) or second_prefix.startswith(first_prefix)
+
+
+def validate_i015_contract_suite(validation: Validation) -> None:
+    instances: dict[str, dict[str, Any]] = {}
+    for contract_type, (example_name, _) in I015_CONTRACT_EXAMPLES.items():
+        instance = validation.load_yaml(AI_ROOT / "examples" / example_name)
+        if validate_i015_contract_header(validation, instance, contract_type, example_name):
+            instances[contract_type] = instance
+    if set(instances) != set(I015_CONTRACT_EXAMPLES):
+        return
+
+    mission = instances["mission"]
+    task = instances["task"]
+    result = instances["result"]
+    review = instances["review"]
+    integration = instances["integration"]
+    handoff = instances["handoff"]
+
+    if task.get("mission_id") != mission.get("id"):
+        validation.error("I015 FO-A contradiction: task mission_id must equal mission id")
+    if integration.get("mission_id") != mission.get("id"):
+        validation.error("I015 FO-A contradiction: integration mission_id must equal mission id")
+    if handoff.get("mission_id") != mission.get("id"):
+        validation.error("I015 FO-A contradiction: handoff mission_id must equal mission id")
+    if result.get("task_id") != task.get("id"):
+        validation.error("I015 FO-A contradiction: result task_id must equal task id")
+    if review.get("task_id") != task.get("id"):
+        validation.error("I015 FO-A contradiction: review task_id must equal task id")
+
+    base_commit = mission.get("base_commit")
+    if result.get("git", {}).get("base_commit") != base_commit:
+        validation.error("I015 FO-A contradiction: result base_commit must equal mission base_commit")
+    if integration.get("base_commit") != base_commit:
+        validation.error("I015 FO-A contradiction: integration base_commit must equal mission base_commit")
+    if mission.get("integration_branch") and integration.get("integration_branch") != mission.get("integration_branch"):
+        validation.error("I015 FO-A contradiction: integration branch must equal mission integration_branch")
+
+    allowed_paths = task.get("allowed_paths", [])
+    forbidden_paths = task.get("forbidden_paths", [])
+    overlapping_rules = sorted(
+        (allowed_rule, forbidden_rule)
+        for allowed_rule in allowed_paths
+        for forbidden_rule in forbidden_paths
+        if i015_path_rules_may_overlap(allowed_rule, forbidden_rule)
+    )
+    if overlapping_rules:
+        validation.error(f"I015 task allowed/forbidden path rules overlap or cannot be proven disjoint: {overlapping_rules}")
+    for changed_path in result.get("changes", []):
+        if not any(fnmatchcase(changed_path, rule) for rule in allowed_paths):
+            validation.error(f"I015 result change is outside task allowed_paths: {changed_path}")
+        if any(fnmatchcase(changed_path, rule) for rule in forbidden_paths):
+            validation.error(f"I015 result change matches task forbidden_paths: {changed_path}")
+
+    required_checks = set(task.get("required_checks", []))
+    result_executions = result.get("tests", {}).get("executions", [])
+    result_check_items = [item for item in result_executions if isinstance(item, dict)]
+    result_check_ids = [item.get("id") for item in result_check_items]
+    result_checks = set(result_check_ids)
+    if len(result_check_ids) != len(result_checks):
+        validation.error("I015 result execution ids must be unique")
+    if not required_checks.issubset(result_checks):
+        validation.error("I015 FO-A contradiction: result tests do not represent every task required_check")
+    if result.get("tests", {}).get("overall") == "PASS" and any(
+        item.get("outcome") != "PASS" for item in result_check_items
+    ):
+        validation.error("I015 result tests overall PASS cannot include a non-PASS execution")
+
+    material_write = result.get("material_write")
+    result_commit = result.get("git", {}).get("result_commit")
+    no_commit_reason = result.get("git", {}).get("no_commit_reason")
+    included_commits = integration.get("included_commits", [])
+    if material_write is True and result_commit == result.get("git", {}).get("base_commit"):
+        validation.error("I015 RC-B material result_commit must differ from result base_commit")
+    expected_commits = {result_commit} if material_write is True and result_commit else set()
+    if set(included_commits) != expected_commits or len(included_commits) != len(expected_commits):
+        validation.error("I015 integration included commits must equal evidenced material result commits")
+    if material_write is False:
+        status = result.get("status")
+        mode = task.get("mode")
+        if status == "BLOCKED":
+            expected_reason = "BLOCKED_BEFORE_MATERIAL_WRITE"
+        elif status == "FAILED":
+            expected_reason = "FAILED_BEFORE_MATERIAL_WRITE"
+        elif mode == "READ_ONLY":
+            expected_reason = "READ_ONLY_TASK"
+        elif mode == "TEST_ONLY":
+            expected_reason = "TEST_ONLY_NO_MATERIAL_WRITE"
+        else:
+            expected_reason = "NO_CHANGE_REQUIRED"
+        if no_commit_reason != expected_reason:
+            validation.error("I015 RC-B no_commit_reason contradicts task mode or result status")
+
+    finding_ids = [item.get("id") for item in review.get("findings", []) if isinstance(item, dict)]
+    if len(finding_ids) != len(set(finding_ids)):
+        validation.error("I015 review finding ids must be unique")
+    unknown_open_findings = sorted(set(integration.get("open_findings", [])) - set(finding_ids))
+    if unknown_open_findings:
+        validation.error(f"I015 integration references unknown review findings: {unknown_open_findings}")
+    blocking_findings = {
+        item.get("id")
+        for item in review.get("findings", [])
+        if isinstance(item, dict) and item.get("severity") in {"HIGH", "CRITICAL"}
+    }
+    open_findings = set(integration.get("open_findings", []))
+    omitted_blocking_findings = sorted(blocking_findings - open_findings)
+    if omitted_blocking_findings:
+        validation.error(
+            f"I015 integration omits unresolved blocking review findings: {omitted_blocking_findings}"
+        )
+
+    integration_checks = integration.get("checks", [])
+    integration_check_items = [item for item in integration_checks if isinstance(item, dict)]
+    integration_check_ids_list = [item.get("id") for item in integration_check_items]
+    integration_check_ids = set(integration_check_ids_list)
+    if len(integration_check_ids_list) != len(integration_check_ids):
+        validation.error("I015 integration check ids must be unique")
+    if not required_checks.issubset(integration_check_ids):
+        validation.error("I015 FO-A contradiction: integration checks omit a task required_check")
+    if integration.get("ready_for_human") is True:
+        if result.get("status") != "SUBMITTED":
+            validation.error("I015 integration cannot be ready when result status is not SUBMITTED")
+        if result.get("tests", {}).get("overall") != "PASS":
+            validation.error("I015 integration cannot be ready unless result tests overall is PASS")
+        if review.get("verdict") != "APPROVED":
+            validation.error("I015 integration cannot be ready unless review verdict is APPROVED")
+        if any(item.get("outcome") != "PASS" for item in integration_check_items):
+            validation.error("I015 integration cannot be ready with a non-PASS check")
+        if blocking_findings & open_findings:
+            validation.error("I015 integration cannot be ready with an unresolved blocking finding")
+        result_by_id = {item.get("id"): item for item in result_check_items}
+        integration_by_id = {item.get("id"): item for item in integration_check_items}
+        for check_id in sorted(required_checks):
+            result_check = result_by_id.get(check_id)
+            integration_check = integration_by_id.get(check_id)
+            if not result_check or result_check.get("outcome") != "PASS" or not isinstance(result_check.get("exit_code"), int):
+                validation.error(
+                    f"I015 integration cannot be ready without PASS result evidence for required check {check_id}"
+                )
+                continue
+            if not integration_check:
+                continue
+            if (
+                integration_check.get("command") != result_check.get("command")
+                or set(integration_check.get("evidence", [])) != set(result_check.get("evidence", []))
+            ):
+                validation.error(
+                    f"I015 integration check evidence must match result evidence for required check {check_id}"
+                )
+
+    decision_refs = set(mission.get("human_decisions", [])) | set(result.get("decisions_needed", []))
+    unknown_handoff_decisions = sorted(set(handoff.get("human_decisions", [])) - decision_refs)
+    if unknown_handoff_decisions:
+        validation.error(f"I015 handoff references unknown human decisions: {unknown_handoff_decisions}")
+
+
 def validate_examples(validation: Validation) -> None:
     mappings = {
         "agent-assignment.example.yaml": "agent-assignment.schema.json",
         "provider-data-policy-review.example.yaml": "provider-data-policy-review.schema.json",
         "provider-route-intake.example.yaml": "ai-service-route-registry.schema.json",
+        "mission.example.yaml": "mission.schema.json",
         "result-contract.example.yaml": "result.schema.json",
         "task-packet.example.yaml": "task.schema.json",
+        "review.example.yaml": "review.schema.json",
+        "integration.example.yaml": "integration.schema.json",
+        "handoff.example.yaml": "handoff.schema.json",
         "agent-session.example.yaml": "agent-session.schema.json",
         "write-lease.example.yaml": "write-lease.schema.json",
         "evidence-record.example.yaml": "evidence-record.schema.json",
@@ -548,6 +923,16 @@ def validate_examples(validation: Validation) -> None:
         instance = validation.load_yaml(AI_ROOT / "examples" / example_name)
         schema = validation.load_json(AI_ROOT / "schemas" / schema_name)
         if instance is None or schema is None:
+            continue
+        expected_type = next(
+            (
+                contract_type
+                for contract_type, (contract_example, _) in I015_CONTRACT_EXAMPLES.items()
+                if contract_example == example_name
+            ),
+            None,
+        )
+        if expected_type and not validate_i015_contract_header(validation, instance, expected_type, example_name):
             continue
         validator = Draft202012Validator(schema, format_checker=FormatChecker())
         for error in sorted(validator.iter_errors(instance), key=lambda item: list(item.path)):
@@ -575,6 +960,7 @@ def main() -> int:
         return 1
 
     validate_required_layout(validation)
+    validate_provider_notes(validation)
     validate_parse_all(validation)
     validate_local_markdown_links(validation)
     validate_json_schemas(validation)
@@ -585,7 +971,9 @@ def main() -> int:
     validate_github_authority(validation)
     validate_repository_workflow(validation)
     validate_provider_routes_fail_closed(validation, role_ids)
+    validate_i015_extension_registry(validation)
     validate_examples(validation)
+    validate_i015_contract_suite(validation)
     validate_readiness_and_runbooks(validation)
 
     if validation.errors:

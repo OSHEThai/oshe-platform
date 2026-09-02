@@ -1,25 +1,30 @@
-task_id: V010-I016/skill-catalog
+contract_type: result
+contract_version: "1.0.0"
+task_id: V010-I015/contract-suite
 status: SUBMITTED
+material_write: false
 agent:
-  provider: exact-approved-route-required
-  model: exact-qualified-model-required
-  role_version: documentation-configuration-agent@1.0.0
+  provider: static-example-no-route
+  model: static-example-no-model-authority
+  role_version: architecture-agent@1.0.0
   skills:
-  - docs-from-diff@0.1.0
   - schema-contract-validation@0.1.0
-  assignment_id: ASN-V010-EXAMPLE-001
 git:
-  base_commit: abc123
-  branch: docs/v010-i016-skill-catalog
-  result_commit: def456
-changes:
-- .ai/skill-registry.yaml
+  base_commit: 4a4e0bd0def63f442a2f892b56fdac1792d0034f
+  branch: content/v010-i015-contract-suite
+  no_commit_reason: NO_CHANGE_REQUIRED
+changes: []
 commands_run:
-- python .ai/tools/validate_agent_os.py
+- python -B .ai/tools/validate_agent_os.py
 tests:
-  passed: 1
-  failed: 0
-  evidence_class: STATIC
+  overall: PASS
+  executions:
+  - id: schema-validation
+    command: python -B .ai/tools/validate_agent_os.py
+    outcome: PASS
+    exit_code: 0
+    evidence:
+    - EVD-SYNTHETIC-I015-SCHEMA-001
 assumptions: []
 risks: []
 decisions_needed: []

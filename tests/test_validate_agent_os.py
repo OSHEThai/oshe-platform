@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import shutil
@@ -11,12 +12,31 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
+from jsonschema import Draft202012Validator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+I015_CONTRACT_FILES = {
+    "mission": ("mission.schema.json", "mission.example.yaml"),
+    "task": ("task.schema.json", "task-packet.example.yaml"),
+    "result": ("result.schema.json", "result-contract.example.yaml"),
+    "review": ("review.schema.json", "review.example.yaml"),
+    "integration": ("integration.schema.json", "integration.example.yaml"),
+    "handoff": ("handoff.schema.json", "handoff.example.yaml"),
+}
+
 
 class AgentOsValidatorTests(unittest.TestCase):
+    def load_i015_contract(self, root: Path, contract_type: str) -> tuple[dict[str, object], dict[str, object]]:
+        schema_name, example_name = I015_CONTRACT_FILES[contract_type]
+        schema = json.loads((root / ".ai" / "schemas" / schema_name).read_text(encoding="utf-8"))
+        instance = yaml.safe_load((root / ".ai" / "examples" / example_name).read_text(encoding="utf-8"))
+        return schema, instance
+
+    def i015_schema_errors(self, schema: dict[str, object], instance: dict[str, object]) -> list[str]:
+        return [error.message for error in Draft202012Validator(schema).iter_errors(instance)]
+
     def make_fixture(self, destination: Path) -> None:
         shutil.copytree(REPO_ROOT / ".ai", destination / ".ai")
         for name in ("AGENTS.md", "CLAUDE.md", "GEMINI.md", "QWEN.md"):
@@ -206,6 +226,502 @@ class AgentOsValidatorTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("provider_routes_enabled=0", result.stdout)
+
+    def test_static_provider_note_set_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            result = self.run_validator(root)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("Provider note", result.stdout)
+
+    def test_provider_notes_reject_missing_required_statements(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            codex_path = root / ".ai" / "provider-notes" / "codex.md"
+            codex_text = codex_path.read_text(encoding="utf-8")
+            codex_path.write_text(
+                codex_text.replace('unsupported_invocation: "FAIL_CLOSED_NO_DISPATCH"\n', "", 1),
+                encoding="utf-8",
+            )
+            qwen_path = root / ".ai" / "provider-notes" / "qwen.md"
+            qwen_text = qwen_path.read_text(encoding="utf-8")
+            qwen_path.write_text(
+                qwen_text.replace("## Output and data boundary", "## Removed section", 1),
+                encoding="utf-8",
+            )
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Provider note codex metadata keys mismatch", result.stdout)
+        self.assertIn("Provider note codex field unsupported_invocation", result.stdout)
+        self.assertIn("Provider note qwen is missing section ## Output and data boundary", result.stdout)
+
+    def test_provider_notes_reject_forbidden_frontmatter_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            claude_path = root / ".ai" / "provider-notes" / "claude.md"
+            claude_text = claude_path.read_text(encoding="utf-8")
+            claude_text = claude_text.replace(
+                'route_status: "DEFAULT_DENY_NO_APPROVED_ROUTE"',
+                'route_status: "ACTIVE"',
+                1,
+            ).replace(
+                'model_alias_selection: "NONE"',
+                'model_alias_selection: "latest"',
+                1,
+            )
+            claude_path.write_text(claude_text, encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Provider note claude field route_status must be DEFAULT_DENY_NO_APPROVED_ROUTE", result.stdout)
+        self.assertIn("Provider note claude field model_alias_selection must be NONE", result.stdout)
+
+    def test_provider_notes_reject_forbidden_body_claims(self) -> None:
+        cases = (
+            ("route_dispatch", "Dispatch: enabled", "active route or dispatch claim"),
+            ("adapter_runtime", "Adapter runtime: enabled", "adapter or runtime activation claim"),
+            ("credential", "Approved credential: provider-production", "approved credential claim"),
+            ("model_alias", "Model alias: latest", "selected model alias claim"),
+            ("retention", "Retention: 30 days", "retention promise claim"),
+            ("numeric_budget", "Numeric budget: 4096", "numeric budget claim"),
+            ("smoke_test", "Smoke test: PASSED", "smoke-test claim"),
+        )
+        for case_name, body_claim, expected_claim in cases:
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                note_path = root / ".ai" / "provider-notes" / "codex.md"
+                with note_path.open("a", encoding="utf-8") as stream:
+                    stream.write(f"\n{body_claim}\n")
+                result = self.run_validator(root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"Provider note codex contains forbidden {expected_claim}", result.stdout)
+
+    def test_i015_selected_contract_examples_pass(self) -> None:
+        for contract_type in I015_CONTRACT_FILES:
+            with self.subTest(contract_type=contract_type):
+                schema, instance = self.load_i015_contract(REPO_ROOT, contract_type)
+                self.assertEqual(self.i015_schema_errors(schema, instance), [])
+
+        registry = yaml.safe_load(
+            (REPO_ROOT / ".ai" / "schemas" / "extensions" / "registry.yaml").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            registry,
+            {
+                "schema_version": "1.0.0",
+                "registry_status": "EMPTY_NO_REGISTERED_EXTENSIONS",
+                "registered_extensions": [],
+            },
+        )
+
+    def test_i015_version_hard_cutover_has_no_fallback(self) -> None:
+        invalid_versions: tuple[object, ...] = (
+            None,
+            1,
+            "v1.0.0",
+            "1",
+            "1.0",
+            "01.0.0",
+            "1.0.0-alpha",
+            "1.0.0+build",
+            " 1.0.0 ",
+            "0.9.0",
+            "2.0.0",
+        )
+        for contract_type in I015_CONTRACT_FILES:
+            schema, valid = self.load_i015_contract(REPO_ROOT, contract_type)
+            missing = copy.deepcopy(valid)
+            missing.pop("contract_version")
+            with self.subTest(contract_type=contract_type, version="missing"):
+                self.assertTrue(self.i015_schema_errors(schema, missing))
+            for invalid_version in invalid_versions:
+                candidate = copy.deepcopy(valid)
+                candidate["contract_version"] = invalid_version
+                with self.subTest(contract_type=contract_type, version=invalid_version):
+                    self.assertTrue(self.i015_schema_errors(schema, candidate))
+            wrong_type = copy.deepcopy(valid)
+            wrong_type["contract_type"] = "result" if contract_type != "result" else "task"
+            with self.subTest(contract_type=contract_type, discriminator="wrong"):
+                self.assertTrue(self.i015_schema_errors(schema, wrong_type))
+            external_fallback = copy.deepcopy(valid)
+            external_fallback.pop("contract_version")
+            external_fallback["metadata"] = {"contract_version": "1.0.0"}
+            with self.subTest(contract_type=contract_type, version="external-fallback"):
+                self.assertTrue(self.i015_schema_errors(schema, external_fallback))
+
+    def test_i015_required_fields_and_closed_objects_fail_closed(self) -> None:
+        for contract_type in I015_CONTRACT_FILES:
+            schema, valid = self.load_i015_contract(REPO_ROOT, contract_type)
+            for field in schema["required"]:
+                candidate = copy.deepcopy(valid)
+                candidate.pop(field)
+                with self.subTest(contract_type=contract_type, missing=field):
+                    self.assertTrue(self.i015_schema_errors(schema, candidate))
+            unknown = copy.deepcopy(valid)
+            unknown["unknown_core_field"] = True
+            with self.subTest(contract_type=contract_type, unknown="top-level"):
+                self.assertTrue(self.i015_schema_errors(schema, unknown))
+            empty_extensions = copy.deepcopy(valid)
+            empty_extensions["extensions"] = {}
+            with self.subTest(contract_type=contract_type, extensions="empty"):
+                self.assertEqual(self.i015_schema_errors(schema, empty_extensions), [])
+            unregistered_extension = copy.deepcopy(valid)
+            unregistered_extension["extensions"] = {"org.oshethai.unselected": {}}
+            with self.subTest(contract_type=contract_type, extensions="unregistered"):
+                self.assertTrue(self.i015_schema_errors(schema, unregistered_extension))
+
+        result_schema, result = self.load_i015_contract(REPO_ROOT, "result")
+        for object_path in (("agent",), ("git",), ("tests",), ("tests", "executions", 0)):
+            candidate = copy.deepcopy(result)
+            target: object = candidate
+            for part in object_path:
+                target = target[part]  # type: ignore[index]
+            target["unknown_nested_field"] = True  # type: ignore[index]
+            with self.subTest(contract_type="result", unknown=object_path):
+                self.assertTrue(self.i015_schema_errors(result_schema, candidate))
+
+        review_schema, review = self.load_i015_contract(REPO_ROOT, "review")
+        review_with_finding = copy.deepcopy(review)
+        review_with_finding["verdict"] = "CHANGES_REQUIRED"
+        review_with_finding["findings"] = [
+            {
+                "id": "FINDING-001",
+                "severity": "MEDIUM",
+                "category": "SCHEMA",
+                "issue": "Synthetic finding.",
+                "required_fix": "Correct the synthetic instance.",
+            }
+        ]
+        self.assertEqual(self.i015_schema_errors(review_schema, review_with_finding), [])
+        for object_path in (("reviewer",), ("findings", 0)):
+            candidate = copy.deepcopy(review_with_finding)
+            target = candidate
+            for part in object_path:
+                target = target[part]  # type: ignore[index]
+            target["unknown_nested_field"] = True  # type: ignore[index]
+            with self.subTest(contract_type="review", unknown=object_path):
+                self.assertTrue(self.i015_schema_errors(review_schema, candidate))
+
+        integration_schema, integration = self.load_i015_contract(REPO_ROOT, "integration")
+        integration["checks"][0]["unknown_nested_field"] = True
+        self.assertTrue(self.i015_schema_errors(integration_schema, integration))
+
+    def test_i015_scalar_array_and_path_constraints_fail_closed(self) -> None:
+        cases = (
+            ("mission", ("title",), ""),
+            ("mission", ("non_goals",), []),
+            ("mission", ("human_decisions",), ["DUPLICATE", "DUPLICATE"]),
+            ("task", ("allowed_paths",), ["../escape"]),
+            ("task", ("forbidden_paths",), ["windows\\path"]),
+            ("task", ("required_checks",), []),
+            ("result", ("changes",), ["../escape"]),
+            ("result", ("git", "base_commit"), "abc123"),
+            ("review", ("reviewer", "actor_id"), ""),
+            ("integration", ("included_commits",), ["abc123"]),
+            ("handoff", ("summary",), ""),
+            ("handoff", ("evidence",), ["DUPLICATE", "DUPLICATE"]),
+        )
+        for contract_type, object_path, value in cases:
+            schema, valid = self.load_i015_contract(REPO_ROOT, contract_type)
+            candidate = copy.deepcopy(valid)
+            target = candidate
+            for part in object_path[:-1]:
+                target = target[part]  # type: ignore[index]
+            target[object_path[-1]] = value  # type: ignore[index]
+            with self.subTest(contract_type=contract_type, field=object_path):
+                self.assertTrue(self.i015_schema_errors(schema, candidate))
+
+    def test_i015_rcb_material_write_and_typed_no_commit_matrix(self) -> None:
+        schema, selected_no_write = self.load_i015_contract(REPO_ROOT, "result")
+        self.assertEqual(self.i015_schema_errors(schema, selected_no_write), [])
+
+        material = copy.deepcopy(selected_no_write)
+        material["material_write"] = True
+        material["changes"] = [".ai/schemas/mission.schema.json"]
+        material["git"].pop("no_commit_reason")
+        material["git"]["result_commit"] = "23456789abcdef0123456789abcdef0123456789"
+        self.assertEqual(self.i015_schema_errors(schema, material), [])
+
+        invalid_material_cases = {
+            "missing-result-commit": lambda value: value["git"].pop("result_commit"),
+            "commit-plus-reason": lambda value: value["git"].update({"no_commit_reason": "NO_CHANGE_REQUIRED"}),
+            "empty-changes": lambda value: value.update({"changes": []}),
+            "abbreviated-commit": lambda value: value["git"].update({"result_commit": "abc123"}),
+            "all-zero-placeholder": lambda value: value["git"].update({"result_commit": "0" * 40}),
+            "all-one-placeholder": lambda value: value["git"].update({"result_commit": "1" * 40}),
+        }
+        for case_name, mutate in invalid_material_cases.items():
+            candidate = copy.deepcopy(material)
+            mutate(candidate)
+            with self.subTest(material_write=True, case=case_name):
+                self.assertTrue(self.i015_schema_errors(schema, candidate))
+
+        valid_no_commit_cases = (
+            ("SUBMITTED", "READ_ONLY_TASK"),
+            ("BLOCKED", "BLOCKED_BEFORE_MATERIAL_WRITE"),
+            ("FAILED", "FAILED_BEFORE_MATERIAL_WRITE"),
+            ("SUBMITTED", "TEST_ONLY_NO_MATERIAL_WRITE"),
+            ("SUBMITTED", "NO_CHANGE_REQUIRED"),
+        )
+        for status, reason in valid_no_commit_cases:
+            candidate = copy.deepcopy(selected_no_write)
+            candidate["status"] = status
+            candidate["git"]["no_commit_reason"] = reason
+            with self.subTest(material_write=False, reason=reason):
+                self.assertEqual(self.i015_schema_errors(schema, candidate), [])
+
+        invalid_no_commit = copy.deepcopy(selected_no_write)
+        invalid_no_commit["git"]["no_commit_reason"] = "BLOCKED_BEFORE_MATERIAL_WRITE"
+        self.assertTrue(self.i015_schema_errors(schema, invalid_no_commit))
+        invalid_no_commit["status"] = "BLOCKED"
+        invalid_no_commit["changes"] = [".ai/schemas/mission.schema.json"]
+        self.assertTrue(self.i015_schema_errors(schema, invalid_no_commit))
+
+    def test_i015_review_and_integration_readiness_fail_closed(self) -> None:
+        review_schema, review = self.load_i015_contract(REPO_ROOT, "review")
+        high_finding = {
+            "id": "FINDING-HIGH-001",
+            "severity": "HIGH",
+            "category": "SECURITY",
+            "issue": "Synthetic blocking finding.",
+            "required_fix": "Resolve before readiness.",
+        }
+        approved_with_high = copy.deepcopy(review)
+        approved_with_high["findings"] = [high_finding]
+        self.assertTrue(self.i015_schema_errors(review_schema, approved_with_high))
+        changes_without_finding = copy.deepcopy(review)
+        changes_without_finding["verdict"] = "CHANGES_REQUIRED"
+        self.assertTrue(self.i015_schema_errors(review_schema, changes_without_finding))
+
+        integration_schema, integration = self.load_i015_contract(REPO_ROOT, "integration")
+        for outcome in ("FAIL", "SKIPPED", "INCONCLUSIVE"):
+            candidate = copy.deepcopy(integration)
+            candidate["checks"][0]["outcome"] = outcome
+            with self.subTest(ready_for_human=True, outcome=outcome):
+                self.assertTrue(self.i015_schema_errors(integration_schema, candidate))
+
+    def test_i015_foa_cross_contract_contradictions_fail_closed(self) -> None:
+        cases = (
+            ("task-mission", "task-packet.example.yaml", ("mission_id",), "OTHER", "task mission_id"),
+            (
+                "result-base",
+                "result-contract.example.yaml",
+                ("git", "base_commit"),
+                "2222222222222222222222222222222222222222",
+                "result base_commit",
+            ),
+            (
+                "outside-path",
+                "result-contract.example.yaml",
+                ("changes",),
+                ["docs/outside.md"],
+                "outside task allowed_paths",
+            ),
+            (
+                "forbidden-path",
+                "task-packet.example.yaml",
+                ("forbidden_paths",),
+                [".ai/schemas/**"],
+                "path rules overlap or cannot be proven disjoint",
+            ),
+            (
+                "missing-result-check",
+                "result-contract.example.yaml",
+                ("tests",),
+                {"overall": "NOT_RUN", "executions": []},
+                "result tests do not represent every task required_check",
+            ),
+            (
+                "fabricated-integration-commit",
+                "integration.example.yaml",
+                ("included_commits",),
+                ["2222222222222222222222222222222222222222"],
+                "included commits must equal evidenced material result commits",
+            ),
+            (
+                "missing-integration-check",
+                "integration.example.yaml",
+                ("checks", 0, "id"),
+                "other-check",
+                "integration checks omit a task required_check",
+            ),
+            (
+                "unknown-handoff-decision",
+                "handoff.example.yaml",
+                ("human_decisions",),
+                ["HDEC-UNKNOWN"],
+                "handoff references unknown human decisions",
+            ),
+            (
+                "non-submitted-ready",
+                "result-contract.example.yaml",
+                ("status",),
+                "BLOCKED",
+                "integration cannot be ready when result status is not SUBMITTED",
+            ),
+            (
+                "unknown-open-finding",
+                "integration.example.yaml",
+                ("open_findings",),
+                ["FINDING-UNKNOWN"],
+                "integration references unknown review findings",
+            ),
+        )
+        for case_name, example_name, object_path, value, expected_error in cases:
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                example_path = root / ".ai" / "examples" / example_name
+                instance = yaml.safe_load(example_path.read_text(encoding="utf-8"))
+                target = instance
+                for part in object_path[:-1]:
+                    target = target[part]  # type: ignore[index]
+                target[object_path[-1]] = value  # type: ignore[index]
+                example_path.write_text(yaml.safe_dump(instance, sort_keys=False), encoding="utf-8")
+                result = self.run_validator(root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stdout)
+
+    def test_i015_security_remediation_negatives_fail_closed(self) -> None:
+        result_schema, selected_no_write = self.load_i015_contract(REPO_ROOT, "result")
+        integration_schema, integration = self.load_i015_contract(REPO_ROOT, "integration")
+        for placeholder in ("0" * 40, "0" * 64):
+            result_candidate = copy.deepcopy(selected_no_write)
+            result_candidate["material_write"] = True
+            result_candidate["changes"] = [".ai/schemas/mission.schema.json"]
+            result_candidate["git"].pop("no_commit_reason")
+            result_candidate["git"]["result_commit"] = placeholder
+            with self.subTest(finding="SEC-I015-003", schema="result", placeholder=len(placeholder)):
+                self.assertTrue(self.i015_schema_errors(result_schema, result_candidate))
+
+            integration_candidate = copy.deepcopy(integration)
+            integration_candidate["included_commits"] = [placeholder]
+            with self.subTest(finding="SEC-I015-003", schema="integration", placeholder=len(placeholder)):
+                self.assertTrue(self.i015_schema_errors(integration_schema, integration_candidate))
+
+        fixture_cases = (
+            (
+                "SEC-I015-003-R1-base-commit-substitution",
+                {
+                    "result-contract.example.yaml": {
+                        "material_write": True,
+                        "changes": [".ai/schemas/mission.schema.json"],
+                        "git": {
+                            "base_commit": "4a4e0bd0def63f442a2f892b56fdac1792d0034f",
+                            "branch": "content/v010-i015-contract-suite",
+                            "result_commit": "4a4e0bd0def63f442a2f892b56fdac1792d0034f",
+                        },
+                    },
+                    "integration.example.yaml": {
+                        "included_commits": ["4a4e0bd0def63f442a2f892b56fdac1792d0034f"]
+                    },
+                },
+                "material result_commit must differ from result base_commit",
+            ),
+            (
+                "SEC-I015-002-omitted-blocking-review-finding",
+                {
+                    "review.example.yaml": {
+                        "verdict": "CHANGES_REQUIRED",
+                        "findings": [
+                            {
+                                "id": "FINDING-HIGH-001",
+                                "severity": "HIGH",
+                                "category": "SECURITY",
+                                "issue": "Synthetic blocking finding.",
+                                "required_fix": "Resolve before readiness.",
+                            }
+                        ],
+                    }
+                },
+                "omits unresolved blocking review findings",
+            ),
+            (
+                "SEC-I015-003-extra-fabricated-commit",
+                {
+                    "result-contract.example.yaml": {
+                        "material_write": True,
+                        "changes": [".ai/schemas/mission.schema.json"],
+                        "git": {
+                            "base_commit": "4a4e0bd0def63f442a2f892b56fdac1792d0034f",
+                            "branch": "content/v010-i015-contract-suite",
+                            "result_commit": "23456789abcdef0123456789abcdef0123456789",
+                        },
+                    },
+                    "integration.example.yaml": {
+                        "included_commits": [
+                            "23456789abcdef0123456789abcdef0123456789",
+                            "3456789abcdef0123456789abcdef0123456789a",
+                        ]
+                    },
+                },
+                "included commits must equal evidenced material result commits",
+            ),
+            (
+                "SEC-I015-005-nonliteral-overlap",
+                {
+                    "task-packet.example.yaml": {
+                        "allowed_paths": [".ai/schemas/**", ".ai/examples/**"],
+                        "forbidden_paths": [".ai/schemas/private/**"],
+                    }
+                },
+                "path rules overlap or cannot be proven disjoint",
+            ),
+        )
+        for case_name, file_updates, expected_error in fixture_cases:
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                for example_name, updates in file_updates.items():
+                    example_path = root / ".ai" / "examples" / example_name
+                    instance = yaml.safe_load(example_path.read_text(encoding="utf-8"))
+                    instance.update(updates)
+                    example_path.write_text(yaml.safe_dump(instance, sort_keys=False), encoding="utf-8")
+                result = self.run_validator(root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stdout)
+
+        for outcome in ("FAIL", "SKIPPED", "INCONCLUSIVE"):
+            with self.subTest(finding="SEC-I015-001", result_outcome=outcome), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                result_path = root / ".ai" / "examples" / "result-contract.example.yaml"
+                result_instance = yaml.safe_load(result_path.read_text(encoding="utf-8"))
+                result_instance["tests"]["overall"] = "FAIL" if outcome == "FAIL" else "INCONCLUSIVE"
+                result_instance["tests"]["executions"][0]["outcome"] = outcome
+                result_instance["tests"]["executions"][0]["exit_code"] = 1 if outcome == "FAIL" else None
+                result_path.write_text(yaml.safe_dump(result_instance, sort_keys=False), encoding="utf-8")
+                validation_result = self.run_validator(root)
+
+                self.assertNotEqual(validation_result.returncode, 0)
+                self.assertIn("cannot be ready unless result tests overall is PASS", validation_result.stdout)
+                self.assertIn("cannot be ready without PASS result evidence", validation_result.stdout)
+
+        for mode, expected_reason in (
+            ("READ_ONLY", "READ_ONLY_TASK"),
+            ("TEST_ONLY", "TEST_ONLY_NO_MATERIAL_WRITE"),
+        ):
+            with self.subTest(finding="SEC-I015-004", mode=mode), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.make_fixture(root)
+                task_path = root / ".ai" / "examples" / "task-packet.example.yaml"
+                task_instance = yaml.safe_load(task_path.read_text(encoding="utf-8"))
+                task_instance["mode"] = mode
+                task_path.write_text(yaml.safe_dump(task_instance, sort_keys=False), encoding="utf-8")
+                validation_result = self.run_validator(root)
+
+                self.assertNotEqual(validation_result.returncode, 0)
+                self.assertIn("no_commit_reason contradicts task mode or result status", validation_result.stdout)
+                self.assertNotEqual(selected_no_write["git"]["no_commit_reason"], expected_reason)
 
     def test_validator_requires_exact_repository_delete_prohibition(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

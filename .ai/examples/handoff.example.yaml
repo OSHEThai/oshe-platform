@@ -1,0 +1,14 @@
+contract_type: handoff
+contract_version: "1.0.0"
+mission_id: V010-T04
+summary: Synthetic handoff for the selected lifecycle-contract example suite.
+scope_completed:
+- Selected contract schema validation
+scope_not_completed:
+- Migration and runtime qualification
+human_decisions:
+- HDEC-V010-I013-I015-PROTECTED-SEMANTICS-SELECTION-037
+risks: []
+evidence:
+- EVD-SYNTHETIC-I015-SCHEMA-001
+recommendation: Submit the synthetic suite for independent review only.

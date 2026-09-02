@@ -3,6 +3,8 @@
   "title": "Agent Mission",
   "type": "object",
   "required": [
+    "contract_type",
+    "contract_version",
     "id",
     "title",
     "goal",
@@ -12,53 +14,43 @@
     "human_decisions"
   ],
   "properties": {
-    "id": {
+    "contract_type": { "const": "mission" },
+    "contract_version": {
       "type": "string",
-      "pattern": "^[A-Z0-9-]+$"
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "const": "1.0.0"
     },
-    "title": {
-      "type": "string"
-    },
-    "goal": {
-      "type": "string"
-    },
+    "id": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
+    "title": { "$ref": "#/$defs/non_empty_string" },
+    "goal": { "$ref": "#/$defs/non_empty_string" },
     "non_goals": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_empty_string" }
     },
-    "risk_class": {
-      "enum": [
-        "R0",
-        "R1",
-        "R2",
-        "R3",
-        "R4",
-        "RX"
-      ]
-    },
-    "base_commit": {
-      "type": "string"
-    },
-    "integration_branch": {
-      "type": "string"
-    },
+    "risk_class": { "enum": ["R0", "R1", "R2", "R3", "R4", "RX"] },
+    "base_commit": { "$ref": "#/$defs/full_commit" },
+    "integration_branch": { "$ref": "#/$defs/non_empty_string" },
     "human_decisions": {
       "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_empty_string" }
     },
     "data_classification": {
-      "enum": [
-        "PUBLIC",
-        "INTERNAL",
-        "RESTRICTED",
-        "CONFIDENTIAL_PERSONAL",
-        "HIGHLY_RESTRICTED"
-      ]
-    }
+      "enum": ["PUBLIC", "INTERNAL", "RESTRICTED", "CONFIDENTIAL_PERSONAL", "HIGHLY_RESTRICTED"]
+    },
+    "extensions": { "$ref": "#/$defs/extensions" }
   },
-  "additionalProperties": true
+  "additionalProperties": false,
+  "$defs": {
+    "non_empty_string": { "type": "string", "minLength": 1 },
+    "full_commit": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "extensions": {
+      "type": "object",
+      "properties": {},
+      "maxProperties": 0,
+      "additionalProperties": false
+    }
+  }
 }

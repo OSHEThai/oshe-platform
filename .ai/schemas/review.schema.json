@@ -2,76 +2,77 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Agent Review",
   "type": "object",
-  "required": [
-    "task_id",
-    "verdict",
-    "reviewer",
-    "findings"
-  ],
+  "required": ["contract_type", "contract_version", "task_id", "verdict", "reviewer", "findings"],
   "properties": {
-    "task_id": {
-      "type": "string"
+    "contract_type": { "const": "review" },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "const": "1.0.0"
     },
-    "verdict": {
-      "enum": [
-        "APPROVED",
-        "CHANGES_REQUIRED",
-        "REJECTED",
-        "BLOCKED"
-      ]
+    "task_id": { "$ref": "#/$defs/non_empty_string" },
+    "verdict": { "enum": ["APPROVED", "CHANGES_REQUIRED", "REJECTED", "BLOCKED"] },
+    "reviewer": { "$ref": "#/$defs/reviewer" },
+    "findings": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/finding" } },
+    "extensions": { "$ref": "#/$defs/extensions" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "APPROVED" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "findings": {
+            "not": {
+              "contains": {
+                "properties": { "severity": { "enum": ["HIGH", "CRITICAL"] } },
+                "required": ["severity"]
+              }
+            }
+          }
+        }
+      },
+      "else": { "properties": { "findings": { "minItems": 1 } } }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "non_empty_string": { "type": "string", "minLength": 1 },
+    "repo_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
     },
     "reviewer": {
-      "type": "object"
+      "type": "object",
+      "required": ["actor_id", "role", "assignment_id", "independent"],
+      "properties": {
+        "actor_id": { "$ref": "#/$defs/non_empty_string" },
+        "role": { "$ref": "#/$defs/non_empty_string" },
+        "assignment_id": { "$ref": "#/$defs/non_empty_string" },
+        "independent": { "type": "boolean" }
+      },
+      "additionalProperties": false
     },
-    "findings": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "severity",
-          "category",
-          "issue",
-          "required_fix"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "severity": {
-            "enum": [
-              "INFO",
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ]
-          },
-          "category": {
-            "type": "string"
-          },
-          "file": {
-            "type": "string"
-          },
-          "line": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "issue": {
-            "type": "string"
-          },
-          "required_fix": {
-            "type": "string"
-          },
-          "required_test": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": true
-      }
+    "finding": {
+      "type": "object",
+      "required": ["id", "severity", "category", "issue", "required_fix"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "severity": { "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "category": { "$ref": "#/$defs/non_empty_string" },
+        "file": { "$ref": "#/$defs/repo_path" },
+        "line": { "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }] },
+        "issue": { "$ref": "#/$defs/non_empty_string" },
+        "required_fix": { "$ref": "#/$defs/non_empty_string" },
+        "required_test": { "$ref": "#/$defs/non_empty_string" }
+      },
+      "additionalProperties": false
+    },
+    "extensions": {
+      "type": "object",
+      "properties": {},
+      "maxProperties": 0,
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": true
+  }
 }
