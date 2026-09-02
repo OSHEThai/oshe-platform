@@ -56,6 +56,12 @@ func run(args []string, anchor string, stdout, stderr io.Writer) int {
 		emitDiagnostic(stderr, Diagnostic{Event: eventPrecondition, Command: command, ExitCode: ExitPrecondition, Detail: err.Error()})
 		return ExitPrecondition
 	}
+	if command == "bootstrap" || command == "reset" || command == "report" {
+		if cerr := classifyLocal(root); cerr != nil {
+			emitDiagnostic(stderr, Diagnostic{Event: eventPrecondition, Command: command, ExitCode: ExitPrecondition, Detail: cerr.Error()})
+			return ExitPrecondition
+		}
+	}
 	absScript := filepath.Join(root, "deploy", "local", script)
 	return executeRunner(context.Background(), command, absScript, stderr)
 }
@@ -66,6 +72,7 @@ func printHelp(w io.Writer) {
 	io.WriteString(w, "  bootstrap    start the local stack and seed synthetic data\n")
 	io.WriteString(w, "  reset        teardown and rebuild the local stack (local volumes only)\n")
 	io.WriteString(w, "  diagnose     check the PostgreSQL authority boundary\n")
+	io.WriteString(w, "  report       emit the allowlisted environment report\n")
 	io.WriteString(w, "  build        (runner not available)\n")
 	io.WriteString(w, "  lint         (runner not available)\n")
 	io.WriteString(w, "  unit         (runner not available)\n")

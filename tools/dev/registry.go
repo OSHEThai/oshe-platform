@@ -18,6 +18,7 @@ var fixedCommands = map[string]string{
 	"bootstrap": "bootstrap.ps1",
 	"reset":     "teardown-rebuild.ps1",
 	"diagnose":  "check-postgres-authority.ps1",
+	"report":    "report-environment.ps1",
 }
 
 var runnerlessCommands = map[string]bool{
