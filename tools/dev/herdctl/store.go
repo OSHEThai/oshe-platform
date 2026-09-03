@@ -465,3 +465,129 @@ func atomicWrite(path string, data []byte) error {
 	}
 	return nil
 }
+
+// -- Worktree Manager and One-Writer Lease Enforcement --
+
+type LeaseEvent struct {
+	MissionID string    `json:"mission_id"`
+	Path      string    `json:"path"`
+	Action    string    `json:"action"` // "acquire" or "release"
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+func (s *Store) leasePath() string {
+	return filepath.Join(s.Root, "leases.log")
+}
+
+func (s *Store) replayLeases() (map[string]*LeaseEvent, error) {
+	data, err := os.ReadFile(s.leasePath())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string]*LeaseEvent), nil
+		}
+		return nil, err
+	}
+	active := make(map[string]*LeaseEvent)
+	lines := strings.Split(string(data), "\n")
+	now := s.now()
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var ev LeaseEvent
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			return nil, fmt.Errorf("visible recovery failed on corruption: %v", err)
+		}
+		if ev.Action == "acquire" {
+			if ev.ExpiresAt.After(now) {
+				active[ev.MissionID] = &ev
+			}
+		} else if ev.Action == "release" {
+			delete(active, ev.MissionID)
+		}
+	}
+
+	// Expiry: implicitly handled above, but double check.
+	for id, ev := range active {
+		if !ev.ExpiresAt.After(now) {
+			delete(active, id)
+		}
+	}
+	return active, nil
+}
+
+func (s *Store) AcquireWorktree(missionID, path string, duration time.Duration) error {
+	path = filepath.Clean(path)
+	active, err := s.replayLeases()
+	if err != nil {
+		return err
+	}
+
+	for id, ev := range active {
+		if id == missionID {
+			continue
+		}
+		p1, p2 := ev.Path, path
+		if p1 == p2 || strings.HasPrefix(p1, p2+string(filepath.Separator)) || strings.HasPrefix(p2, p1+string(filepath.Separator)) {
+			return errors.New("overlapping path scope rejection")
+		}
+	}
+
+	ev := LeaseEvent{
+		MissionID: missionID,
+		Path:      path,
+		Action:    "acquire",
+		ExpiresAt: s.now().Add(duration),
+	}
+	return s.appendLeaseEvent(ev)
+}
+
+func (s *Store) ReleaseWorktree(missionID string) error {
+	ev := LeaseEvent{
+		MissionID: missionID,
+		Action:    "release",
+	}
+	return s.appendLeaseEvent(ev)
+}
+
+func (s *Store) appendLeaseEvent(ev LeaseEvent) error {
+	b, err := json.Marshal(ev)
+	if err != nil {
+		return err
+	}
+	b = append(b, '\n')
+
+	f, err := os.OpenFile(s.leasePath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.Write(b); err != nil {
+		return err
+	}
+	return f.Sync()
+}
+
+func (s *Store) CleanupWorktrees() error {
+	active, err := s.replayLeases()
+	if err != nil {
+		return err
+	}
+
+	tmpPath := s.leasePath() + ".tmp"
+	os.Remove(tmpPath)
+	f, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	for _, ev := range active {
+		b, _ := json.Marshal(ev)
+		f.Write(b)
+		f.Write([]byte("\n"))
+	}
+	f.Sync()
+	f.Close()
+
+	return os.Rename(tmpPath, s.leasePath())
+}

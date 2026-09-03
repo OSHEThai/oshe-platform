@@ -663,3 +663,66 @@ func TestProjectionRejectsInvalidSequence(t *testing.T) {
 		t.Fatal("ahead-of-journal projection sequence not rejected")
 	}
 }
+
+// -- Worktree Manager Tests --
+
+func TestWorktreeManager(t *testing.T) {
+	s := newStore(t)
+
+	// Test Acquire
+	if err := s.AcquireWorktree("M-1", "/tmp/a", time.Hour); err != nil {
+		t.Fatalf("acquire M-1 failed: %v", err)
+	}
+
+	// Test overlap rejection (same path)
+	if err := s.AcquireWorktree("M-2", "/tmp/a", time.Hour); err == nil {
+		t.Fatal("overlap on same path not rejected")
+	}
+
+	// Test overlap rejection (sub path)
+	if err := s.AcquireWorktree("M-2", "/tmp/a/b", time.Hour); err == nil {
+		t.Fatal("overlap on sub path not rejected")
+	}
+
+	// Test overlap rejection (parent path)
+	if err := s.AcquireWorktree("M-2", "/tmp", time.Hour); err == nil {
+		t.Fatal("overlap on parent path not rejected")
+	}
+
+	// Test non-overlapping path
+	if err := s.AcquireWorktree("M-2", "/tmp/b", time.Hour); err != nil {
+		t.Fatalf("acquire M-2 failed: %v", err)
+	}
+
+	// Test release
+	if err := s.ReleaseWorktree("M-1"); err != nil {
+		t.Fatalf("release M-1 failed: %v", err)
+	}
+
+	// M-1 released, so we can acquire /tmp/a again
+	if err := s.AcquireWorktree("M-3", "/tmp/a", time.Hour); err != nil {
+		t.Fatalf("acquire M-3 on released path failed: %v", err)
+	}
+
+	// Test expiry
+	s.Clock = func() time.Time { return time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC) }
+
+	// Now M-2 and M-3 are expired, so we can acquire overlapping paths
+	if err := s.AcquireWorktree("M-4", "/tmp/a", time.Hour); err != nil {
+		t.Fatalf("acquire M-4 on expired path failed: %v", err)
+	}
+
+	// Test Cleanup
+	if err := s.CleanupWorktrees(); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+
+	// Visible recovery on corruption
+	f, _ := os.OpenFile(s.leasePath(), os.O_APPEND|os.O_WRONLY, 0o644)
+	f.Write([]byte("{invalid json\n"))
+	f.Close()
+
+	if err := s.AcquireWorktree("M-5", "/tmp/x", time.Hour); err == nil {
+		t.Fatal("corruption not surfaced during replay")
+	}
+}

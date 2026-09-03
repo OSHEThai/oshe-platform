@@ -27,6 +27,10 @@ func dispatch(args []string, store *Store, stdout, stderr io.Writer) int {
 		return cmdCreate(args, store, stdout, stderr)
 	case "validate", "start", "pause", "resume", "cancel", "archive":
 		return cmdTransition(args, cmd, store, stdout, stderr)
+	case "dispatch", "monitor", "timeout", "dispatch-cancel", "restart":
+		return cmdDispatchLifecycle(args, cmd, store, stdout, stderr)
+	case "int-verify", "int-prepare", "int-review-approve", "int-review-remediate", "int-handoff", "int-draft-pr", "int-status":
+		return cmdIntegrationLifecycle(args, cmd, store, stdout, stderr)
 	case "status":
 		return cmdStatus(args, store, stdout, stderr)
 	default:
@@ -161,4 +165,69 @@ func fail(stderr io.Writer, cmd, category string) int {
 func emitJSON(w io.Writer, v any) {
 	b, _ := json.Marshal(v)
 	fmt.Fprintln(w, string(b))
+}
+
+func cmdDispatchLifecycle(args []string, cmd string, store *Store, stdout, stderr io.Writer) int {
+	id, err := parseIDFlag(args)
+	if err != nil {
+		return fail(stderr, cmd, catUsage)
+	}
+	d := &LocalDispatcher{Store: store}
+	var res *DispatchResult
+	switch cmd {
+	case "dispatch":
+		err = d.Dispatch(id)
+	case "monitor":
+		res, err = d.Monitor(id)
+	case "timeout":
+		err = d.Timeout(id)
+	case "dispatch-cancel":
+		err = d.Cancel(id)
+	case "restart":
+		err = d.Restart(id)
+	}
+	if err != nil {
+		return fail(stderr, cmd, errorCategory(err))
+	}
+	if cmd == "monitor" {
+		emitJSON(stdout, res)
+	} else {
+		emitJSON(stdout, map[string]any{"event": cmd, "mission_id": id})
+	}
+	return 0
+}
+
+func cmdIntegrationLifecycle(args []string, cmd string, store *Store, stdout, stderr io.Writer) int {
+	id, err := parseIDFlag(args)
+	if err != nil {
+		return fail(stderr, cmd, catUsage)
+	}
+	c := &IntegrationController{Store: store}
+	var res *IntegrationStatus
+	switch cmd {
+	case "int-verify":
+		// Mock dependency list for CLI
+		err = c.VerifyDependencies(id, []string{"mock-dep"})
+	case "int-prepare":
+		err = c.PrepareCandidate(id)
+	case "int-review-approve":
+		err = c.SubmitReview(id, true)
+	case "int-review-remediate":
+		err = c.SubmitReview(id, false)
+	case "int-handoff":
+		err = c.Handoff(id)
+	case "int-draft-pr":
+		err = c.RequestDraftPR(id)
+	case "int-status":
+		res, err = c.Status(id)
+	}
+	if err != nil {
+		return fail(stderr, cmd, errorCategory(err))
+	}
+	if cmd == "int-status" {
+		emitJSON(stdout, res)
+	} else {
+		emitJSON(stdout, map[string]any{"event": cmd, "mission_id": id})
+	}
+	return 0
 }
