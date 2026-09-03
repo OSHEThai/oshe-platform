@@ -1,5 +1,14 @@
-# Synthetic-only seed. No production or customer data is ever loaded.
+# Synthetic-only deterministic seed. No production or customer data is ever loaded.
+# Determinism: fixed fictional rows and identifiers only; no wall-clock time,
+# randomness, GUIDs, or host/user-derived values.
 $ErrorActionPreference = 'Stop'
-Write-Host 'Synthetic seed boundary: OSHE_LOCAL_SYNTHETIC_SEED=READY (no production/customer data).'
-# The deterministic synthetic seed data set is applied by the application bootstrap;
-# this script records the synthetic-only boundary for the local stack.
+
+$syntheticSeed = @(
+    [pscustomobject]@{ tenant_id = 'synth-0001'; name = 'Synthetic Tenant One'; locale = 'th-TH' },
+    [pscustomobject]@{ tenant_id = 'synth-0002'; name = 'Synthetic Tenant Two'; locale = 'en-US' }
+)
+
+foreach ($row in $syntheticSeed) {
+    Write-Host ("OSHE_SYNTHETIC_SEED_ROW=" + ($row | ConvertTo-Json -Compress))
+}
+Write-Host 'OSHE_LOCAL_SYNTHETIC_SEED=READY'
