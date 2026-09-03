@@ -240,3 +240,45 @@ func TestDispatchCLI(t *testing.T) {
 		t.Fatal("cancel failed")
 	}
 }
+
+func TestIntegrationCLI(t *testing.T) {
+	s := newStore(t)
+	id := "M-INT-CLI"
+	s.Create(testMission(id))
+
+	if code, _, _ := runCmd(t, s, "int-verify", "--id", id); code != 0 {
+		t.Fatal("int-verify failed")
+	}
+	if code, _, _ := runCmd(t, s, "int-prepare", "--id", id); code != 0 {
+		t.Fatal("int-prepare failed")
+	}
+	if code, _, _ := runCmd(t, s, "int-review-remediate", "--id", id); code != 0 {
+		t.Fatal("int-review-remediate failed")
+	}
+
+	// Try handoff, should fail
+	if code, _, _ := runCmd(t, s, "int-handoff", "--id", id); code == 0 {
+		t.Fatal("int-handoff succeeded but should have failed")
+	}
+
+	if code, _, _ := runCmd(t, s, "int-prepare", "--id", id); code != 0 {
+		t.Fatal("int-prepare failed")
+	}
+	if code, _, _ := runCmd(t, s, "int-review-approve", "--id", id); code != 0 {
+		t.Fatal("int-review-approve failed")
+	}
+	if code, _, _ := runCmd(t, s, "int-handoff", "--id", id); code != 0 {
+		t.Fatal("int-handoff failed")
+	}
+	if code, _, _ := runCmd(t, s, "int-draft-pr", "--id", id); code != 0 {
+		t.Fatal("int-draft-pr failed")
+	}
+
+	code, out, _ := runCmd(t, s, "int-status", "--id", id)
+	if code != 0 {
+		t.Fatal("int-status failed")
+	}
+	if !strings.Contains(out, "APPROVED") {
+		t.Fatalf("expected APPROVED in int-status output, got %s", out)
+	}
+}
