@@ -106,5 +106,26 @@ class ValidateRepositorySecretPatternTests(unittest.TestCase):
         self.assertFalse(self._is_detected(safe_reference))
 
 
+    def test_synthetic_local_env_default_is_allowed_only_for_its_declared_path(self) -> None:
+        seeded_line = "POSTGRES_" + "PASSWORD" + "=" + "oshe_dev_" + "synthetic_only"
+        self.assertTrue(self._is_detected(seeded_line))
+        stripped = validate_repository.secret_scan_text("deploy/local/.env.example", seeded_line)
+        self.assertFalse(self._is_detected(stripped))
+
+    def test_allowlist_is_path_scoped_and_value_exact(self) -> None:
+        seeded_line = "POSTGRES_" + "PASSWORD" + "=" + "oshe_dev_" + "synthetic_only"
+        same_value_other_path = validate_repository.secret_scan_text("deploy/other.env", seeded_line)
+        self.assertTrue(self._is_detected(same_value_other_path))
+        other_value_same_path = validate_repository.secret_scan_text(
+            "deploy/local/.env.example",
+            "POSTGRES_" + "PASSWORD" + "=" + "X" * 12,
+        )
+        self.assertTrue(self._is_detected(other_value_same_path))
+        self.assertEqual(
+            validate_repository.SECRET_ALLOWED_VALUES,
+            {"deploy/local/.env.example": ("oshe_dev_synthetic_only",)},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

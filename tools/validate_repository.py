@@ -97,6 +97,22 @@ SECRET_PATTERNS = [
     ),
 ]
 
+
+SECRET_ALLOWED_VALUES: dict[str, tuple[str, ...]] = {
+    "deploy/local/.env.example": ("oshe_dev_synthetic_only",),
+}
+
+
+def secret_scan_text(relative_path: str, text: str) -> str:
+    allowed = SECRET_ALLOWED_VALUES.get(relative_path)
+    if not allowed:
+        return text
+    for value in allowed:
+        text = text.replace(value, "")
+    return text
+
+
+
 OUTER_YAML_PATHS = (
     ".github/ISSUE_TEMPLATE/architecture.yml",
     ".github/ISSUE_TEMPLATE/bug.yml",
@@ -324,9 +340,12 @@ def main() -> int:
         except UnicodeDecodeError:
             continue
 
+        relative = path.relative_to(root)
+        scan_text = secret_scan_text(relative.as_posix(), text)
+
         for pattern in SECRET_PATTERNS:
-            if pattern.search(text):
-                errors.append(f"possible secret in {path.relative_to(root)}")
+            if pattern.search(scan_text):
+                errors.append(f"possible secret in {relative}")
 
         if path.suffix == ".json":
             try:
