@@ -205,3 +205,38 @@ func TestDiagnosticRedactsUnknownField(t *testing.T) {
 		t.Fatal("diagnostic leaked attacker-controlled field name")
 	}
 }
+
+func TestDispatchCLI(t *testing.T) {
+	s := newStore(t)
+	id := "M-DISP-CLI"
+	s.Create(testMission(id))
+
+	if code, _, _ := runCmd(t, s, "dispatch", "--id", id); code != 0 {
+		t.Fatal("dispatch failed")
+	}
+
+	code, out, _ := runCmd(t, s, "monitor", "--id", id)
+	if code == 0 {
+		t.Fatalf("expected monitor to fail (pending), got success: %s", out)
+	}
+
+	if code, _, _ := runCmd(t, s, "timeout", "--id", id); code != 0 {
+		t.Fatal("timeout failed")
+	}
+
+	code, out, _ = runCmd(t, s, "monitor", "--id", id)
+	if code != 0 {
+		t.Fatal("monitor failed after timeout")
+	}
+	if !strings.Contains(out, "TIMEOUT") {
+		t.Fatalf("expected TIMEOUT in monitor output, got %s", out)
+	}
+
+	if code, _, _ := runCmd(t, s, "restart", "--id", id); code != 0 {
+		t.Fatal("restart failed")
+	}
+
+	if code, _, _ := runCmd(t, s, "dispatch-cancel", "--id", id); code != 0 {
+		t.Fatal("cancel failed")
+	}
+}
