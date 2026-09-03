@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import subprocess
 import sys
 import unicodedata
 import urllib.parse
@@ -902,6 +904,169 @@ def validate_i015_contract_suite(validation: Validation) -> None:
         validation.error(f"I015 handoff references unknown human decisions: {unknown_handoff_decisions}")
 
 
+CONTEXT_DIGEST_EXAMPLE = "context-digest.example.yaml"
+CONTEXT_DIGEST_SCHEMA = "context-digest.schema.json"
+CONTEXT_DIGEST_COMMIT_PATTERN = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+CONTEXT_DIGEST_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+CONTEXT_DIGEST_DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def compute_oshe_context_digest(inputs: list[dict[str, Any]]) -> str:
+    """OSHE-CONTEXT-v1: SHA-256 over sorted `<path>\0<lowercase-sha256>\n` leaf records."""
+    ordered = sorted(inputs, key=lambda item: str(item.get("path", "")))
+    records = "".join(f"{item['path']}\0{str(item['sha256']).lower()}\n" for item in ordered)
+    return "sha256:" + hashlib.sha256(records.encode("utf-8")).hexdigest()
+
+
+def _git_output(repo_root: Path, args: list[str]) -> tuple[int, str]:
+    """Run a read-only git command; return (returncode, stdout text)."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode, result.stdout
+    except Exception:
+        return -1, ""
+
+
+def _git_bytes(repo_root: Path, args: list[str]) -> tuple[int, bytes]:
+    """Run a read-only git command capturing raw bytes."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), *args],
+            capture_output=True,
+            check=False,
+        )
+        return result.returncode, result.stdout
+    except Exception:
+        return -1, b""
+
+
+def _canonical_posix_relative_path(value: Any) -> bool:
+    """One canonical repository-relative POSIX path; no drive/colon/root/backslash/dot/dotdot/empty/traversal."""
+    if not isinstance(value, str) or not value:
+        return False
+    if "\0" in value or value.startswith("/") or "\\" in value or ":" in value:
+        return False
+    return all(segment not in ("", ".", "..") for segment in value.split("/"))
+
+
+def _resolve_commit(repo_root: Path, commit: str) -> str | None:
+    """Resolve a declared commit to a real commit object hash, or None."""
+    code, out = _git_output(repo_root, ["rev-parse", "--verify", f"{commit}^{{commit}}"])
+    if code != 0:
+        return None
+    value = out.strip().splitlines()[0]
+    if not CONTEXT_DIGEST_COMMIT_PATTERN.fullmatch(value):
+        return None
+    return value
+
+
+def _commit_regular_blob(repo_root: Path, commit: str, path: str) -> tuple[str | None, str | None]:
+    """Return (blob_sha, error_fragment) for a regular-file blob at commit/path via git object reads."""
+    code, type_out = _git_output(repo_root, ["cat-file", "-t", f"{commit}:{path}"])
+    if code != 0:
+        return None, "is not a regular file"
+    if type_out.strip() != "blob":
+        return None, "is not a regular file"
+    code, ls_out = _git_output(repo_root, ["ls-tree", "-z", commit, "--", path])
+    if code != 0:
+        return None, "is not a regular file"
+    for record in ls_out.split("\0"):
+        if not record:
+            continue
+        meta, sep, rec_path = record.partition("\t")
+        if not sep or rec_path != path:
+            continue
+        parts = meta.split(" ")
+        if len(parts) != 3:
+            return None, "is not a regular file"
+        mode, _, blob_sha = parts
+        if mode == "120000":
+            return None, "is a symlink"
+        if mode not in ("100644", "100755"):
+            return None, "is not a regular file"
+        if not re.fullmatch(r"[0-9a-f]{40}", blob_sha):
+            return None, "is not a regular file"
+        return blob_sha, None
+    return None, "is not a regular file"
+
+
+def check_context_digest(instance: Any, repo_root: Path) -> list[str]:
+    """Fail-closed violations for a context-digest instance (excludes schema-only checks)."""
+    errors: list[str] = []
+    if not isinstance(instance, dict):
+        return ["context-digest is not an object"]
+    if instance.get("algorithm") != "sha256":
+        errors.append("context-digest algorithm must be sha256; unsupported values fail closed")
+    if instance.get("canonicalization") != "OSHE-CONTEXT-v1":
+        errors.append("context-digest canonicalization must be OSHE-CONTEXT-v1; unsupported values fail closed")
+    commit = instance.get("repository_commit")
+    resolved_commit: str | None = None
+    if not isinstance(commit, str) or not CONTEXT_DIGEST_COMMIT_PATTERN.fullmatch(commit):
+        errors.append("context-digest repository_commit must be a full lowercase 40/64-hex identity")
+    else:
+        resolved_commit = _resolve_commit(repo_root, commit)
+        if resolved_commit is None:
+            errors.append("context-digest repository_commit is unknown or does not name a commit object")
+    inputs = instance.get("inputs")
+    if not isinstance(inputs, list) or not inputs:
+        errors.append("context-digest inputs must be a non-empty array")
+        return errors
+    paths: list[str] = []
+    for item in inputs:
+        if not isinstance(item, dict):
+            errors.append("context-digest input is not an object")
+            continue
+        path = item.get("path")
+        sha = item.get("sha256")
+        if not isinstance(path, str) or not path:
+            errors.append("context-digest input path must be a non-empty string")
+            continue
+        paths.append(path)
+        if not _canonical_posix_relative_path(path):
+            errors.append(f"context-digest input path is not a canonical repository-relative POSIX path: {path}")
+            continue
+        if not isinstance(sha, str) or not CONTEXT_DIGEST_SHA256_PATTERN.fullmatch(sha):
+            errors.append(f"context-digest input sha256 must be 64 lowercase hex: {path}")
+            continue
+        if resolved_commit is None:
+            continue
+        blob_sha, fragment = _commit_regular_blob(repo_root, resolved_commit, path)
+        if fragment is not None or blob_sha is None:
+            errors.append(f"context-digest input {fragment or 'is not a regular file'} at the bound commit: {path}")
+            continue
+        code, raw = _git_bytes(repo_root, ["cat-file", "blob", blob_sha])
+        if code != 0 or hashlib.sha256(raw).hexdigest() != sha:
+            errors.append(f"context-digest input byte sha256 mismatch at the bound commit: {path}")
+    if len(paths) != len(set(paths)):
+        errors.append("context-digest inputs must have unique paths")
+    if paths != sorted(paths):
+        errors.append("context-digest inputs must be sorted by path")
+    digest = instance.get("digest")
+    if not isinstance(digest, str) or not CONTEXT_DIGEST_DIGEST_PATTERN.fullmatch(digest):
+        errors.append("context-digest digest must be sha256: followed by 64 lowercase hex")
+    elif digest != compute_oshe_context_digest(inputs):
+        errors.append("context-digest digest does not match OSHE-CONTEXT-v1 recomputation")
+    return errors
+
+
+def validate_context_digest(validation: Validation) -> None:
+    instance = validation.load_yaml(AI_ROOT / "examples" / CONTEXT_DIGEST_EXAMPLE)
+    schema = validation.load_json(AI_ROOT / "schemas" / CONTEXT_DIGEST_SCHEMA)
+    if instance is None or schema is None:
+        return
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    for error in sorted(validator.iter_errors(instance), key=lambda item: list(item.path)):
+        location = "/".join(str(part) for part in error.path) or "<root>"
+        validation.error(f"context-digest example fails schema at {location}: {error.message}")
+    for message in check_context_digest(instance, REPO_ROOT):
+        validation.error(message)
+
+
 def validate_examples(validation: Validation) -> None:
     mappings = {
         "agent-assignment.example.yaml": "agent-assignment.schema.json",
@@ -973,6 +1138,7 @@ def main() -> int:
     validate_provider_routes_fail_closed(validation, role_ids)
     validate_i015_extension_registry(validation)
     validate_examples(validation)
+    validate_context_digest(validation)
     validate_i015_contract_suite(validation)
     validate_readiness_and_runbooks(validation)
 

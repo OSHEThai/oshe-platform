@@ -1,0 +1,11 @@
+schema_version: "1.0.0"
+digest_type: oshe-context-digest
+algorithm: sha256
+canonicalization: OSHE-CONTEXT-v1
+repository_commit: "1bab2e9b258222048322024450bfb67e6457458e"
+inputs:
+  - path: AGENTS.md
+    sha256: 797e11df9e7a1bdf38671c565dcaf4245028bf43f44beeb8f680cb4e0055dd0f
+  - path: CLAUDE.md
+    sha256: 92321d2b5364f4fa7e051af9faaacdd9c19f263b5c239f0767dc8ab10077e42b
+digest: "sha256:83c31efc2fd45c8dc5ef70f1cb28c1d85f266d1a1d93bcf854dbeeb42cf75bb7"

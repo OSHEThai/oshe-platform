@@ -16,6 +16,8 @@ from jsonschema import Draft202012Validator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / ".ai" / "tools"))
+import validate_agent_os as vao  # noqa: E402
 
 I015_CONTRACT_FILES = {
     "mission": ("mission.schema.json", "mission.example.yaml"),
@@ -60,7 +62,47 @@ class AgentOsValidatorTests(unittest.TestCase):
         tests_destination = destination / "tests"
         tests_destination.mkdir()
         shutil.copy2(REPO_ROOT / "tests" / "test_local_ci.py", tests_destination / "test_local_ci.py")
+        self._rebind_context_digest_example(destination)
 
+    def _rebind_context_digest_example(self, root: Path) -> None:
+        """Make the disposable fixture a Git repo and rebind its context-digest example to the fixture HEAD."""
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+        subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+        subprocess.run(
+            [
+                "git", "-C", str(root),
+                "-c", "user.name=disposable",
+                "-c", "user.email=disposable@local.invalid",
+                "commit", "-q", "-m", "fixture",
+            ],
+            check=True,
+        )
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        inputs: list[dict[str, str]] = []
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            blob = subprocess.run(
+                ["git", "-C", str(root), "cat-file", "blob", f"{head}:{name}"],
+                check=True,
+                capture_output=True,
+            ).stdout
+            inputs.append({"path": name, "sha256": hashlib.sha256(blob).hexdigest()})
+        example = {
+            "schema_version": "1.0.0",
+            "digest_type": "oshe-context-digest",
+            "algorithm": "sha256",
+            "canonicalization": "OSHE-CONTEXT-v1",
+            "repository_commit": head,
+            "inputs": inputs,
+            "digest": vao.compute_oshe_context_digest(inputs),
+        }
+        (root / ".ai" / "examples" / "context-digest.example.yaml").write_text(
+            yaml.safe_dump(example, sort_keys=False), encoding="utf-8"
+        )
     def run_validator(self, root: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [sys.executable, str(root / ".ai" / "tools" / "validate_agent_os.py")],
@@ -985,6 +1027,226 @@ class AgentOsValidatorTests(unittest.TestCase):
             result.stdout,
         )
         self.assertNotIn("GITHUB_OPERATION_GATE_PASS", result.stdout)
+
+
+class ContextDigestTests(unittest.TestCase):
+    def _example(self) -> dict[str, object]:
+        path = REPO_ROOT / ".ai" / "examples" / "context-digest.example.yaml"
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    def _git(self, root: Path, *args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(root), *args], check=True, capture_output=True, text=True
+        ).stdout
+
+    def _new_repo(self, root: Path) -> None:
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+
+    def _commit(self, root: Path, message: str) -> str:
+        subprocess.run(
+            [
+                "git", "-C", str(root),
+                "-c", "user.name=disposable",
+                "-c", "user.email=disposable@local.invalid",
+                "commit", "-q", "-m", message,
+            ],
+            check=True,
+        )
+        return self._git(root, "rev-parse", "HEAD").strip()
+
+    def _commit_regular(self, root: Path, path: str, content: bytes) -> str:
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        subprocess.run(["git", "-C", str(root), "add", "--", path], check=True)
+        return self._commit(root, "add " + path)
+
+    def _commit_symlink(self, root: Path, path: str, target: str) -> str:
+        blob = subprocess.run(
+            ["git", "-C", str(root), "hash-object", "-w", "--stdin"],
+            input=target.encode(), check=True, capture_output=True,
+        ).stdout.strip().decode()
+        subprocess.run(
+            ["git", "-C", str(root), "update-index", "--add", "--cacheinfo", f"120000,{blob},{path}"],
+            check=True,
+        )
+        return self._commit(root, "symlink " + path)
+
+    def _commit_tree_entry(self, root: Path, path: str, content: bytes) -> str:
+        blob = subprocess.run(
+            ["git", "-C", str(root), "hash-object", "-w", "--stdin"],
+            input=content, check=True, capture_output=True,
+        ).stdout.strip().decode()
+        subprocess.run(
+            ["git", "-C", str(root), "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}/leaf.txt"],
+            check=True,
+        )
+        return self._commit(root, "tree " + path)
+
+    def _commit_gitlink(self, root: Path, path: str, target_commit: str) -> str:
+        subprocess.run(
+            ["git", "-C", str(root), "update-index", "--add", "--cacheinfo", f"160000,{target_commit},{path}"],
+            check=True,
+        )
+        return self._commit(root, "gitlink " + path)
+
+    def _instance(self, commit: str, inputs: list[dict[str, str]]) -> dict[str, object]:
+        return {
+            "schema_version": "1.0.0",
+            "digest_type": "oshe-context-digest",
+            "algorithm": "sha256",
+            "canonicalization": "OSHE-CONTEXT-v1",
+            "repository_commit": commit,
+            "inputs": inputs,
+            "digest": vao.compute_oshe_context_digest(inputs),
+        }
+
+    def test_example_is_valid(self) -> None:
+        self.assertEqual(vao.check_context_digest(self._example(), REPO_ROOT), [])
+
+    def test_digest_computation_is_deterministic(self) -> None:
+        inputs = [
+            {"path": ".ai/a.md", "sha256": "0" * 64},
+            {"path": ".ai/b.md", "sha256": "1" * 64},
+        ]
+        self.assertEqual(vao.compute_oshe_context_digest(inputs), vao.compute_oshe_context_digest(inputs))
+
+    def test_digest_sorts_paths_and_lowercases_sha256(self) -> None:
+        first = [
+            {"path": ".ai/b", "sha256": "A" * 64},
+            {"path": ".ai/a", "sha256": "B" * 64},
+        ]
+        second = [
+            {"path": ".ai/a", "sha256": "b" * 64},
+            {"path": ".ai/b", "sha256": "a" * 64},
+        ]
+        self.assertEqual(vao.compute_oshe_context_digest(first), vao.compute_oshe_context_digest(second))
+
+    def test_rejects_unsorted_inputs(self) -> None:
+        instance = self._example()
+        instance["inputs"] = list(reversed(instance["inputs"]))
+        self.assertTrue(any("sorted" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+
+    def test_rejects_duplicate_path(self) -> None:
+        instance = self._example()
+        instance["inputs"] = instance["inputs"] + [dict(instance["inputs"][0])]
+        self.assertTrue(any("unique" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+
+    def test_rejects_non_canonical_path(self) -> None:
+        bad_paths = (
+            "../escape.md",
+            "/absolute.md",
+            "a\\b.md",
+            "C:/drive.md",
+            "C:\\drive.md",
+            "alias:path.md",
+            "a//empty.md",
+            "a/./dot.md",
+            "a/../dotdot.md",
+            ".",
+            "..",
+        )
+        for bad_path in bad_paths:
+            with self.subTest(path=bad_path):
+                instance = self._example()
+                instance["inputs"] = [{"path": bad_path, "sha256": "0" * 64}]
+                errors = vao.check_context_digest(instance, REPO_ROOT)
+                self.assertTrue(any("POSIX" in error for error in errors), errors)
+
+    def test_rejects_malformed_commit_syntax(self) -> None:
+        instance = self._example()
+        instance["repository_commit"] = "not-a-commit"
+        self.assertTrue(any("repository_commit" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+
+    def test_rejects_unknown_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            self._commit_regular(root, "a.txt", b"content")
+            inputs = [{"path": "a.txt", "sha256": hashlib.sha256(b"content").hexdigest()}]
+            errors = vao.check_context_digest(self._instance("1" * 40, inputs), root)
+            self.assertTrue(any("unknown" in error for error in errors), errors)
+
+    def test_rejects_alternate_commit_with_differing_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            commit1 = self._commit_regular(root, "a.txt", b"one")
+            inputs = [{"path": "a.txt", "sha256": hashlib.sha256(b"one").hexdigest()}]
+            self.assertEqual(vao.check_context_digest(self._instance(commit1, inputs), root), [])
+            self._commit_regular(root, "a.txt", b"two")
+            commit2 = self._git(root, "rev-parse", "HEAD").strip()
+            errors = vao.check_context_digest(self._instance(commit2, inputs), root)
+            self.assertTrue(any("mismatch" in error for error in errors), errors)
+
+    def test_historical_blob_discriminates_commits_after_worktree_bytes_change(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            commit1 = self._commit_regular(root, "a.txt", b"one")
+            inputs = [{"path": "a.txt", "sha256": hashlib.sha256(b"one").hexdigest()}]
+            self._commit_regular(root, "a.txt", b"two")
+            commit2 = self._git(root, "rev-parse", "HEAD").strip()
+            # Worktree bytes now differ from commit1; the pass must come from git object reads.
+            self.assertEqual(vao.check_context_digest(self._instance(commit1, inputs), root), [])
+            errors = vao.check_context_digest(self._instance(commit2, inputs), root)
+            self.assertTrue(any("mismatch" in error for error in errors), errors)
+
+    def test_rejects_symlink_tree_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            commit = self._commit_symlink(root, "link.txt", "target.txt")
+            instance = self._instance(commit, [{"path": "link.txt", "sha256": "0" * 64}])
+            errors = vao.check_context_digest(instance, root)
+            self.assertTrue(any("symlink" in error for error in errors), errors)
+
+    def test_rejects_directory_tree_entry_without_filesystem_dereference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            commit = self._commit_tree_entry(root, "docs", b"leaf bytes")
+            instance = self._instance(commit, [{"path": "docs", "sha256": "0" * 64}])
+            errors = vao.check_context_digest(instance, root)
+            self.assertFalse((root / "docs").exists())
+            self.assertTrue(any("not a regular file" in error for error in errors), errors)
+
+    def test_rejects_gitlink_tree_entry_without_filesystem_dereference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self._new_repo(root)
+            anchor = self._commit_regular(root, "a.txt", b"anchor")
+            commit = self._commit_gitlink(root, "vendor/lib", anchor)
+            instance = self._instance(commit, [{"path": "vendor/lib", "sha256": "0" * 64}])
+            errors = vao.check_context_digest(instance, root)
+            self.assertFalse((root / "vendor" / "lib").exists())
+            self.assertTrue(any("not a regular file" in error for error in errors), errors)
+
+    def test_rejects_digest_mismatch(self) -> None:
+        instance = self._example()
+        instance["digest"] = "sha256:" + "0" * 64
+        self.assertTrue(any("digest does not match" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+
+    def test_rejects_unsupported_algorithm_and_canonicalization(self) -> None:
+        instance = self._example()
+        instance["algorithm"] = "md5"
+        self.assertTrue(any("algorithm" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+        instance = self._example()
+        instance["canonicalization"] = "OTHER-v2"
+        self.assertTrue(any("canonicalization" in error for error in vao.check_context_digest(instance, REPO_ROOT)))
+
+    def test_rejects_missing_input(self) -> None:
+        instance = self._example()
+        instance["inputs"] = [{"path": "does-not-exist.md", "sha256": "0" * 64}]
+        errors = vao.check_context_digest(instance, REPO_ROOT)
+        self.assertTrue(any("regular file" in error for error in errors), errors)
+
+    def test_rejects_unknown_field(self) -> None:
+        instance = self._example()
+        instance["extra_field"] = "nope"
+        schema = json.loads((REPO_ROOT / ".ai" / "schemas" / "context-digest.schema.json").read_text(encoding="utf-8"))
+        messages = [error.message for error in Draft202012Validator(schema).iter_errors(instance)]
+        self.assertTrue(any("additional" in message.lower() for message in messages))
 
 
 if __name__ == "__main__":
