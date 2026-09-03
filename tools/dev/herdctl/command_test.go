@@ -73,3 +73,37 @@ func TestCmdAdapterStub(t *testing.T) {
 		t.Fatal("expected failure for offline-mock error payload")
 	}
 }
+
+func TestCmdQuotaSim(t *testing.T) {
+	var out, errb bytes.Buffer
+
+	// Reset before test
+	cmdQuotaSim([]string{"quota-sim", "reset"}, &out, &errb)
+	out.Reset()
+
+	// Acquire normal
+	if code := cmdQuotaSim([]string{"quota-sim", "acquire", "normal"}, &out, &errb); code != 0 {
+		t.Fatal("expected success")
+	}
+	if !strings.Contains(out.String(), "acquired") {
+		t.Fatal("expected acquired output")
+	}
+
+	// Acquire high (exceed quota)
+	if code := cmdQuotaSim([]string{"quota-sim", "acquire", "high"}, &out, &errb); code == 0 {
+		t.Fatal("expected failure on high cost")
+	}
+
+	// Release
+	out.Reset()
+	if code := cmdQuotaSim([]string{"quota-sim", "release"}, &out, &errb); code != 0 {
+		t.Fatal("expected success on release")
+	}
+
+	// Stop
+	out.Reset()
+	cmdQuotaSim([]string{"quota-sim", "stop"}, &out, &errb)
+	if code := cmdQuotaSim([]string{"quota-sim", "acquire", "normal"}, &out, &errb); code == 0 {
+		t.Fatal("expected failure after stop")
+	}
+}
