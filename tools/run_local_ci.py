@@ -97,6 +97,13 @@ def main() -> int:
     if not isinstance(checks, list) or not checks:
         parser.error("CI configuration must contain at least one check.")
 
+    if (root / "tools" / "dev" / "go.mod").is_file():
+        checks.extend([
+            {"id": "go-build", "command": ["go", "build", "./..."], "cwd": "tools/dev"},
+            {"id": "go-vet", "command": ["go", "vet", "./..."], "cwd": "tools/dev"},
+            {"id": "go-test", "command": ["go", "test", "-v", "./..."], "cwd": "tools/dev"},
+        ])
+
     state_path = root / ".local-ci" / "checkpoints.json"
     checkpoints: dict[str, Any] = {"schema_version": "1.0.0", "checks": {}}
     if state_path.is_file():
@@ -119,6 +126,7 @@ def main() -> int:
     for check in checks:
         check_id = check.get("id") if isinstance(check, dict) else None
         command = check.get("command") if isinstance(check, dict) else None
+        cwd_str = check.get("cwd", "") if isinstance(check, dict) else ""
         if not isinstance(check_id, str) or not check_id or not isinstance(command, list) or not command:
             failures.append(str(check_id or "INVALID_CHECK"))
             print("FAIL INVALID_CHECK: id and non-empty command are required", file=sys.stderr)
@@ -144,7 +152,8 @@ def main() -> int:
             continue
 
         print(f"RUN  {check_id}: {' '.join(command)}")
-        completed = subprocess.run(resolved_command, cwd=root, check=False, text=True)
+        check_cwd = (root / cwd_str).resolve()
+        completed = subprocess.run(resolved_command, cwd=check_cwd, check=False, text=True)
         if completed.returncode == 0:
             passed.append(check_id)
             checkpoint_checks[check_id] = {
