@@ -22,7 +22,7 @@ var (
 // Sealed canonical SHA-256 digests. Compose and seed are accepted only by full
 // digest equality; no substring or regex acceptance is used for the final decision.
 const (
-	canonicalComposeSHA256 = "3e10f7e5768c4eba31ef6d14b56a031c279f76c18ac04c2ffa4ff7c00e45c000"
+	canonicalComposeSHA256 = "a43cf3f90494bedfa8ccf3367d1c8197fb9d10c6e47a63bb24631364c2aff05a"
 	canonicalSeedSHA256    = "f9d68daa5c0cc6dbe693d30497d46fff3400484c3b4fcbd1d9846f2152414d77"
 )
 
@@ -38,7 +38,7 @@ var envAllowlist = map[string]string{
 // root. It returns nil only when compose and seed are byte-identical to the
 // sealed canonical content, the env matches the closed allowlist, and the target
 // identity is unambiguous.
-func classifyLocal(root string) error {
+var classifyLocal = func(root string) error {
 	compose, err := readLocalFile(root, "compose.dev.yaml")
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func readLocalFile(root, name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%w: %s: %v", errClassificationUncertain, name, err)
 	}
-	return string(data), nil
+	return strings.ReplaceAll(string(data), "\r\n", "\n"), nil
 }
 
 // sha256Hex returns the hex-encoded SHA-256 of s.

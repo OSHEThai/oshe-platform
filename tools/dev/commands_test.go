@@ -223,3 +223,19 @@ func TestExecutableAnchorFailureFailsClosed(t *testing.T) {
 		t.Fatal("executable anchor failure returned no error (cwd fallback)")
 	}
 }
+
+func TestClassifyLocalFailureExitsPrecondition(t *testing.T) {
+	savedClassify := classifyLocal
+	classifyLocal = func(root string) error { return errors.New("simulated classification failure") }
+	t.Cleanup(func() { classifyLocal = savedClassify })
+
+	var out, errb bytes.Buffer
+	code := run([]string{"bootstrap"}, realRoot(t), &out, &errb)
+	if code != ExitPrecondition {
+		t.Fatalf("classifyLocal failure exit = %d, want %d", code, ExitPrecondition)
+	}
+	d := decodeDiagnostic(t, errb.Bytes())
+	if d["event"] != eventPrecondition {
+		t.Errorf("event = %v, want %q", d["event"], eventPrecondition)
+	}
+}
