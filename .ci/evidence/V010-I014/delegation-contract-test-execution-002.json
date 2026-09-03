@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "EVD-V010-I014-DELEGATION-CONTRACT-TEST-EXECUTION-002",
+  "evidence_class": "CONTRACT",
+  "assignment_id": "ASN-V010-I014-DELEGATION-TEST-REMEDIATION-FREE-LUNA-002",
+  "lease_id": "LEASE-V010-I014-DELEGATION-TEST-REMEDIATION-002",
+  "decision_id": "HDEC-NO-SPEND-I014-TEST-REMEDIATION-018",
+  "base_commit": "25cc384beeb2d060537f0588d5db4a8aa3faf1d3",
+  "scope": {
+    "allowed_paths": [
+      "tests/test_permission_delegation.py",
+      ".ci/evidence/V010-I014/delegation-contract-test-execution-002.json"
+    ],
+    "local_ci_path_unchanged": ".ci/local-ci.json"
+  },
+  "captured_at": "2026-09-02T05:30:44+07:00",
+  "timezone": "Asia/Bangkok",
+  "classification": "STATIC_SOURCE_TEST",
+  "role_card_coverage": {
+    "discovery": "repository-derived .ai/roles/cards/*.md excluding index.md",
+    "current_role_card_count": 12,
+    "required_fields": [
+      "purpose",
+      "authority",
+      "prohibited_actions",
+      "inputs",
+      "outputs",
+      "escalation"
+    ],
+    "schema": ".ai/schemas/role-card.schema.json"
+  },
+  "example_schema_coverage": {
+    "assignment": [
+      ".ai/examples/agent-assignment.example.yaml",
+      ".ai/schemas/agent-assignment.schema.json"
+    ],
+    "session": [
+      ".ai/examples/agent-session.example.yaml",
+      ".ai/schemas/agent-session.schema.json"
+    ],
+    "write_lease": [
+      ".ai/examples/write-lease.example.yaml",
+      ".ai/schemas/write-lease.schema.json"
+    ]
+  },
+  "commands": [
+    {
+      "command": "python -B -m unittest tests.test_permission_delegation",
+      "exit_code": 0,
+      "tests_run": 20
+    },
+    {
+      "command": "python -B -m unittest discover -s tests -p \"test_*.py\"",
+      "exit_code": 0,
+      "tests_run": 38
+    },
+    {
+      "command": "python -B -c \"import json; from pathlib import Path; d=json.loads(Path('.ci/evidence/V010-I014/delegation-contract-test-execution-002.json').read_text(encoding='utf-8')); assert d['evidence_class']=='CONTRACT'; print('Evidence JSON parsed and contract fields present')\"",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "python tools/validate_repository.py --repo-kind platform",
+      "exit_code": 0
+    }
+  ],
+  "test_counts": {
+    "focused": 20,
+    "full_discovery": 38
+  },
+  "no_real_local_ci_boundary": {
+    "real_local_ci_executed": false,
+    "run_local_ci.py_executed": false,
+    "checkpoint_writes": false,
+    "classification": "static source tests only"
+  },
+  "prohibited_credit_boundaries": [
+    "No runtime delegation enforcement, provider route, or dispatch evidence.",
+    "No GitHub, remote, network, package installation, credentials, production/customer data, merge, release, or deployment evidence.",
+    "No issue closure or protected decision is claimed.",
+    "No real local-CI execution or checkpoint-write evidence is claimed."
+  ],
+  "containing_commit": {
+    "relation": "contains_this_artifact",
+    "commit_sha": null,
+    "resolution": "The final containing commit SHA is reported out-of-band in the handoff and audited against this path.",
+    "self_referential_result_hash": false
+  }
+}
