@@ -1,0 +1,12 @@
+{
+  "code": "ENTITY_NOT_FOUND",
+  "message": "The requested inspection resource was not found within current tenant scope.",
+  "correlation_id": "corr_01956100abcdef0123456789abcdef01",
+  "details": [
+    {
+      "field": "inspection_id",
+      "reason": "resource_missing",
+      "message": "No active inspection matches the provided identifier."
+    }
+  ]
+}
