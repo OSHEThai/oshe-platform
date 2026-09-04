@@ -1,0 +1,214 @@
+{
+  "schema_version": "1.0.0",
+  "register_id": "REG-V020-IDENTIFIER-ENTITY-001",
+  "governance": {
+    "topic": "V020-T01",
+    "issue": "V020-I008",
+    "github_issue": 43,
+    "status": "APPROVED_SPECIFICATION",
+    "collision_rule": "crypto_rand_128bit_minimum",
+    "enumeration_defense": "cryptographic_random_payload_and_strict_prefix_scoping"
+  },
+  "entities": [
+    {
+      "entity_type": "Tenant",
+      "prefix": "ten",
+      "canonical_prefix": "ten_",
+      "scope": "GLOBAL",
+      "tenant_scoped": false,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Top-level isolation boundary for organization and workspace resources"
+    },
+    {
+      "entity_type": "Organization",
+      "prefix": "org",
+      "canonical_prefix": "org_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Organization boundary within a tenant"
+    },
+    {
+      "entity_type": "Company",
+      "prefix": "cmp",
+      "canonical_prefix": "cmp_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Operating company or contractor within tenant"
+    },
+    {
+      "entity_type": "Site",
+      "prefix": "ste",
+      "canonical_prefix": "ste_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Physical facility, plant, or location within tenant"
+    },
+    {
+      "entity_type": "User",
+      "prefix": "usr",
+      "canonical_prefix": "usr_",
+      "scope": "GLOBAL",
+      "tenant_scoped": false,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Global user identity"
+    },
+    {
+      "entity_type": "Role",
+      "prefix": "rol",
+      "canonical_prefix": "rol_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Role definition within tenant"
+    },
+    {
+      "entity_type": "Session",
+      "prefix": "ses",
+      "canonical_prefix": "ses_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Authenticated session state within tenant"
+    },
+    {
+      "entity_type": "ChecklistTemplate",
+      "prefix": "tpl",
+      "canonical_prefix": "tpl_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Safety inspection checklist template definition"
+    },
+    {
+      "entity_type": "InspectionRecord",
+      "prefix": "ins",
+      "canonical_prefix": "ins_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Executed inspection record"
+    },
+    {
+      "entity_type": "Finding",
+      "prefix": "fnd",
+      "canonical_prefix": "fnd_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Safety finding or hazard observation"
+    },
+    {
+      "entity_type": "CorrectiveAction",
+      "prefix": "act",
+      "canonical_prefix": "act_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Remedial corrective action assignment"
+    },
+    {
+      "entity_type": "EvidenceArtifact",
+      "prefix": "evd",
+      "canonical_prefix": "evd_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Uploaded evidence file or attachment"
+    },
+    {
+      "entity_type": "AuditRecord",
+      "prefix": "aud",
+      "canonical_prefix": "aud_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Immutable audit ledger event record"
+    },
+    {
+      "entity_type": "DomainEvent",
+      "prefix": "evt",
+      "canonical_prefix": "evt_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Outbox domain event"
+    },
+    {
+      "entity_type": "ScheduledJob",
+      "prefix": "job",
+      "canonical_prefix": "job_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Delayed or recurring scheduled job"
+    },
+    {
+      "entity_type": "Notification",
+      "prefix": "ntf",
+      "canonical_prefix": "ntf_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Dispatched local sink notification"
+    },
+    {
+      "entity_type": "Correlation",
+      "prefix": "corr",
+      "canonical_prefix": "corr_",
+      "scope": "GLOBAL",
+      "tenant_scoped": false,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Distributed operation correlation trace identifier"
+    },
+    {
+      "entity_type": "Causation",
+      "prefix": "caus",
+      "canonical_prefix": "caus_",
+      "scope": "GLOBAL",
+      "tenant_scoped": false,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Direct causal precursor event or message identifier"
+    },
+    {
+      "entity_type": "IdempotencyKey",
+      "prefix": "idmp",
+      "canonical_prefix": "idmp_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "Client-scoped idempotency key for mutations"
+    },
+    {
+      "entity_type": "ExternalReference",
+      "prefix": "xref",
+      "canonical_prefix": "xref_",
+      "scope": "TENANT",
+      "tenant_scoped": true,
+      "payload_format": "hex_lowercase",
+      "min_payload_bytes": 16,
+      "description": "External system reference integration mapping"
+    }
+  ]
+}
