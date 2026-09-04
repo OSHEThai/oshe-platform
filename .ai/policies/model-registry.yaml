@@ -44,14 +44,14 @@ models:
   - SECURITY_CASE
   - LEGAL_PRIVILEGED
   - PRODUCTION_SECRET
-  cli_id: TBD
-  cli_version: TBD
+  cli_id: codex-cli
+  cli_version: 0.152.0
   adapter_id: TBD
   adapter_version: TBD
   configuration_digest: TBD
   evaluated_at: null
   evaluation_status: NOT_STARTED
-  approval_status: INTAKE_INCOMPLETE
+  approval_status: UNDER_POLICY_REVIEW
   dispatch_enabled: false
   review_trigger: Resolve exact identity and complete route qualification before use
 - model_record_id: model-openai-codex-candidate
@@ -70,14 +70,14 @@ models:
   approved_roles: []
   allowed_data_classes: []
   prohibited_data_classes: *id001
-  cli_id: TBD
-  cli_version: TBD
+  cli_id: gemini-cli
+  cli_version: 0.57.0
   adapter_id: TBD
   adapter_version: TBD
   configuration_digest: TBD
   evaluated_at: null
   evaluation_status: NOT_STARTED
-  approval_status: INTAKE_INCOMPLETE
+  approval_status: UNDER_POLICY_REVIEW
   dispatch_enabled: false
   review_trigger: Resolve exact identity and complete route qualification before use
 - model_record_id: model-google-gemini-candidate

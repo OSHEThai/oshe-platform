@@ -16,6 +16,8 @@ source_of_truth: LOCAL_REPOSITORY
 classification: INTERNAL
 change_risk: R3
 current_route_decision: DENY
+owner_authority_ref: H010-004 / Issue-26-comment-5536206761
+terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
 ---
 
 # Provider Data Policy Review - OpenAI Codex
@@ -30,7 +32,8 @@ The local repository is authoritative for this review. The Google Drive copy is 
 - Selection-evidence limitation: not independently verified and does not resolve provider, service, account, model, runtime, adapter, configuration, or data-policy identity
 - Proposed data scope: `PUBLIC` repository metadata only
 - Explicit exclusions: secrets, customer data, and production data
-- Current route decision: `DENY` pending independent review
+- Sole Human Owner H010-004: Codex selected as primary; terms accepted for the applicable route; `PUBLIC` only
+- Current route decision: `DENY` pending exact identity, independent review, and activation evidence
 - Dispatch: prohibited
 
 No route is approved. Unknown or conflicting facts fail closed.
@@ -45,7 +48,12 @@ The selected-candidate record and connector identifier are intake evidence only.
 
 Record exact sources and effective versions for terms, data processing, security/privacy, retention, training or service-improvement use, regions, subprocessors, support access, logging, deletion, export, encryption, incident handling, administrative settings, local package provenance, licensing, host trust, and update behavior.
 
-No authoritative provider identity or data-policy source has been reviewed. The owner-supplied Chrome observation establishes candidate selection only.
+Reviewed official sources (read on 2026-09-04):
+
+- [Using Codex with your ChatGPT plan](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan): the applicable terms/privacy basis depends on the sign-in plan or agreement.
+- [How your data is used to improve model performance](https://help.openai.com/en/articles/5722486-how-your-data-is-used-to-improve-model-performance): data controls apply to Codex tasks.
+
+The exact sign-in plan, account identity, model, and runtime configuration remain unresolved. The owner acceptance is therefore bounded to `PUBLIC` repository metadata and cannot enable dispatch.
 
 ## Data handling assessment
 
@@ -67,7 +75,7 @@ These tests and the independent review have not been completed.
 
 ## Approval
 
-Only the Sole Human Owner may change `current_route_decision` from `DENY`. Approval applies only to the exact route identity and frozen scope.
+The Sole Human Owner recorded H010-004 approval in Issue #26 comment 5536206761: Codex is primary, terms are accepted for the applicable route, and `PUBLIC` is the only permitted proposed data class. `current_route_decision` remains `DENY` until exact route identity and all technical/evidence gates are complete.
 
 ## Evidence status as of 2026-09-01
 

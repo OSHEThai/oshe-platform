@@ -18,13 +18,21 @@ reviews:
   route_decision: DENY
   source_of_truth: LOCAL_REPOSITORY
   independent_review_status: REQUIRED_NOT_COMPLETED
+  owner_authority_ref: H010-004 / Issue-26-comment-5536206761
+  terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+  proposed_data_classes: [PUBLIC]
 - review_id: PDR-GOOGLE-GEMINI-001
   provider_family: Google
   route_ids:
   - route-google-gemini-candidate
   document: Provider Data Policy Review - Google Gemini.md
-  status: NOT_STARTED
+  status: IN_REVIEW
   route_decision: DENY
+  source_of_truth: LOCAL_REPOSITORY
+  independent_review_status: REQUIRED_NOT_COMPLETED
+  owner_authority_ref: H010-004 / Issue-26-comment-5536206761
+  terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+  proposed_data_classes: [PUBLIC]
 - review_id: PDR-ANTHROPIC-CLAUDE-001
   provider_family: Anthropic
   route_ids:
