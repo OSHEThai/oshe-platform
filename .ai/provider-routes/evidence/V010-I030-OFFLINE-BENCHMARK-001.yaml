@@ -1,0 +1,23 @@
+schema_version: 1.0.0
+evidence_id: EVD-V010-I030-OFFLINE-BENCHMARK-001
+evidence_class: SYNTHETIC
+claim: Deterministic offline V010-I030 benchmark fixtures, failure injections, and recorded PUBLIC-response comparison pass without provider dispatch.
+repository: OSHEThai/oshe-platform
+commit: 3236bfc0cd9ea7dc3f0cf00fb8f8d38c880eb851
+environment: isolated-local-worktree
+command_or_method: python -B tools/reference_benchmark.py --verify; python -B tools/reference_benchmark.py --emit --output artifacts/v010-i030-offline-benchmark-scorecard.json; python -B tests/test_reference_benchmark.py -v; python -B .ai/tools/validate_agent_os.py
+result: PASS
+artifact_refs:
+- artifacts/v010-i030-offline-benchmark-scorecard.json
+- tools/reference_benchmark.py
+- tests/test_reference_benchmark.py
+- tests/fixtures/reference_benchmark/synthetic_cases.json
+- tests/fixtures/reference_benchmark/public_response_observations.json
+captured_at: '2026-09-04T21:13:33+07:00'
+captured_by: project-management-agent
+limitations:
+- Evidence class is SYNTHETIC and does not prove live provider qualification, route activation, runtime, release, or deployment.
+- provider_routes_enabled is 0; no provider, credential, account, configuration, network dispatch, or quota consumption occurred.
+- The emitted file SHA-256 is 41959683B5FA4601B2698C2615DCCD4536FEC69308349F17B3B647DA66D334BB; its deterministic scorecard_sha256 field is f47b03782ce5ce614fadb302b5d7ae5adeaf117b0c57b3e9815c585024874c16.
+review_ref: null
+human_decision_ref: H010-007-NOT_EXERCISED
