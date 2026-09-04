@@ -75,6 +75,54 @@ class AgentOsValidatorTests(unittest.TestCase):
         credential_path.write_text(yaml.safe_dump(credential_registry, sort_keys=False), encoding="utf-8")
         return route_id, credential_id
 
+    def make_approved_provider_fixture(self, root: Path) -> str:
+        route_path = root / ".ai" / "provider-routes" / "ai-service-route-registry.yaml"
+        routes = yaml.safe_load(route_path.read_text(encoding="utf-8"))
+        route = routes["routes"][0]
+        route_id = route["provider_route_id"]
+        routes["active_route_ids"] = [route_id]
+        routes["approved_route_ids"] = [route_id]
+        routes["enabled_route_ids"] = [route_id]
+        route["approved_roles"] = ["project-management-agent"]
+        route["allowed_data_classes"] = ["PUBLIC"]
+        route["data_policy_review"] = {
+            "review_id": "PDR-QWEN-LOCAL-001",
+            "status": "APPROVED",
+            "allowed_data_classes": ["PUBLIC"],
+        }
+        route["lifecycle"]["status"] = "APPROVED"
+        route["lifecycle"]["dispatch_enabled"] = True
+        route_path.write_text(yaml.safe_dump(routes, sort_keys=False), encoding="utf-8")
+
+        model_path = root / ".ai" / "policies" / "model-registry.yaml"
+        models = yaml.safe_load(model_path.read_text(encoding="utf-8"))
+        model = models["models"][0]
+        model_id = model["model_record_id"]
+        models["approved_model_refs"] = [model_id]
+        models["enabled_model_record_ids"] = [model_id]
+        model["approval_status"] = "APPROVED"
+        model["dispatch_enabled"] = True
+        model["approved_roles"] = ["project-management-agent"]
+        model["allowed_data_classes"] = ["PUBLIC"]
+        model_path.write_text(yaml.safe_dump(models, sort_keys=False), encoding="utf-8")
+
+        routing_path = root / ".ai" / "policies" / "provider-routing.yaml"
+        routing = yaml.safe_load(routing_path.read_text(encoding="utf-8"))
+        routing["routing_status"] = "APPROVED_ROUTES_CONFIGURED"
+        role_route = routing["role_routes"]["project-management-agent"]
+        role_route["primary_route_id"] = route_id
+        role_route["selection_state"] = "APPROVED"
+        role_route["dispatch_enabled"] = True
+        routing_path.write_text(yaml.safe_dump(routing, sort_keys=False), encoding="utf-8")
+
+        review_path = root / ".ai" / "provider-routes" / "provider-policy-review-register.yaml"
+        reviews = yaml.safe_load(review_path.read_text(encoding="utf-8"))
+        review = next(item for item in reviews["reviews"] if item["review_id"] == "PDR-QWEN-LOCAL-001")
+        review["status"] = "APPROVED"
+        review["route_decision"] = "APPROVED"
+        review_path.write_text(yaml.safe_dump(reviews, sort_keys=False), encoding="utf-8")
+        return route_id
+
     def make_gate_record(
         self,
         root: Path,
@@ -246,7 +294,31 @@ class AgentOsValidatorTests(unittest.TestCase):
             result = self.run_validator(root)
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Candidate route is unexpectedly enabled", result.stdout)
+        self.assertIn("Dispatch-enabled route is absent from enabled IDs", result.stdout)
+
+    def test_coherent_approved_provider_fixture_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            self.make_approved_provider_fixture(root)
+            result = self.run_validator(root)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("provider_routes_enabled=1", result.stdout)
+
+    def test_approved_route_requires_enabled_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.make_fixture(root)
+            self.make_approved_provider_fixture(root)
+            model_path = root / ".ai" / "policies" / "model-registry.yaml"
+            models = yaml.safe_load(model_path.read_text(encoding="utf-8"))
+            models["enabled_model_record_ids"] = []
+            model_path.write_text(yaml.safe_dump(models, sort_keys=False), encoding="utf-8")
+            result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Approved and enabled model ID sets must match", result.stdout)
 
     def test_complete_metadata_gate_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
