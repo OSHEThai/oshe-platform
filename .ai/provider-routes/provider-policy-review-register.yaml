@@ -44,7 +44,8 @@ reviews:
   status: IN_REVIEW
   route_decision: DENY
   source_of_truth: LOCAL_REPOSITORY
-  independent_review_status: REQUIRED_NOT_COMPLETED
+  independent_review_status: COMPLETED_DENY_MAINTAINED
+  independent_review_document: Independent Policy Review - Google Antigravity Qwen R2.md
   owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
   terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
   proposed_data_classes: [PUBLIC]
