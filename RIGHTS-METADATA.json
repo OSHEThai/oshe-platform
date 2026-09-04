@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "OSHEThai/oshe-platform",
+  "licensor": "OSHEThai",
+  "root_license": "MPL-2.0",
+  "rules": [
+    {"path": "LICENSE", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "MPL-2.0", "source": "https://spdx.org/licenses/MPL-2.0.html"},
+    {"path": "LICENSES/**", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "SPDX_STANDARD_TEXT", "source": "SPDX and Creative Commons standard license texts"},
+    {"path": "DCO-1.1.txt", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "DCO-1.1", "source": "https://developercertificate.org/"},
+    {"path": "**", "classification": "OSHE_AUTHORED_ENGINEERING", "license": "MPL-2.0", "copyright": "OSHEThai"}
+  ],
+  "public_scope_rule": "Apache-2.0 is permitted only for a future explicit rule classified PUBLIC_CONTRACT, PUBLIC_SCHEMA, SDK, INTEGRATION_EXAMPLE, or CONFORMANCE_KIT.",
+  "unknown_rights": "FAIL_CLOSED"
+}
