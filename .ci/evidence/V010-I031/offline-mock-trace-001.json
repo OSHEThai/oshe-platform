@@ -1,0 +1,44 @@
+{
+  "mission_id": "V010-I031-OFFLINE-MOCK-001",
+  "provider_routes_enabled": 0,
+  "qualification": "MOCK_ONLY_NOT_LIVE",
+  "result_contract": "STRUCTURED_JSON",
+  "status": "COMPLETED",
+  "trace": [
+    {
+      "batch": 1,
+      "event": "TASK_COMPLETED",
+      "owner_role": "PM",
+      "report_to": null,
+      "task_id": "plan"
+    },
+    {
+      "batch": 2,
+      "event": "TASK_COMPLETED",
+      "owner_role": "Engineering Lead",
+      "report_to": "PM Secretary",
+      "task_id": "implement"
+    },
+    {
+      "batch": 2,
+      "event": "TASK_COMPLETED",
+      "owner_role": "Test Quality Lead",
+      "report_to": "PM Secretary",
+      "task_id": "validate"
+    },
+    {
+      "batch": 3,
+      "event": "TASK_COMPLETED",
+      "owner_role": "Independent Review Lead",
+      "report_to": "PM Secretary",
+      "task_id": "review"
+    },
+    {
+      "batch": 4,
+      "event": "TASK_COMPLETED",
+      "owner_role": "PM Secretary",
+      "report_to": "PM",
+      "task_id": "consolidate"
+    }
+  ]
+}
