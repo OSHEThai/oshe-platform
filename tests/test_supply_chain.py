@@ -52,6 +52,14 @@ class SupplyChainTests(unittest.TestCase):
             (output / "sbom.spdx.json").write_text("tampered\n", encoding="utf-8")
             self.assertFalse(supply_chain.verify_bundle(root, output))
 
+    def test_existing_bundle_is_never_silently_replaced(self) -> None:
+        root = self.make_root()
+        with tempfile.TemporaryDirectory() as output_name:
+            output = pathlib.Path(output_name)
+            supply_chain.write_bundle(root, output)
+            with self.assertRaises(FileExistsError):
+                supply_chain.write_bundle(root, output)
+
     def test_signature_envelope_is_explicitly_unsigned_and_not_production_ready(self) -> None:
         root = self.make_root()
         envelope = __import__("json").loads(supply_chain.bundle(root)["signature-envelope.json"])

@@ -122,6 +122,8 @@ def bundle(root: pathlib.Path) -> dict[str, bytes]:
 
 
 def write_bundle(root: pathlib.Path, output: pathlib.Path) -> None:
+    if any((output / name).exists() for name in (*ARTIFACT_NAMES, "SHA256SUMS")):
+        raise FileExistsError("refusing to replace an existing supply-chain bundle")
     output.mkdir(parents=True, exist_ok=True)
     for name, content in bundle(root).items():
         (output / name).write_bytes(content)
@@ -145,7 +147,11 @@ def main() -> int:
         output = (root / args.output_dir).resolve()
         if root not in output.parents:
             parser.error("output directory must remain inside the repository")
-        write_bundle(root, output)
+        try:
+            write_bundle(root, output)
+        except FileExistsError as exc:
+            print(f"ERROR: {exc}")
+            return 1
         print(f"Supply-chain bundle written to {output}")
         return 0
     with tempfile.TemporaryDirectory() as temporary:
