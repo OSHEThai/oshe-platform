@@ -1,0 +1,34 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "buildDefinition": {
+      "buildType": "https://oshethai.example/build/offline-supply-chain/v1",
+      "externalParameters": {
+        "network": "disabled"
+      },
+      "resolvedDependencies": [
+        {
+          "name": "tampered/component",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    "runDetails": {
+      "builder": {
+        "id": "oshethai/local-offline"
+      },
+      "metadata": {
+        "invocationId": "deterministic-local-tampered"
+      }
+    }
+  },
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "name": "git:tampered_commit"
+    }
+  ]
+}
