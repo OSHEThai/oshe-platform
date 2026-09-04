@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_set": "V020-I008-MIGRATION-ROLLBACK-FIXTURES",
+  "scenarios": [
+    {
+      "scenario_id": "MIG-001-UNPREFIXED-UUID-TO-CANONICAL",
+      "description": "Deterministic conversion of legacy UUIDv4 to canonical prefixed identifier",
+      "entity_type": "InspectionRecord",
+      "prefix": "ins",
+      "legacy_records": [
+        {
+          "legacy_id": "550e8400-e29b-41d4-a716-446655440000",
+          "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+          "title": "Monthly Scaffolding Audit",
+          "created_at": "2026-08-01T10:00:00Z"
+        },
+        {
+          "legacy_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+          "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+          "title": "Confined Space Entry Check",
+          "created_at": "2026-08-02T11:00:00Z"
+        }
+      ],
+      "expected_canonical_records": [
+        {
+          "canonical_id": "ins_550e8400e29b41d4a716446655440000",
+          "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+          "title": "Monthly Scaffolding Audit",
+          "created_at": "2026-08-01T10:00:00Z"
+        },
+        {
+          "canonical_id": "ins_6ba7b8109dad11d180b400c04fd430c8",
+          "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+          "title": "Confined Space Entry Check",
+          "created_at": "2026-08-02T11:00:00Z"
+        }
+      ],
+      "expected_outcome": "SUCCESS"
+    },
+    {
+      "scenario_id": "MIG-002-PARTIAL-FAILURE-ATOMIC-ROLLBACK",
+      "description": "Simulated batch migration failure triggering atomic rollback with zero partial state committed",
+      "entity_type": "Finding",
+      "prefix": "fnd",
+      "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+      "batch": [
+        {
+          "legacy_id": "fnd-legacy-001",
+          "entropy_hex": "0123456789abcdef0123456789abcdef",
+          "valid": true
+        },
+        {
+          "legacy_id": "fnd-legacy-002",
+          "entropy_hex": "fedcba9876543210fedcba9876543210",
+          "valid": true
+        },
+        {
+          "legacy_id": "fnd-legacy-CORRUPT",
+          "entropy_hex": "INVALID_HEX_ENTROPY_NOT_HEX!!",
+          "valid": false
+        },
+        {
+          "legacy_id": "fnd-legacy-004",
+          "entropy_hex": "aabbccddeeff0011aabbccddeeff0011",
+          "valid": true
+        }
+      ],
+      "failure_trigger_index": 2,
+      "expected_error": "ErrMalformedID",
+      "expected_outcome": "ROLLBACK_PRESERVED"
+    },
+    {
+      "scenario_id": "MIG-003-CROSS-TENANT-MIGRATION-DENIAL",
+      "description": "Denial of migration operations where record tenant contradicts active caller tenant context",
+      "caller_tenant_id": "ten_0123456789abcdef0123456789abcdef",
+      "target_record": {
+        "legacy_id": "act-legacy-999",
+        "tenant_id": "ten_ffffffffffffffffffffffffffffffff",
+        "entropy_hex": "11223344556677881122334455667788"
+      },
+      "expected_error": "ErrTenantMismatch",
+      "expected_outcome": "DENIAL"
+    },
+    {
+      "scenario_id": "MIG-004-COLLISION-AVOIDANCE-AND-REJECTION",
+      "description": "Rejection of migration record whose computed canonical ID already exists in target entity store",
+      "existing_id": "tpl_0123456789abcdef0123456789abcdef",
+      "candidate_record": {
+        "legacy_id": "legacy-template-duplicate",
+        "computed_canonical_id": "tpl_0123456789abcdef0123456789abcdef",
+        "tenant_id": "ten_0123456789abcdef0123456789abcdef"
+      },
+      "expected_error": "ErrDuplicateIdentifier",
+      "expected_outcome": "COLLISION_REJECTED"
+    }
+  ]
+}
