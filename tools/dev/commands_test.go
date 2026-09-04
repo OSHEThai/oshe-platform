@@ -103,6 +103,30 @@ func TestBootstrapSuccess(t *testing.T) {
 	}
 }
 
+func TestResetSuccess(t *testing.T) {
+	setFakeRunner(t, true, 0, nil)
+	var out, errb bytes.Buffer
+	code := run([]string{"reset"}, realRoot(t), &out, &errb)
+	if code != ExitSuccess {
+		t.Fatalf("reset exit = %d, want %d", code, ExitSuccess)
+	}
+	if errb.Len() != 0 {
+		t.Fatalf("success emitted diagnostics: %q", errb.String())
+	}
+}
+
+func TestReportSuccess(t *testing.T) {
+	setFakeRunner(t, true, 0, nil)
+	var out, errb bytes.Buffer
+	code := run([]string{"report"}, realRoot(t), &out, &errb)
+	if code != ExitSuccess {
+		t.Fatalf("report exit = %d, want %d", code, ExitSuccess)
+	}
+	if errb.Len() != 0 {
+		t.Fatalf("success emitted diagnostics: %q", errb.String())
+	}
+}
+
 func TestFabricatedRootRejectedExitPrecondition(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "deploy", "local"), 0o755); err != nil {

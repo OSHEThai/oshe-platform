@@ -16,9 +16,9 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 # Install Node + corepack/pnpm (copied from the pinned node stage).
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/bin/corepack /usr/local/bin/corepack
+RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 ENV PATH="/usr/local/bin:${PATH}"
-RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
+RUN apk add --no-cache libstdc++ libgcc && corepack enable && corepack prepare pnpm@11.24.0 --activate
 
 RUN apk add --no-cache git
 
