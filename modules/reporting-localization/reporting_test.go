@@ -281,3 +281,154 @@ func TestDerivedResultNonAuthority(t *testing.T) {
 		t.Errorf("expected NonAuthorityNotice to start with DERIVED_OUTPUT_NON_AUTHORITY, got: %s", res.NonAuthorityNotice)
 	}
 }
+
+func TestWalkingSkeleton_InspectionSummaryReport(t *testing.T) {
+	evalTime := time.Date(2026, 9, 5, 14, 0, 0, 0, time.UTC)
+	catalog := NewReportCatalog(func() time.Time { return evalTime })
+
+	metric := MetricDefinition{
+		MetricID:       "metric_ws_inspection_closure_rate",
+		Title:          "Walking Skeleton Inspection Closure Rate",
+		Owner:          "MOD-REP",
+		Formula:        "avg(closure_rate)",
+		DeclaredSource: "MOD-WFA:inspections_walking_skeleton",
+		Grain:          GrainDaily,
+		AllowedFilters: []string{"checklist_version", "status", "site_id"},
+		FreshnessBound: 2 * time.Hour,
+		Exclusions:     []string{"draft_inspections_excluded", "unverified_findings_excluded"},
+		Limitations:    []string{"internal_engineering_alpha_only", "no_public_service_commitment"},
+		NonAuthority:   true,
+	}
+
+	if err := catalog.RegisterMetric(metric); err != nil {
+		t.Fatalf("failed to register walking skeleton metric: %v", err)
+	}
+
+	tenantID := "ten_walking_skeleton_alpha"
+	readerID := "reader_qa_inspector"
+	if err := catalog.AuthorizeReader(tenantID, readerID); err != nil {
+		t.Fatalf("failed to authorize reader: %v", err)
+	}
+
+	sourceTime := evalTime.Add(-30 * time.Minute)
+	records := []SyntheticRecord{
+		{
+			TenantID:  tenantID,
+			Category:  "safety",
+			Status:    "CLOSED",
+			Value:     100.0,
+			Tags:      map[string]string{"checklist_version": "v1.0", "site_id": "site_east_1"},
+			Timestamp: sourceTime,
+		},
+		{
+			TenantID:  tenantID,
+			Category:  "safety",
+			Status:    "CLOSED",
+			Value:     80.0,
+			Tags:      map[string]string{"checklist_version": "v1.0", "site_id": "site_east_1"},
+			Timestamp: sourceTime,
+		},
+		{
+			TenantID:  tenantID,
+			Category:  "safety",
+			Status:    "OPEN",
+			Value:     50.0,
+			Tags:      map[string]string{"checklist_version": "v1.0", "site_id": "site_east_1"},
+			Timestamp: sourceTime,
+		},
+	}
+	if err := catalog.LoadFixtures(tenantID, records, sourceTime); err != nil {
+		t.Fatalf("failed to load walking skeleton fixtures: %v", err)
+	}
+
+	res, err := catalog.ExecuteQuery(QueryRequest{
+		MetricID: metric.MetricID,
+		TenantID: tenantID,
+		ReaderID: readerID,
+		Filters:  map[string]string{"status": "CLOSED", "checklist_version": "v1.0"},
+	})
+	if err != nil {
+		t.Fatalf("walking skeleton query failed: %v", err)
+	}
+
+	if res.CalculatedValue != 90.0 {
+		t.Errorf("expected average closure rate 90.0, got %f", res.CalculatedValue)
+	}
+	if res.SampleCount != 2 {
+		t.Errorf("expected sample count 2, got %d", res.SampleCount)
+	}
+	if res.FreshnessDisposition != DispositionFresh {
+		t.Errorf("expected FRESH freshness disposition, got %s", res.FreshnessDisposition)
+	}
+	if len(res.Exclusions) != 2 || len(res.Limitations) != 2 {
+		t.Errorf("expected exclusions and limitations to be propagated, got %v / %v", res.Exclusions, res.Limitations)
+	}
+	if !strings.Contains(res.NonAuthorityNotice, "DERIVED_OUTPUT_NON_AUTHORITY") {
+		t.Errorf("expected NonAuthorityNotice on query result, got %s", res.NonAuthorityNotice)
+	}
+}
+
+func TestWalkingSkeleton_CrossTenantQueryIsolation(t *testing.T) {
+	catalog := NewReportCatalog(nil)
+	metric := defaultMetricDef("metric_ws_isolation")
+	_ = catalog.RegisterMetric(metric)
+
+	tenantA := "ten_ws_tenant_a"
+	tenantB := "ten_ws_tenant_b"
+	readerA := "reader_tenant_a"
+	_ = catalog.AuthorizeReader(tenantA, readerA)
+
+	_ = catalog.LoadFixtures(tenantA, []SyntheticRecord{
+		{Category: "fire", Status: "CLOSED", Value: 100.0},
+	}, time.Now().UTC())
+
+	_, err := catalog.ExecuteQuery(QueryRequest{
+		MetricID: metric.MetricID,
+		TenantID: tenantB,
+		ReaderID: readerA,
+	})
+	if !errors.Is(err, ErrUnauthorizedReader) {
+		t.Fatalf("expected ErrUnauthorizedReader for foreign tenant query, got: %v", err)
+	}
+}
+
+func TestWalkingSkeleton_StaleMetricAndDisallowedFilterDenial(t *testing.T) {
+	baseTime := time.Date(2026, 9, 5, 18, 0, 0, 0, time.UTC)
+	clock, advance := newReportingTestClock(baseTime)
+
+	catalog := NewReportCatalog(clock)
+	metric := defaultMetricDef("metric_ws_stale")
+	metric.FreshnessBound = 1 * time.Hour
+	_ = catalog.RegisterMetric(metric)
+
+	tenantID := "ten_ws_stale"
+	readerID := "reader_ws_stale"
+	_ = catalog.AuthorizeReader(tenantID, readerID)
+
+	sourceTime := baseTime.Add(-10 * time.Minute)
+	_ = catalog.LoadFixtures(tenantID, []SyntheticRecord{{Category: "safety", Value: 75.0}}, sourceTime)
+
+	advance(3 * time.Hour)
+
+	res, err := catalog.ExecuteQuery(QueryRequest{
+		MetricID: metric.MetricID,
+		TenantID: tenantID,
+		ReaderID: readerID,
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+	if res.FreshnessDisposition != DispositionStale {
+		t.Errorf("expected DispositionStale, got: %s", res.FreshnessDisposition)
+	}
+
+	_, err = catalog.ExecuteQuery(QueryRequest{
+		MetricID: metric.MetricID,
+		TenantID: tenantID,
+		ReaderID: readerID,
+		Filters:  map[string]string{"unregistered_dimension": "inject"},
+	})
+	if !errors.Is(err, ErrUnsupportedFilter) {
+		t.Errorf("expected ErrUnsupportedFilter, got: %v", err)
+	}
+}

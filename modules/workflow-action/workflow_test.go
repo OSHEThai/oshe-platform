@@ -420,3 +420,192 @@ func TestWorkflow_ConcurrentAttempts(t *testing.T) {
 		t.Errorf("expected exactly 1 audit entry, got %d", len(history))
 	}
 }
+
+func TestWorkflow_RollbackToPreviousCheckpoint(t *testing.T) {
+	clock, advance := newTestClock(t)
+	engine := workflowaction.NewEngine(clock)
+
+	wfID := "wf-rollback-01"
+	_, _ = engine.CreateWorkflow(wfID)
+
+	// Transition rev 1 -> rev 2 (InProgress)
+	advance(5 * time.Minute)
+	_, err := engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "req-step-1",
+		CorrelationID:    "corr-1",
+		TargetState:      workflowaction.StateInProgress,
+		ExpectedRevision: 1,
+		Authorizer:       alwaysAllow,
+	})
+	if err != nil {
+		t.Fatalf("transition 1 failed: %v", err)
+	}
+
+	// Capture checkpoint at rev 2
+	ckpt, err := engine.Checkpoint(wfID)
+	if err != nil {
+		t.Fatalf("checkpoint failed: %v", err)
+	}
+	if ckpt.Revision != 2 || ckpt.CurrentState != workflowaction.StateInProgress {
+		t.Fatalf("unexpected checkpoint: %+v", ckpt)
+	}
+
+	// Transition rev 2 -> rev 3 (UnderReview)
+	advance(5 * time.Minute)
+	inst3, err := engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "req-step-2",
+		CorrelationID:    "corr-2",
+		TargetState:      workflowaction.StateUnderReview,
+		ExpectedRevision: 2,
+		Authorizer:       alwaysAllow,
+	})
+	if err != nil || inst3.Revision != 3 {
+		t.Fatalf("transition 2 failed: %v", err)
+	}
+
+	// Rollback to checkpoint (rev 2)
+	advance(5 * time.Minute)
+	rolledBack, err := engine.Rollback(wfID, ckpt, "corrective rollback after review failure")
+	if err != nil {
+		t.Fatalf("rollback failed: %v", err)
+	}
+
+	// State restored to InProgress; Revision monotonically advanced to 4
+	if rolledBack.CurrentState != workflowaction.StateInProgress {
+		t.Errorf("expected rolled back state InProgress, got %s", rolledBack.CurrentState)
+	}
+	if rolledBack.Revision != 4 {
+		t.Errorf("expected revision 4 after rollback, got %d", rolledBack.Revision)
+	}
+
+	// Verify audit history includes the rollback entry
+	history := engine.AuditHistory(wfID)
+	if len(history) != 3 {
+		t.Fatalf("expected 3 audit entries, got %d", len(history))
+	}
+	lastEntry := history[2]
+	if lastEntry.PriorState != workflowaction.StateUnderReview || lastEntry.CurrentState != workflowaction.StateInProgress {
+		t.Errorf("unexpected rollback audit entry: %+v", lastEntry)
+	}
+	if lastEntry.Revision != 4 {
+		t.Errorf("expected audit entry revision 4, got %d", lastEntry.Revision)
+	}
+}
+
+func TestWorkflow_RollbackTerminalStateRejection(t *testing.T) {
+	clock, _ := newTestClock(t)
+	engine := workflowaction.NewEngine(clock)
+
+	wfID := "wf-term-rollback"
+	_, _ = engine.CreateWorkflow(wfID)
+	ckpt, _ := engine.Checkpoint(wfID)
+
+	// Transition all the way to Closed (terminal)
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r1",
+		TargetState:      workflowaction.StateInProgress,
+		ExpectedRevision: 1,
+		Authorizer:       alwaysAllow,
+	})
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r2",
+		TargetState:      workflowaction.StateUnderReview,
+		ExpectedRevision: 2,
+		Authorizer:       alwaysAllow,
+	})
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r3",
+		TargetState:      workflowaction.StateApproved,
+		ExpectedRevision: 3,
+		Authorizer:       alwaysAllow,
+	})
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r4",
+		TargetState:      workflowaction.StateClosed,
+		ExpectedRevision: 4,
+		Authorizer:       alwaysAllow,
+	})
+
+	// Attempt rollback on closed workflow -> must fail closed
+	_, err := engine.Rollback(wfID, ckpt, "unauthorized rollback on terminal state")
+	if !errors.Is(err, workflowaction.ErrTerminalState) {
+		t.Fatalf("expected ErrTerminalState on terminal rollback, got: %v", err)
+	}
+}
+
+func TestWorkflow_RollbackInvalidParameters(t *testing.T) {
+	clock, _ := newTestClock(t)
+	engine := workflowaction.NewEngine(clock)
+
+	wfID := "wf-invalid-rollback"
+	_, _ = engine.CreateWorkflow(wfID)
+	ckpt, _ := engine.Checkpoint(wfID)
+
+	// Rollback to same revision (rev 1 == rev 1) -> invalid
+	_, err := engine.Rollback(wfID, ckpt, "no-op rollback")
+	if !errors.Is(err, workflowaction.ErrInvalidRollback) {
+		t.Fatalf("expected ErrInvalidRollback for same revision, got: %v", err)
+	}
+
+	// Rollback with mismatched workflow ID
+	mismatchedCkpt := ckpt
+	mismatchedCkpt.ID = "other-workflow"
+	_, err = engine.Rollback(wfID, mismatchedCkpt, "cross-workflow rollback")
+	if !errors.Is(err, workflowaction.ErrInvalidRollback) {
+		t.Fatalf("expected ErrInvalidRollback for mismatched ID, got: %v", err)
+	}
+}
+
+func TestWorkflow_StaleUpdateRejectedAfterRollback(t *testing.T) {
+	clock, _ := newTestClock(t)
+	engine := workflowaction.NewEngine(clock)
+
+	wfID := "wf-stale-after-rollback"
+	_, _ = engine.CreateWorkflow(wfID)
+	ckpt, _ := engine.Checkpoint(wfID)
+
+	// Advance to InProgress (rev 2)
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r1",
+		TargetState:      workflowaction.StateInProgress,
+		ExpectedRevision: 1,
+		Authorizer:       alwaysAllow,
+	})
+
+	// Advance to UnderReview (rev 3)
+	_, _ = engine.Transition(workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "r2",
+		TargetState:      workflowaction.StateUnderReview,
+		ExpectedRevision: 2,
+		Authorizer:       alwaysAllow,
+	})
+
+	// Worker A captured rev 3 and prepares transition to Approved
+	staleWorkerReq := workflowaction.TransitionRequest{
+		WorkflowID:       wfID,
+		RequestID:        "worker-stale-req",
+		TargetState:      workflowaction.StateApproved,
+		ExpectedRevision: 3, // based on rev 3
+		Authorizer:       alwaysAllow,
+	}
+
+	// Supervisor performs rollback to InProgress (ckpt rev 2) -> advances workflow revision to 4
+	_, err := engine.Rollback(wfID, ckpt, "supervisor rollback")
+	if err != nil {
+		t.Fatalf("rollback failed: %v", err)
+	}
+
+	// Worker A's transition arrives with ExpectedRevision 3 -> must be rejected with ErrStaleRevision!
+	_, err = engine.Transition(staleWorkerReq)
+	if !errors.Is(err, workflowaction.ErrStaleRevision) {
+		t.Fatalf("expected ErrStaleRevision for worker holding pre-rollback revision, got: %v", err)
+	}
+}
