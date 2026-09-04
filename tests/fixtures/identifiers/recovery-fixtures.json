@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_set": "V020-I008-SERIALIZATION-RECOVERY-FIXTURES",
+  "canonical_envelopes": [
+    {
+      "fixture_id": "ENV-001-VALID-BASE",
+      "valid": true,
+      "version": "v1",
+      "correlation_id": "corr_0123456789abcdef0123456789abcdef",
+      "causation_id": "caus_fedcba9876543210fedcba9876543210",
+      "canonical_json": "{\"version\":\"v1\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "sha256_digest": "3cf76495db36a935be056bc22998ec4876b64b19c22881a742878c772cb202f5"
+    }
+  ],
+  "tampered_vectors": [
+    {
+      "vector_id": "TAMPER-001-DUPLICATE-KEYS",
+      "description": "Payload containing duplicate correlation_id keys must be rejected",
+      "raw_json": "{\"version\":\"v1\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "expected_error": "ErrDuplicateFields"
+    },
+    {
+      "vector_id": "TAMPER-002-EXTRA-UNEXPECTED-FIELD",
+      "description": "Payload with unexpected extra property must fail closed",
+      "raw_json": "{\"version\":\"v1\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\",\"unexpected_injection\":\"malicious\"}",
+      "expected_error": "ErrExtraFields"
+    },
+    {
+      "vector_id": "TAMPER-003-UNSUPPORTED-VERSION",
+      "description": "Payload with version 'v2' must be rejected",
+      "raw_json": "{\"version\":\"v2\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "expected_error": "ErrUnsupportedVersion"
+    },
+    {
+      "vector_id": "TAMPER-004-EMPTY-VERSION",
+      "description": "Payload with empty version must be rejected",
+      "raw_json": "{\"version\":\"\",\"correlation_id\":\"corr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "expected_error": "ErrEmptyVersion"
+    },
+    {
+      "vector_id": "TAMPER-005-MALFORMED-CORRELATION-PREFIX",
+      "description": "Correlation ID lacking corr_ prefix must be rejected",
+      "raw_json": "{\"version\":\"v1\",\"correlation_id\":\"usr_0123456789abcdef0123456789abcdef\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "expected_error": "ErrMalformedID"
+    },
+    {
+      "vector_id": "TAMPER-006-UPPERCASE-HEX-PAYLOAD",
+      "description": "Payload with uppercase hex characters must be rejected",
+      "raw_json": "{\"version\":\"v1\",\"correlation_id\":\"corr_0123456789ABCDEF0123456789ABCDEF\",\"causation_id\":\"caus_fedcba9876543210fedcba9876543210\"}",
+      "expected_error": "ErrMalformedID"
+    }
+  ],
+  "state_recovery_scenarios": [
+    {
+      "scenario_id": "REC-001-ROUNDTRIP-DIGEST-VERIFIED",
+      "description": "Entity state snapshot serialization, corruption simulation, and bit-exact recovery verification",
+      "initial_state": {
+        "tenant_id": "ten_0123456789abcdef0123456789abcdef",
+        "entity_id": "ins_550e8400e29b41d4a716446655440000",
+        "correlation_id": "corr_0123456789abcdef0123456789abcdef",
+        "causation_id": "caus_fedcba9876543210fedcba9876543210",
+        "status": "COMPLETED",
+        "revision": 3
+      },
+      "expected_recovery_status": "EXACT_DIGEST_MATCH"
+    }
+  ]
+}
