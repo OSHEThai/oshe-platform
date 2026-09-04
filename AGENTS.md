@@ -49,5 +49,5 @@ Write a result matching `.ai/schemas/result.schema.json`, including base commit,
 ## Authority and Runtime Status
 
 - ADR-0005 defines 12 canonical role authorities; ADR-0006 grants the Release and Evidence Agent evidence-gated full GitHub authority through the `github-manager` specialist profile; ADR-0007 governs local-first CI, pull requests, branch lifecycle, and cleanup.
-- Provider and model routes default to deny. A route is usable only after exact identity, data policy, quota, tool scope, qualification evidence, expiry, and human approval are recorded.
+- Provider and model routes default to deny. A route is usable only after its provider/model label, data policy, quota, tool scope, qualification evidence, expiry, and human approval are recorded. Do not collect account, tier, location, endpoint/runtime, revision/digest, authentication-reference, or configuration-digest metadata as a route-use prerequisite.
 - Runtime enforcement is not yet implemented. The repository controls are preparation and validation artifacts, not evidence of an operational dispatcher.

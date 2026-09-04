@@ -8,8 +8,6 @@
     "review_id",
     "provider_id",
     "service_id",
-    "account_profile_id",
-    "region_or_host_profile",
     "authoritative_sources",
     "review_dimensions",
     "allowed_data_classes",
@@ -33,12 +31,6 @@
       "type": "string"
     },
     "service_id": {
-      "type": "string"
-    },
-    "account_profile_id": {
-      "type": "string"
-    },
-    "region_or_host_profile": {
       "type": "string"
     },
     "authoritative_sources": {

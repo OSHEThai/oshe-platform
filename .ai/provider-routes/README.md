@@ -38,7 +38,7 @@ Provide the machine-readable planning-control baseline for AI-service identity, 
 
 ## Current decision
 
-All six candidate routes are `INTAKE_INCOMPLETE`; all models are unqualified; all canonical roles are unassigned; every `dispatch_enabled` value is false; and the default decision is deny. No exact model ID, revision, account, region, endpoint, CLI, adapter, data policy, quota, price, or evaluation is inferred.
+All seven route records are non-dispatchable; all models are unqualified; all canonical roles are unassigned; every `dispatch_enabled` value is false; and the default decision is deny. Provider/model labels are planning identifiers only. The registry does not collect account, service-tier, location, endpoint/runtime, model revision/digest, authentication-reference, or configuration-digest metadata.
 
 An interactive AI session used to help prepare documents does not create an approved Herdr route.
 
@@ -66,7 +66,7 @@ These names identify planning families only.
 
 ## Route activation gate
 
-A route becomes dispatchable only after exact identity, applicable policy evidence, bounded role/task/data/tool/network scope, usage and hard-stop controls, technical preflight, negative tests, evaluation, recovery evidence, independent review, and Sole Human Owner approval are complete.
+A route becomes dispatchable only after an approved provider/model label, applicable policy evidence, bounded role/task/data/tool/network scope, usage and hard-stop controls, technical preflight, negative tests, evaluation, recovery evidence, independent review, and Sole Human Owner approval are complete. Account, tier, location, endpoint/runtime, revision/digest, authentication-reference, and configuration-digest metadata are not activation prerequisites.
 
 ## Current limitations
 

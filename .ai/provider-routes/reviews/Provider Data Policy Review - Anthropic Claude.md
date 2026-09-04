@@ -24,9 +24,9 @@ current_route_decision: DENY
 
 No route is approved. Unknown or conflicting facts fail closed.
 
-## Exact route identity required
+## Route label and scope
 
-Record provider/service legal identity, account or local-host profile, service tier, region or host, endpoint, exact model ID, revision/digest, CLI/runtime, adapter, authentication mode, configuration digest, and intended use.
+Record the provider/service/model label and intended use. Do not collect or require account or local-host profile, service tier, region or host, endpoint or runtime source, model revision/digest, authentication reference, or configuration digest. CLI and adapter observations are optional.
 
 ## Authoritative evidence required
 
@@ -42,17 +42,17 @@ Record permitted roles, purposes, task families, data classes, tools, network pr
 
 ## Required tests and evidence
 
-Include identity readback, configuration digest, data-class denial, hidden-tool or subagent denial, invalid-task rejection, quota and hard-stop behavior, failure recovery, output-contract validation, independent review, and evidence bundle.
+Include data-class denial, hidden-tool or subagent denial, invalid-task rejection, quota and hard-stop behavior, failure recovery, output-contract validation, independent review, and evidence bundle.
 
 ## Approval
 
-Only the Sole Human Owner may change `current_route_decision` from `DENY`. Approval applies only to the exact route identity and frozen scope.
+Only the Sole Human Owner may change `current_route_decision` from `DENY`. Approval applies only to the documented provider/model label and frozen scope.
 
 ## Evidence status as of 2026-08-18
 
-- Exact account/service identity: `TBD`
-- Exact model and revision/digest: `TBD`
-- CLI/runtime and adapter: `TBD`
+- Account, tier, location, endpoint/runtime, revision/digest, authentication, and configuration metadata: intentionally not collected
+- Provider/model label: recorded from the candidate route
+- CLI and adapter observations: optional
 - Data-policy sources reviewed: none
 - Approved roles: none
 - Allowed data classes: none
