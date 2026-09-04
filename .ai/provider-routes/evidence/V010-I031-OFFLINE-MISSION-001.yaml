@@ -1,0 +1,22 @@
+schema_version: 1.0.0
+evidence_id: EVD-V010-I031-OFFLINE-MISSION-001
+evidence_class: SYNTHETIC
+claim: Deterministic local mock mission trace, structured reporting line, and fail-closed failure/recovery controls pass without agent dispatch or provider use.
+repository: OSHEThai/oshe-platform
+commit: 9764bec3707768b2c76a6499383e95356890d4cc
+environment: isolated-local-worktree
+command_or_method: python -B tools/mission_rehearsal.py --verify; python -B tools/mission_rehearsal.py --emit --output .ci/evidence/V010-I031/offline-mock-trace-001.json; python -B -m unittest tests.test_mission_rehearsal -v; python -B .ai/tools/validate_agent_os.py
+result: PASS
+artifact_refs:
+- .ci/evidence/V010-I031/offline-mock-trace-001.json
+- tools/mission_rehearsal.py
+- tests/test_mission_rehearsal.py
+- tests/fixtures/mission_rehearsal/offline_mission.json
+captured_at: '2026-09-04T21:19:33+07:00'
+captured_by: project-management-agent
+limitations:
+- Evidence class is SYNTHETIC and qualification is MOCK_ONLY_NOT_LIVE; it does not prove a live Herdr mission, provider qualification, route activation, runtime, release, or deployment.
+- provider_routes_enabled is 0; no agent dispatch, provider, credential, account, configuration, network dispatch, or quota consumption occurred.
+- The trace SHA-256 is 44D9C1DDC5E953C30C46F1005F985BD1B96B39D454E0CE68439D0FD785DF0550; failure/recovery credit is limited to the four local unit tests.
+review_ref: null
+human_decision_ref: HCOM-001-NOT_EXERCISED
