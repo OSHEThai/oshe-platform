@@ -13,7 +13,8 @@
         "tests.test_local_ci",
         "tests.test_supply_chain",
         "tests.test_evidence_bundle",
-        "tests.test_reference_benchmark"
+        "tests.test_reference_benchmark",
+        "tests.test_mission_rehearsal"
       ]
     },
     {
