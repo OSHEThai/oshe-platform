@@ -4,6 +4,7 @@ package governance
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -461,4 +462,94 @@ func (r *CompatibilityRegistry) GetOwner(name string, kind ContractKind) (string
 		return "", ErrContractNotFound
 	}
 	return owner, nil
+}
+
+// UnmarshalJSON parses a SemVer from either a string like "1.2.3" or an object representation.
+func (v *SemVer) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err == nil {
+		parsed, err := ParseSemVer(s)
+		if err != nil {
+			return err
+		}
+		*v = parsed
+		return nil
+	}
+	type rawSemVer SemVer
+	var raw rawSemVer
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	*v = SemVer(raw)
+	return nil
+}
+
+// MarshalJSON serializes SemVer to its canonical dot-separated string representation.
+func (v SemVer) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.String())
+}
+
+// Count returns the total number of distinct contract versions registered across all contracts.
+func (r *CompatibilityRegistry) Count() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	count := 0
+	for _, history := range r.entries {
+		count += len(history)
+	}
+	return count
+}
+
+// ContractCount returns the total number of distinct contracts registered.
+func (r *CompatibilityRegistry) ContractCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.entries)
+}
+
+// RegistryValidationItem defines a single item in a JSON validation payload.
+type RegistryValidationItem struct {
+	CallerModule string             `json:"caller_module,omitempty"`
+	Entry        CompatibilityEntry `json:"entry"`
+}
+
+// RegistryValidationPayload models the batch JSON format for validating contract registries.
+type RegistryValidationPayload struct {
+	SchemaVersion string                   `json:"schema_version"`
+	Entries       []RegistryValidationItem `json:"entries"`
+}
+
+// ValidateRegistryJSON parses a JSON payload and registers each entry into a fresh CompatibilityRegistry.
+// It fails closed if JSON is malformed, schema_version is blank, or any entry violates:
+// - metadata requirements (blank fields, invalid digest)
+// - contract ownership (cross-module mutation, duplicate ownership)
+// - dependency resolution (unresolved dependency contract/version)
+// - version progression (version regression)
+// - compatibility evolution (breaking/major without explicit valid migration path)
+func ValidateRegistryJSON(data []byte) (*CompatibilityRegistry, []string) {
+	var payload RegistryValidationPayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, []string{fmt.Sprintf("JSON parse error: %v", err)}
+	}
+
+	if strings.TrimSpace(payload.SchemaVersion) == "" {
+		return nil, []string{"schema_version cannot be blank"}
+	}
+
+	reg := NewCompatibilityRegistry()
+	var errs []string
+
+	for i, item := range payload.Entries {
+		caller := strings.TrimSpace(item.CallerModule)
+		if caller == "" {
+			caller = strings.TrimSpace(item.Entry.OwnerModule)
+		}
+
+		if err := reg.Register(caller, item.Entry); err != nil {
+			errs = append(errs, fmt.Sprintf("entry[%d] (%s:%s@%s): %v",
+				i, item.Entry.Kind, item.Entry.Name, item.Entry.Version, err))
+		}
+	}
+
+	return reg, errs
 }
