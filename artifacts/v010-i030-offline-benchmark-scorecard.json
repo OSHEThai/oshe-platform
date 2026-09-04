@@ -1,0 +1,81 @@
+{
+  "benchmark_id": "V010-I030-OFFLINE-REFERENCE",
+  "failure_injection_policy": "NONE",
+  "fixtures": [
+    {
+      "failure_injection_policy": "NONE",
+      "fixture_id": "synthetic-json-echo",
+      "measures": {
+        "expected_output_match": "true",
+        "fixture_schema_valid": "true",
+        "provider_mode": "SYNTHETIC_OFFLINE",
+        "route_selection": "NONE",
+        "turns": "1"
+      },
+      "output": {
+        "case": "alpha",
+        "safe": true
+      },
+      "status": "COMPLETED"
+    },
+    {
+      "failure_injection_policy": "NONE",
+      "fixture_id": "synthetic-schema-summary",
+      "measures": {
+        "expected_output_match": "true",
+        "fixture_schema_valid": "true",
+        "provider_mode": "SYNTHETIC_OFFLINE",
+        "route_selection": "NONE",
+        "turns": "1"
+      },
+      "output": {
+        "field_count": 2,
+        "schema_valid": true
+      },
+      "status": "COMPLETED"
+    },
+    {
+      "failure_injection_policy": "NONE",
+      "fixture_id": "synthetic-json-validator-valid-record",
+      "measures": {
+        "expected_output_match": "true",
+        "fixture_schema_valid": "true",
+        "provider_mode": "SYNTHETIC_OFFLINE",
+        "route_selection": "NONE",
+        "turns": "1"
+      },
+      "output": {
+        "missing_fields": [],
+        "schema_valid": true,
+        "valid": true
+      },
+      "status": "COMPLETED"
+    },
+    {
+      "failure_injection_policy": "NONE",
+      "fixture_id": "synthetic-json-validator-missing-required-field",
+      "measures": {
+        "expected_output_match": "true",
+        "fixture_schema_valid": "true",
+        "provider_mode": "SYNTHETIC_OFFLINE",
+        "route_selection": "NONE",
+        "turns": "1"
+      },
+      "output": {
+        "missing_fields": [
+          "status"
+        ],
+        "schema_valid": false,
+        "valid": false
+      },
+      "status": "COMPLETED"
+    }
+  ],
+  "provider_routes_enabled": 0,
+  "scorecard_sha256": "f47b03782ce5ce614fadb302b5d7ae5adeaf117b0c57b3e9815c585024874c16",
+  "summary": {
+    "completed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}
