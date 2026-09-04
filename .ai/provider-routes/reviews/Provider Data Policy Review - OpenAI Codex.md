@@ -33,7 +33,7 @@ The local repository is authoritative for this review. The Google Drive copy is 
 - Proposed data scope: `PUBLIC` repository metadata only
 - Explicit exclusions: secrets, customer data, and production data
 - Sole Human Owner H010-004: Codex selected as primary; terms accepted for the applicable route; `PUBLIC` only
-- Current route decision: `DENY` pending exact identity, independent policy review, technical/evaluation evidence, and activation evidence
+- Current route decision: `DENY` pending exact identity, technical/evaluation evidence, and activation evidence; the active-lease independent policy review is completed with `DENY_MAINTAINED`
 - Dispatch: prohibited
 
 No route is approved. Unknown or conflicting facts fail closed.
@@ -71,11 +71,11 @@ No role, task family, data class, tool, network profile, credential, quota, fail
 
 Include identity readback, configuration digest, data-class denial, hidden-tool or subagent denial, invalid-task rejection, quota and hard-stop behavior, failure recovery, output-contract validation, independent review, and evidence bundle.
 
-A single ephemeral, read-only PUBLIC-only connectivity preflight was executed under Sole Human Owner authorization (LEASE-V010-I023-CODEX-PUBLIC-PREFLIGHT-397) and exited 0 with token `OSHE_V010_PUBLIC_PREFLIGHT_OK` (recorded in [V010-I023-CODEX-PUBLIC-PREFLIGHT-397](../evidence/V010-I023-CODEX-PUBLIC-PREFLIGHT-397.md)). The observed runtime session model was `gpt-5.6-luna`. Full route qualification tests, independent policy/qualification review, and activation gates remain incomplete.
+A single ephemeral, read-only PUBLIC-only connectivity preflight was executed under Sole Human Owner authorization (LEASE-V010-I023-CODEX-PUBLIC-PREFLIGHT-397) and exited 0 with token `OSHE_V010_PUBLIC_PREFLIGHT_OK` (recorded in [V010-I023-CODEX-PUBLIC-PREFLIGHT-397](../evidence/V010-I023-CODEX-PUBLIC-PREFLIGHT-397.md)). The observed runtime session model was `gpt-5.6-luna`. The active-lease independent policy review is complete with `DENY_MAINTAINED`; full route qualification tests, qualification review, and activation gates remain incomplete.
 
 ## Independent policy review
 
-[Independent Policy Review - OpenAI Codex](Independent%20Policy%20Review%20-%20OpenAI%20Codex.md) is preserved as a `NON_ADOPTED_NO_CREDIT` predecessor because its governing lease was not active when it was produced. It does not complete this gate, clear the route, approve a data class, or replace the separate technical, evaluation, or activation gates.
+[Independent Policy Review - OpenAI Codex](Independent%20Policy%20Review%20-%20OpenAI%20Codex.md) is preserved as a `NON_ADOPTED_NO_CREDIT` predecessor because its governing lease was not active when it was produced. [Independent Policy Review - OpenAI Codex R2](Independent%20Policy%20Review%20-%20OpenAI%20Codex%20R2.md) is the accepted active-lease review and retains `DENY_MAINTAINED`. Neither document clears the route, approves a data class, or replaces the separate technical, evaluation, or activation gates.
 
 ## Approval
 
@@ -89,12 +89,12 @@ The Sole Human Owner recorded H010-004 approval in Issue #26 comment 5536206761:
 - Exact account/service identity: `TBD`
 - Exact model and revision/digest: `TBD`
 - CLI/runtime and adapter: `TBD`
-- Data-policy sources reviewed: the official sources listed above; independent policy review remains required
+- Data-policy sources reviewed: the official sources listed above; the active-lease independent policy review retains `DENY_MAINTAINED`
 - Proposed data scope: `PUBLIC` repository metadata only; not approved
 - Secrets, customer data, and production data: prohibited
 - Approved roles: none
 - Allowed data classes: none
-- Independent policy review: required and not completed; full qualification review remains pending
+- Independent policy review: completed with `DENY_MAINTAINED` by R2; full qualification review remains pending
 - Evaluation: not started
 - Route lifecycle: `UNDER_POLICY_REVIEW`
 - Dispatch: prohibited
