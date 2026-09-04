@@ -3,8 +3,8 @@ document_id: IPR-OPENAI-CODEX-001
 title: Independent Policy Review - OpenAI Codex
 document_type: independent_policy_review
 document_version: 1.0.0
-lifecycle_status: COMPLETED
-review_disposition: DENY_MAINTAINED
+lifecycle_status: NON_ADOPTED_NO_CREDIT
+review_disposition: NON_ADOPTED_NO_CREDIT
 reviewer: Security, Privacy and Product Safety Lead
 reviewer_pane: w9:p13
 applicable_route: route-openai-codex-candidate
@@ -12,6 +12,10 @@ reviewed_date: '2026-09-04'
 ---
 
 # Independent Policy Review - OpenAI Codex
+
+> **Non-adoption notice.** This predecessor artifact was produced before the
+> activation time of its governing lease. It is preserved for lineage only and
+> is not an accepted independent-policy-review result or gate completion.
 
 ## Scope and sources
 
@@ -26,7 +30,10 @@ For individual/consumer Codex use, submitted content may be used to improve mode
 
 ## Disposition
 
-`DENY_MAINTAINED`. Keep the candidate default-deny and disabled. The proposed `PUBLIC` scope remains a boundary for review, not an enabled data-class permission.
+The former proposed disposition was `DENY_MAINTAINED`. It is non-adopted because
+the governing lease was not active. Keep the candidate default-deny and disabled;
+the proposed `PUBLIC` scope remains a boundary for review, not an enabled data-class
+permission.
 
 ## Unresolved gates
 
@@ -37,4 +44,7 @@ For individual/consumer Codex use, submitted content may be used to improve mode
 
 ## Credit boundary
 
-This is an independent policy review only. It performs and authorizes no provider invocation, configuration, qualification, activation, dispatch, mission, release, deployment, or Issue closure.
+This predecessor artifact performs and authorizes no provider invocation,
+configuration, qualification, activation, dispatch, mission, release, deployment,
+or Issue closure. A successor independent policy review must be performed under an
+active lease before the gate can be completed.

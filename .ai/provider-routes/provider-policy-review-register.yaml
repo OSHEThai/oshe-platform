@@ -17,8 +17,9 @@ reviews:
   status: IN_REVIEW
   route_decision: DENY
   source_of_truth: LOCAL_REPOSITORY
-  independent_review_status: COMPLETED_DENY_MAINTAINED
-  independent_review_document: Independent Policy Review - OpenAI Codex.md
+  independent_review_status: REQUIRED_NOT_COMPLETED
+  predecessor_independent_review_document: Independent Policy Review - OpenAI Codex.md
+  predecessor_independent_review_disposition: NON_ADOPTED_NO_CREDIT_PRE_ACTIVATION
   owner_authority_ref: H010-004 / Issue-26-comment-5536206761
   terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
   proposed_data_classes: [PUBLIC]
