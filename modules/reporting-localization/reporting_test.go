@@ -1,0 +1,283 @@
+package reporting
+
+import (
+	"errors"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+)
+
+func newReportingTestClock(initial time.Time) (func() time.Time, func(d time.Duration)) {
+	curr := initial
+	var mu sync.Mutex
+	clock := func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return curr
+	}
+	advance := func(d time.Duration) {
+		mu.Lock()
+		defer mu.Unlock()
+		curr = curr.Add(d)
+	}
+	return clock, advance
+}
+
+func defaultMetricDef(id string) MetricDefinition {
+	return MetricDefinition{
+		MetricID:       id,
+		Title:          "Average Inspection Score",
+		Owner:          "compliance-analytics-team",
+		Formula:        "AVG(inspection_score)",
+		DeclaredSource: "MOD-INS:inspections_v1",
+		Grain:          GrainDaily,
+		AllowedFilters: []string{"category", "status"},
+		FreshnessBound: 1 * time.Hour,
+		Exclusions:     []string{"drafts_excluded", "test_inspections_excluded"},
+		Limitations:    []string{"historical_lookback_bounded_to_90_days"},
+		NonAuthority:   true,
+	}
+}
+
+func TestReproducibleFixtureComparison(t *testing.T) {
+	c := NewReportCatalog(nil)
+	def := defaultMetricDef("metric_avg_score")
+	if err := c.RegisterMetric(def); err != nil {
+		t.Fatalf("RegisterMetric failed: %v", err)
+	}
+
+	_ = c.AuthorizeReader("ten_alpha", "reader_alice")
+
+	fixtures := []SyntheticRecord{
+		{Category: "fire_safety", Status: "completed", Value: 80.0},
+		{Category: "fire_safety", Status: "completed", Value: 90.0},
+		{Category: "electrical", Status: "completed", Value: 70.0},
+	}
+	_ = c.LoadFixtures("ten_alpha", fixtures, time.Now().UTC())
+
+	req := QueryRequest{
+		MetricID: "metric_avg_score",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+		Filters:  map[string]string{"category": "fire_safety"},
+	}
+
+	res1, err := c.ExecuteQuery(req)
+	if err != nil {
+		t.Fatalf("query 1 failed: %v", err)
+	}
+
+	res2, err := c.ExecuteQuery(req)
+	if err != nil {
+		t.Fatalf("query 2 failed: %v", err)
+	}
+
+	// Exact reproducible calculation
+	if res1.CalculatedValue != 85.0 || res2.CalculatedValue != 85.0 {
+		t.Errorf("expected reproducible value 85.0, got res1=%f, res2=%f", res1.CalculatedValue, res2.CalculatedValue)
+	}
+	if res1.SampleCount != 2 || res2.SampleCount != 2 {
+		t.Errorf("expected sample count 2, got res1=%d, res2=%d", res1.SampleCount, res2.SampleCount)
+	}
+}
+
+func TestCrossTenantDenial(t *testing.T) {
+	c := NewReportCatalog(nil)
+	_ = c.RegisterMetric(defaultMetricDef("metric_isolation"))
+
+	_ = c.AuthorizeReader("ten_alpha", "reader_alpha")
+	_ = c.AuthorizeReader("ten_bravo", "reader_bravo")
+
+	_ = c.LoadFixtures("ten_alpha", []SyntheticRecord{
+		{Category: "general", Status: "ok", Value: 100.0},
+	}, time.Now().UTC())
+
+	_ = c.LoadFixtures("ten_bravo", []SyntheticRecord{
+		{Category: "general", Status: "ok", Value: 500.0},
+	}, time.Now().UTC())
+
+	// Reader alpha queries tenant alpha -> gets only alpha's 100.0
+	resAlpha, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_isolation",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alpha",
+	})
+	if err != nil {
+		t.Fatalf("query alpha failed: %v", err)
+	}
+	if resAlpha.CalculatedValue != 100.0 || resAlpha.SampleCount != 1 {
+		t.Errorf("expected 100.0 from tenant alpha, got %f", resAlpha.CalculatedValue)
+	}
+
+	// Reader alpha attempts to query tenant bravo -> denied
+	_, err = c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_isolation",
+		TenantID: "ten_bravo",
+		ReaderID: "reader_alpha",
+	})
+	if !errors.Is(err, ErrUnauthorizedReader) {
+		t.Fatalf("expected ErrUnauthorizedReader querying other tenant, got: %v", err)
+	}
+}
+
+func TestUnauthorizedQueryDenial(t *testing.T) {
+	c := NewReportCatalog(nil)
+	_ = c.RegisterMetric(defaultMetricDef("metric_auth"))
+	_ = c.AuthorizeReader("ten_alpha", "authorized_reader")
+
+	// Blank tenant
+	_, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_auth",
+		TenantID: "",
+		ReaderID: "authorized_reader",
+	})
+	if !errors.Is(err, ErrBlankTenantID) {
+		t.Errorf("expected ErrBlankTenantID, got: %v", err)
+	}
+
+	// Blank reader
+	_, err = c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_auth",
+		TenantID: "ten_alpha",
+		ReaderID: "",
+	})
+	if !errors.Is(err, ErrBlankReaderID) {
+		t.Errorf("expected ErrBlankReaderID, got: %v", err)
+	}
+
+	// Unknown reader
+	_, err = c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_auth",
+		TenantID: "ten_alpha",
+		ReaderID: "intruder",
+	})
+	if !errors.Is(err, ErrUnauthorizedReader) {
+		t.Errorf("expected ErrUnauthorizedReader, got: %v", err)
+	}
+}
+
+func TestAllowedFilterEnforcement(t *testing.T) {
+	c := NewReportCatalog(nil)
+	_ = c.RegisterMetric(defaultMetricDef("metric_filters"))
+	_ = c.AuthorizeReader("ten_alpha", "reader_alice")
+	_ = c.LoadFixtures("ten_alpha", []SyntheticRecord{{Value: 10}}, time.Now().UTC())
+
+	// Valid filter: category
+	_, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_filters",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+		Filters:  map[string]string{"category": "safety"},
+	})
+	if err != nil {
+		t.Fatalf("expected success on allowed filter, got: %v", err)
+	}
+
+	// Invalid filter: severity (not in allowed filters)
+	_, err = c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_filters",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+		Filters:  map[string]string{"severity": "critical"},
+	})
+	if !errors.Is(err, ErrUnsupportedFilter) {
+		t.Fatalf("expected ErrUnsupportedFilter, got: %v", err)
+	}
+}
+
+func TestStaleMetricVisibility(t *testing.T) {
+	baseTime := time.Date(2026, 9, 5, 12, 0, 0, 0, time.UTC)
+	clock, advance := newReportingTestClock(baseTime)
+
+	c := NewReportCatalog(clock)
+	def := defaultMetricDef("metric_stale")
+	def.FreshnessBound = 1 * time.Hour
+	_ = c.RegisterMetric(def)
+	_ = c.AuthorizeReader("ten_alpha", "reader_alice")
+
+	// Source was updated 10 minutes before baseTime -> FRESH
+	_ = c.LoadFixtures("ten_alpha", []SyntheticRecord{{Value: 50}}, baseTime.Add(-10*time.Minute))
+
+	resFresh, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_stale",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+	if resFresh.FreshnessDisposition != DispositionFresh {
+		t.Errorf("expected DispositionFresh, got: %s", resFresh.FreshnessDisposition)
+	}
+
+	// Advance clock by 2 hours -> now data is STALE (> 1h freshness bound)
+	advance(2 * time.Hour)
+
+	resStale, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_stale",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+	if resStale.FreshnessDisposition != DispositionStale {
+		t.Errorf("expected DispositionStale, got: %s", resStale.FreshnessDisposition)
+	}
+}
+
+func TestExclusionsAndLimitationsPropagation(t *testing.T) {
+	c := NewReportCatalog(nil)
+	def := defaultMetricDef("metric_props")
+	_ = c.RegisterMetric(def)
+	_ = c.AuthorizeReader("ten_alpha", "reader_alice")
+	_ = c.LoadFixtures("ten_alpha", []SyntheticRecord{{Value: 10}}, time.Now().UTC())
+
+	res, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "metric_props",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+
+	if len(res.Exclusions) != 2 || res.Exclusions[0] != "drafts_excluded" {
+		t.Errorf("unexpected exclusions: %v", res.Exclusions)
+	}
+	if len(res.Limitations) != 1 || res.Limitations[0] != "historical_lookback_bounded_to_90_days" {
+		t.Errorf("unexpected limitations: %v", res.Limitations)
+	}
+}
+
+func TestDerivedResultNonAuthority(t *testing.T) {
+	c := NewReportCatalog(nil)
+
+	// Attempting to register metric without non-authority designation fails closed
+	badDef := defaultMetricDef("bad_metric")
+	badDef.NonAuthority = false
+	err := c.RegisterMetric(badDef)
+	if !errors.Is(err, ErrMissingNonAuthority) {
+		t.Fatalf("expected ErrMissingNonAuthority, got: %v", err)
+	}
+
+	// Valid metric query returns explicit non-authority notice
+	goodDef := defaultMetricDef("good_metric")
+	_ = c.RegisterMetric(goodDef)
+	_ = c.AuthorizeReader("ten_alpha", "reader_alice")
+	_ = c.LoadFixtures("ten_alpha", []SyntheticRecord{{Value: 10}}, time.Now().UTC())
+
+	res, err := c.ExecuteQuery(QueryRequest{
+		MetricID: "good_metric",
+		TenantID: "ten_alpha",
+		ReaderID: "reader_alice",
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+
+	if !strings.HasPrefix(res.NonAuthorityNotice, "DERIVED_OUTPUT_NON_AUTHORITY") {
+		t.Errorf("expected NonAuthorityNotice to start with DERIVED_OUTPUT_NON_AUTHORITY, got: %s", res.NonAuthorityNotice)
+	}
+}
