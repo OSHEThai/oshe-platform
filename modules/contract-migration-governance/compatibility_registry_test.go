@@ -520,3 +520,257 @@ func TestCompatibilityRegistry_ConcurrentOperations(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestValidateRegistryJSON_ValidDocument(t *testing.T) {
+	validJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.tenant.context",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL",
+					"description": "Tenant context schema"
+				}
+			},
+			{
+				"caller_module": "MOD-IAM",
+				"entry": {
+					"name": "iam.access_policy",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-IAM",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL",
+					"dependencies": [
+						{
+							"name": "org.tenant.context",
+							"kind": "SCHEMA",
+							"version": "1.0.0"
+						}
+					],
+					"description": "Access policy schema"
+				}
+			},
+			{
+				"caller_module": "MOD-CTR",
+				"entry": {
+					"name": "api.envelope",
+					"kind": "API",
+					"owner_module": "MOD-CTR",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL",
+					"description": "API envelope contract"
+				}
+			}
+		]
+	}`
+
+	reg, errs := governance.ValidateRegistryJSON([]byte(validJSON))
+	if len(errs) != 0 {
+		t.Fatalf("expected 0 errors, got %d: %v", len(errs), errs)
+	}
+	if reg == nil || reg.Count() != 3 {
+		t.Fatalf("expected 3 registered contract versions, got %+v", reg)
+	}
+}
+
+func TestValidateRegistryJSON_InvalidJSON(t *testing.T) {
+	_, errs := governance.ValidateRegistryJSON([]byte(`{not valid json`))
+	if len(errs) == 0 {
+		t.Fatal("expected parse error for invalid JSON, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_BlankSchemaVersion(t *testing.T) {
+	_, errs := governance.ValidateRegistryJSON([]byte(`{"schema_version": "", "entries": []}`))
+	if len(errs) == 0 {
+		t.Fatal("expected error for blank schema_version, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_DuplicateCrossModuleOwnership(t *testing.T) {
+	crossJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "shared.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			},
+			{
+				"caller_module": "MOD-IAM",
+				"entry": {
+					"name": "shared.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-IAM",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			}
+		]
+	}`
+
+	_, errs := governance.ValidateRegistryJSON([]byte(crossJSON))
+	if len(errs) == 0 {
+		t.Fatal("expected duplicate ownership error, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_UnresolvedDependency(t *testing.T) {
+	unresolvedJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-IAM",
+				"entry": {
+					"name": "iam.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-IAM",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL",
+					"dependencies": [
+						{
+							"name": "nonexistent.contract",
+							"kind": "SCHEMA",
+							"version": "1.0.0"
+						}
+					]
+				}
+			}
+		]
+	}`
+
+	_, errs := governance.ValidateRegistryJSON([]byte(unresolvedJSON))
+	if len(errs) == 0 {
+		t.Fatal("expected unresolved dependency error, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_VersionRegression(t *testing.T) {
+	regressionJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.2.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			},
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.1.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			}
+		]
+	}`
+
+	_, errs := governance.ValidateRegistryJSON([]byte(regressionJSON))
+	if len(errs) == 0 {
+		t.Fatal("expected version regression error, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_IncompatibleWithoutMigrationPath(t *testing.T) {
+	breakingJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			},
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "2.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BREAKING"
+				}
+			}
+		]
+	}`
+
+	_, errs := governance.ValidateRegistryJSON([]byte(breakingJSON))
+	if len(errs) == 0 {
+		t.Fatal("expected migration path required error, got 0 errors")
+	}
+}
+
+func TestValidateRegistryJSON_BreakingWithValidMigrationPath(t *testing.T) {
+	validBreakingJSON := `{
+		"schema_version": "1.0.0",
+		"entries": [
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "1.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BIDIRECTIONAL"
+				}
+			},
+			{
+				"caller_module": "MOD-ORG",
+				"entry": {
+					"name": "org.contract",
+					"kind": "SCHEMA",
+					"owner_module": "MOD-ORG",
+					"version": "2.0.0",
+					"digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"direction": "BREAKING",
+					"migration_path": {
+						"migration_id": "MIG-ORG-001",
+						"from_version": "1.0.0",
+						"to_version": "2.0.0",
+						"strategy": "UPCAST",
+						"description": "Upcast contract schema to v2"
+					}
+				}
+			}
+		]
+	}`
+
+	reg, errs := governance.ValidateRegistryJSON([]byte(validBreakingJSON))
+	if len(errs) != 0 {
+		t.Fatalf("expected 0 errors for valid breaking with migration path, got %v", errs)
+	}
+	if reg.Count() != 2 {
+		t.Fatalf("expected 2 versions registered, got %d", reg.Count())
+	}
+}
