@@ -81,5 +81,51 @@ class ValidateRepositoryYamlLimitTests(unittest.TestCase):
         self.assertFalse(any(path.startswith(".ai/") for path in validate_repository.OUTER_YAML_PATHS))
 
 
+class ValidateRepositorySecretPatternTests(unittest.TestCase):
+    @staticmethod
+    def _is_detected(value: str) -> bool:
+        return any(pattern.search(value) for pattern in validate_repository.SECRET_PATTERNS)
+
+    def test_runtime_constructed_representative_seeds_are_detected(self) -> None:
+        seeds = {
+            "classic-github-token": "gh" + "p_" + ("A" * 24),
+            "fine-grained-github-token": "github" + "_pat_" + ("B" * 24),
+            "private-key-marker": "-----BEGIN " + "PRIVATE KEY-----",
+            "quoted-secret-assignment": "password" + "=" + '"' + ("C" * 12) + '"',
+        }
+        for name, seed in seeds.items():
+            with self.subTest(name=name):
+                self.assertTrue(self._is_detected(seed))
+
+    def test_runtime_constructed_unquoted_sensitive_environment_assignment_is_detected(self) -> None:
+        seeded_assignment = "API_" + "TOKEN" + "=" + "synthetic-seed-value"
+        self.assertTrue(self._is_detected(seeded_assignment))
+
+    def test_runtime_constructed_environment_reference_is_not_a_secret(self) -> None:
+        safe_reference = "API_" + "TOKEN" + "=${API_" + "TOKEN}"
+        self.assertFalse(self._is_detected(safe_reference))
+
+
+    def test_synthetic_local_env_default_is_allowed_only_for_its_declared_path(self) -> None:
+        seeded_line = "POSTGRES_" + "PASSWORD" + "=" + "oshe_dev_" + "synthetic_only"
+        self.assertTrue(self._is_detected(seeded_line))
+        stripped = validate_repository.secret_scan_text("deploy/local/.env.example", seeded_line)
+        self.assertFalse(self._is_detected(stripped))
+
+    def test_allowlist_is_path_scoped_and_value_exact(self) -> None:
+        seeded_line = "POSTGRES_" + "PASSWORD" + "=" + "oshe_dev_" + "synthetic_only"
+        same_value_other_path = validate_repository.secret_scan_text("deploy/other.env", seeded_line)
+        self.assertTrue(self._is_detected(same_value_other_path))
+        other_value_same_path = validate_repository.secret_scan_text(
+            "deploy/local/.env.example",
+            "POSTGRES_" + "PASSWORD" + "=" + "X" * 12,
+        )
+        self.assertTrue(self._is_detected(other_value_same_path))
+        self.assertEqual(
+            validate_repository.SECRET_ALLOWED_VALUES,
+            {"deploy/local/.env.example": ("oshe_dev_synthetic_only",)},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

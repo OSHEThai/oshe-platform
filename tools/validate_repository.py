@@ -90,7 +90,28 @@ SECRET_PATTERNS = [
     re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     re.compile(r"(?i)(password|secret|token)\s*[:=]\s*[\"'][^\"']{8,}[\"']"),
+    re.compile(
+        r"(?m)^[ \t]*(?:export[ \t]+)?(?:[A-Z][A-Z0-9_]*_)?"
+        r"(?:PASSWORD|SECRET|TOKEN)(?:_(?:VALUE|KEY))?[ \t]*=[ \t]*"
+        r"(?![\"']|\$\{|<)[^\s#]{8,}[ \t]*(?:#.*)?$"
+    ),
 ]
+
+
+SECRET_ALLOWED_VALUES: dict[str, tuple[str, ...]] = {
+    "deploy/local/.env.example": ("oshe_dev_synthetic_only",),
+}
+
+
+def secret_scan_text(relative_path: str, text: str) -> str:
+    allowed = SECRET_ALLOWED_VALUES.get(relative_path)
+    if not allowed:
+        return text
+    for value in allowed:
+        text = text.replace(value, "")
+    return text
+
+
 
 OUTER_YAML_PATHS = (
     ".github/ISSUE_TEMPLATE/architecture.yml",
@@ -319,9 +340,12 @@ def main() -> int:
         except UnicodeDecodeError:
             continue
 
+        relative = path.relative_to(root)
+        scan_text = secret_scan_text(relative.as_posix(), text)
+
         for pattern in SECRET_PATTERNS:
-            if pattern.search(text):
-                errors.append(f"possible secret in {path.relative_to(root)}")
+            if pattern.search(scan_text):
+                errors.append(f"possible secret in {relative}")
 
         if path.suffix == ".json":
             try:
