@@ -25,6 +25,14 @@
         "--repo-kind",
         "platform"
       ]
+    },
+    {
+      "id": "supply-chain-verification",
+      "command": [
+        "python",
+        "tools/supply_chain.py",
+        "--verify"
+      ]
     }
   ]
 }
