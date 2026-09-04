@@ -26,15 +26,15 @@ related_decisions:
 
 ## 1. Route identity
 
-Record the exact `route_id`, provider and service legal identity, account or organization profile, service tier, region, endpoint, data-residency setting, model ID and revision, CLI and adapter versions, configuration digest, authentication mode, and intended role/task/data scope.
+Record the `route_id`, provider/service/model label, and intended role/task/data scope. Do not collect or require account or organization profile, service tier, region or host, endpoint or runtime source, model revision/digest, authentication reference, or configuration digest. CLI and adapter observations may be recorded when available, but are not prerequisites.
 
-Unknown identity is recorded as `UNKNOWN` and the route remains denied.
+An unknown provider/service/model label is recorded as `UNKNOWN` and the route remains denied.
 
 ## 2. Evidence sources
 
-Use authoritative provider terms, data-processing or administrative settings, security and privacy documentation, account controls, subprocessors, support documentation, incident terms, and controlled observations. Marketing summaries are supplemental only.
+Use authoritative provider terms, data-processing settings, security and privacy documentation, subprocessors, support documentation, incident terms, and controlled observations. Marketing summaries are supplemental only.
 
-For every source record title, URL or controlled reference, effective or accessed date, authority, exact service/account/region applicability, known limitations, and preserved snapshot where permitted.
+For every source record title, URL or controlled reference, effective or accessed date, authority, applicable provider/service/model label, known limitations, and preserved snapshot where permitted.
 
 ## 3. Data-handling assessment
 

@@ -1,7 +1,7 @@
 schema_version: 1.0.0
 registry_id: REG-AISR-001
 title: AI Service and Provider Route Registry
-registry_version: 1.0.0
+registry_version: 1.0.1
 lifecycle_status: APPROVED
 maturity: OPERATIONAL
 implementation_status: IMPLEMENTED_FOR_PLANNING_CONTROL
@@ -43,8 +43,11 @@ route_state_model:
 - RETIRED
 global_controls:
   unknown_value_behavior: FAIL_CLOSED
-  alias_without_resolved_identity: PROHIBITED
-  provider_brand_only_approval: PROHIBITED
+  route_metadata_minimization: Do not collect account, service-tier, location, endpoint/runtime,
+    model revision/digest, authentication-reference, or configuration-digest metadata.
+  route_metadata_minimization_authority: Sole Human Owner direction 2026-09-04; supersedes
+    those metadata prerequisites in earlier planning and evidence artifacts without altering them.
+  provider_model_label_required: true
   hidden_subagents: PROHIBITED
   self_qualification: PROHIBITED
   failover_rule: Fallback must be separately qualified and may not weaken data, tool,
@@ -59,12 +62,6 @@ routes:
   provider_id: qwen
   service_id: qwen-local
   route_kind: LOCAL_RUNTIME
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-qwen-local-candidate
   cli:
     cli_id: TBD
@@ -73,8 +70,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -121,25 +116,15 @@ routes:
     status: INTAKE_INCOMPLETE
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
   source_basis: Candidate service lane named in existing provider-planning artifacts;
     no exact route is approved.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - cli_id_and_version
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -150,21 +135,15 @@ routes:
   service_id: codex
   candidate_selection:
     selected_candidate: OpenAI Codex / ChatGPT Codex Connector
-    selection_status: OWNER_APPROVED_PRIMARY_H010_004_PENDING_EXACT_IDENTITY
+    selection_status: OWNER_APPROVED_PRIMARY_H010_004_PENDING_ROUTE_QUALIFICATION
     authority_ref: H010-004 / Issue-26-comment-5536206761
     evidence:
       provenance: OWNER_SUPPLIED
       observation: Chrome-observed ChatGPT Codex Connector installation
       identifier: '141917362'
       independent_verification_status: NOT_PERFORMED
-    identity_resolution_status: UNRESOLVED
+    metadata_minimization_status: OWNER_DIRECTED_NO_ACCOUNT_OR_RUNTIME_METADATA
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-openai-codex-candidate
   cli:
     cli_id: codex-cli
@@ -173,8 +152,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -215,7 +192,7 @@ routes:
     source_of_truth: LOCAL_REPOSITORY
     route_decision: DENY
     owner_authority_ref: H010-004 / Issue-26-comment-5536206761
-    terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+    terms_status: OWNER_ACCEPTED_PENDING_ROUTE_QUALIFICATION
     independent_review_status: REQUIRED_NOT_COMPLETED
     review_trigger: Complete before any provider submission or route activation
   evaluation:
@@ -227,25 +204,16 @@ routes:
     status: UNDER_POLICY_REVIEW
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
   source_basis: Sole Human Owner H010-004 approved Codex as primary with PUBLIC-only
     scope and accepted terms; owner-supplied Chrome observation remains intake evidence
-    only and no exact route identity or dispatch authority is approved.
+    only and no route use or dispatch authority is approved.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -257,14 +225,8 @@ routes:
     selected_candidate: Historical Google Gemini interpretation
     selection_status: SUPERSEDED_BY_OWNER_CORRECTION_H010_004_R2
     authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
-    identity_resolution_status: SUPERSEDED
+    metadata_minimization_status: OWNER_DIRECTED_NO_ACCOUNT_OR_RUNTIME_METADATA
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-google-gemini-candidate
   cli:
     cli_id: gemini-cli
@@ -273,8 +235,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -326,10 +286,9 @@ routes:
     status: RETIRED
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
@@ -337,14 +296,6 @@ routes:
     this identity to Google Antigravity via Gemini CLI with Qwen3.6-35B-A3B selected;
     this retained record has no dispatch authority.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -353,12 +304,6 @@ routes:
   provider_id: anthropic
   service_id: claude
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-anthropic-claude-candidate
   cli:
     cli_id: TBD
@@ -367,8 +312,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -407,25 +350,15 @@ routes:
     status: INTAKE_INCOMPLETE
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
   source_basis: Candidate service lane named in existing provider-planning artifacts;
     no exact route is approved.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - cli_id_and_version
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -436,16 +369,10 @@ routes:
   service_id: antigravity
   candidate_selection:
     selected_candidate: Google Antigravity via Gemini CLI / Qwen3.6-35B-A3B
-    selection_status: OWNER_CORRECTED_SECONDARY_H010_004_PENDING_EXACT_IDENTITY
+    selection_status: OWNER_CORRECTED_SECONDARY_H010_004_PENDING_ROUTE_QUALIFICATION
     authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
-    identity_resolution_status: PARTIALLY_OBSERVED_NOT_QUALIFIED
+    metadata_minimization_status: OWNER_DIRECTED_NO_ACCOUNT_OR_RUNTIME_METADATA
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-google-antigravity-qwen3.6-35b-a3b-candidate
   cli:
     cli_id: gemini-cli
@@ -454,8 +381,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -496,7 +421,7 @@ routes:
     source_of_truth: LOCAL_REPOSITORY
     route_decision: DENY
     owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
-    terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+    terms_status: OWNER_ACCEPTED_PENDING_ROUTE_QUALIFICATION
     review_trigger: Complete before any provider submission or route activation
   evaluation:
     status: NOT_STARTED
@@ -507,10 +432,9 @@ routes:
     status: UNDER_POLICY_REVIEW
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
@@ -518,13 +442,6 @@ routes:
     CLI with Qwen3.6-35B-A3B selected. PUBLIC-only scope and terms acceptance are
     owner-supplied policy input, not activation authority.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - model_revision_or_digest
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -534,12 +451,6 @@ routes:
   provider_id: deepseek
   service_id: deepseek-pro
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-deepseek-pro-candidate
   cli:
     cli_id: TBD
@@ -548,8 +459,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -588,25 +497,15 @@ routes:
     status: INTAKE_INCOMPLETE
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
   source_basis: Candidate service lane named in existing provider-planning artifacts;
     no exact route is approved.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - cli_id_and_version
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
@@ -616,12 +515,6 @@ routes:
   provider_id: deepseek
   service_id: deepseek-flash
   route_kind: ONLINE_SERVICE
-  account_profile_id: TBD
-  service_tier: TBD
-  location:
-    region_or_host_profile: TBD
-    endpoint_or_runtime_source: TBD
-    network_destination: TBD
   model_record_id: model-deepseek-flash-candidate
   cli:
     cli_id: TBD
@@ -630,8 +523,6 @@ routes:
   adapter:
     adapter_id: TBD
     version: TBD
-  configuration_digest: TBD
-  auth_profile_ref: TBD_NO_SECRET_VALUE
   approved_roles: []
   approved_task_families: []
   allowed_data_classes: []
@@ -670,25 +561,15 @@ routes:
     status: INTAKE_INCOMPLETE
     dispatch_enabled: false
     effective_date: null
-    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
-      quota, cost, or configuration change
+    review_trigger: Any provider, service, model, CLI, adapter, policy, tool, quota, or cost
+      change
     suspension_triggers:
-    - UNKNOWN_IDENTITY
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
   source_basis: Candidate service lane named in existing provider-planning artifacts;
     no exact route is approved.
   unknowns:
-  - account_profile_id
-  - service_tier
-  - region_or_host_profile
-  - endpoint_or_runtime_source
-  - exact_model_id
-  - model_revision_or_digest
-  - cli_id_and_version
-  - adapter_id_and_version
-  - configuration_digest
   - provider_data_policy_review
   - quota_and_usage_limits
   - technical_validation
