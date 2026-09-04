@@ -23,6 +23,19 @@ INPUT_PATHS = (
     "toolchain.lock.yaml",
     "repo-manifest.yaml",
     "LICENSE-POLICY.md",
+    "modules/module-registry.yaml",
+    "contracts/api/go.mod",
+    "packages/identifiers/go.mod",
+    "schemas/api/error-envelope.schema.json",
+    "modules/organization-tenancy/go.mod",
+    "modules/identity-authorization/go.mod",
+    "modules/files-evidence/go.mod",
+    "modules/records-audit/go.mod",
+    "modules/configuration-checklist/go.mod",
+    "modules/workflow-action/go.mod",
+    "modules/events-outbox-jobs/go.mod",
+    "modules/reporting-localization/go.mod",
+    "modules/contract-migration-governance/go.mod",
 )
 ARTIFACT_NAMES = ("sbom.spdx.json", "provenance.json", "platform-bom.json", "signature-envelope.json")
 
