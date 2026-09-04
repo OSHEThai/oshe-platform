@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import dataclasses
 import importlib.util
+import json
 import pathlib
 import sys
+import tempfile
 import unittest
 
 
@@ -79,6 +81,49 @@ class ValidateRepositoryYamlLimitTests(unittest.TestCase):
     def test_outer_corpus_is_exact_and_excludes_delegated_ai_yaml(self) -> None:
         self.assertEqual(len(validate_repository.OUTER_YAML_PATHS), 8)
         self.assertFalse(any(path.startswith(".ai/") for path in validate_repository.OUTER_YAML_PATHS))
+
+
+class ValidateRepositoryRightsMetadataTests(unittest.TestCase):
+    def _write(self, root: pathlib.Path, relative: str, text: str = "fixture\n") -> None:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def _metadata(self) -> dict[str, object]:
+        return {
+            "schema_version": "1.0.0",
+            "repository": "OSHEThai/oshe-platform",
+            "licensor": "OSHEThai",
+            "root_license": "MPL-2.0",
+            "rules": [
+                {"path": "LICENSE", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "MPL-2.0", "source": "fixture"},
+                {"path": "LICENSES/**", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "SPDX_STANDARD_TEXT", "source": "fixture"},
+                {"path": "DCO-1.1.txt", "classification": "THIRD_PARTY_STANDARD_TEXT", "license": "DCO-1.1", "source": "fixture"},
+                {"path": "**", "classification": "OSHE_AUTHORED_ENGINEERING", "license": "MPL-2.0", "copyright": "OSHEThai"},
+            ],
+        }
+
+    def test_complete_rights_metadata_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = pathlib.Path(temporary_directory)
+            for relative in ("LICENSE", "DCO-1.1.txt", "NOTICE.md", "LICENSES/MPL-2.0.txt", "LICENSES/Apache-2.0.txt", "source.py"):
+                self._write(root, relative)
+            (root / "RIGHTS-METADATA.json").write_text(json.dumps(self._metadata()), encoding="utf-8")
+
+            self.assertEqual(validate_repository.validate_rights_metadata(root, "platform"), [])
+
+    def test_unknown_rights_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = pathlib.Path(temporary_directory)
+            for relative in ("LICENSE", "DCO-1.1.txt", "NOTICE.md", "LICENSES/MPL-2.0.txt", "LICENSES/Apache-2.0.txt"):
+                self._write(root, relative)
+            metadata = self._metadata()
+            metadata["rules"] = []
+            (root / "RIGHTS-METADATA.json").write_text(json.dumps(metadata), encoding="utf-8")
+
+            errors = validate_repository.validate_rights_metadata(root, "platform")
+
+            self.assertIn("rights metadata must contain ordered rules", errors)
 
 
 class ValidateRepositorySecretPatternTests(unittest.TestCase):

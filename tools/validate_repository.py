@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import fnmatch
 import json
 import pathlib
 import re
@@ -96,6 +97,77 @@ SECRET_PATTERNS = [
         r"(?![\"']|\$\{|<)[^\s#]{8,}[ \t]*(?:#.*)?$"
     ),
 ]
+
+RIGHTS_METADATA = "RIGHTS-METADATA.json"
+RIGHTS_REQUIRED = ("LICENSE", "DCO-1.1.txt", "NOTICE.md", RIGHTS_METADATA)
+RIGHTS_IGNORED_PARTS = {".git", ".local-ci", "__pycache__", ".pytest_cache"}
+RIGHTS_LICENSES = {
+    "platform": {
+        "OSHE_AUTHORED_ENGINEERING": {"MPL-2.0"},
+        "PUBLIC_CONTRACT": {"Apache-2.0"},
+        "PUBLIC_SCHEMA": {"Apache-2.0"},
+        "SDK": {"Apache-2.0"},
+        "INTEGRATION_EXAMPLE": {"Apache-2.0"},
+        "CONFORMANCE_KIT": {"Apache-2.0"},
+    },
+    "content": {
+        "CODE_TOOL_SCHEMA_TEST_AUTOMATION": {"Apache-2.0"},
+        "OSHE_AUTHORED_PRACTICAL_CONTENT": {"CC-BY-SA-4.0"},
+        "OSHE_AUTHORED_METADATA_OR_MAPPING": {"CC-BY-4.0"},
+    },
+}
+
+
+def validate_rights_metadata(root: pathlib.Path, repo_kind: str) -> list[str]:
+    """Require every repository file to have deterministic, fail-closed rights metadata."""
+    errors: list[str] = []
+    for relative_path in RIGHTS_REQUIRED:
+        if not (root / relative_path).is_file():
+            errors.append(f"missing licensing control: {relative_path}")
+    metadata_path = root / RIGHTS_METADATA
+    if not metadata_path.is_file():
+        return errors
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return errors + [f"invalid rights metadata: {exc}"]
+    if metadata.get("schema_version") != "1.0.0":
+        errors.append("rights metadata must declare schema_version 1.0.0")
+    if metadata.get("licensor") != "OSHEThai":
+        errors.append("rights metadata licensor must be OSHEThai")
+    expected_root_license = {"platform": "MPL-2.0", "content": "Apache-2.0"}[repo_kind]
+    if metadata.get("root_license") != expected_root_license:
+        errors.append(f"rights metadata root license must be {expected_root_license}")
+    rules = metadata.get("rules")
+    if not isinstance(rules, list) or not rules:
+        return errors + ["rights metadata must contain ordered rules"]
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root).as_posix()
+        if any(part in RIGHTS_IGNORED_PARTS for part in path.relative_to(root).parts) or path.suffix == ".pyc":
+            continue
+        matched = next((rule for rule in rules if isinstance(rule, dict) and fnmatch.fnmatchcase(relative, rule.get("path", ""))), None)
+        if matched is None:
+            errors.append(f"missing rights metadata for {relative}")
+            continue
+        classification = matched.get("classification")
+        license_id = matched.get("license")
+        if classification == "THIRD_PARTY_STANDARD_TEXT":
+            if not isinstance(matched.get("source"), str) or not matched["source"].strip():
+                errors.append(f"third-party standard text lacks provenance: {relative}")
+            continue
+        allowed = RIGHTS_LICENSES[repo_kind].get(classification)
+        if allowed is None or license_id not in allowed:
+            errors.append(f"invalid rights classification or license for {relative}")
+        if matched.get("copyright") != "OSHEThai":
+            errors.append(f"OSHE-authored rights lack OSHEThai attribution: {relative}")
+    for license_id in sorted({license_id for values in RIGHTS_LICENSES[repo_kind].values() for license_id in values}):
+        if not (root / "LICENSES" / f"{license_id}.txt").is_file():
+            errors.append(f"missing standard license text: {license_id}")
+    if not (root / "LICENSE").read_bytes().strip():
+        errors.append("root LICENSE is empty")
+    return errors
 
 
 SECRET_ALLOWED_VALUES: dict[str, tuple[str, ...]] = {
@@ -331,6 +403,8 @@ def main() -> int:
     for rel in COMMON_REQUIRED + REPO_REQUIRED[args.repo_kind]:
         if not (root / rel).exists():
             errors.append(f"missing required path: {rel}")
+
+    errors.extend(validate_rights_metadata(root, args.repo_kind))
 
     for path in root.rglob("*"):
         if not path.is_file() or ".git" in path.parts:
