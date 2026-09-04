@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "fixtures": [
+    {
+      "fixture_id": "synthetic-json-echo",
+      "input": {"task": "echo", "value": {"case": "alpha", "safe": true}},
+      "expected_output": {"case": "alpha", "safe": true},
+      "max_turns": 2
+    },
+    {
+      "fixture_id": "synthetic-schema-summary",
+      "input": {"task": "summarize-schema", "fields": ["id", "status"]},
+      "expected_output": {"field_count": 2, "schema_valid": true},
+      "max_turns": 3
+    }
+  ]
+}
