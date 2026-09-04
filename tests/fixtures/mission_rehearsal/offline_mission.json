@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "mission_id": "V010-I031-OFFLINE-MOCK-001",
+  "visible_roles": ["PM", "PM Secretary", "Engineering Lead", "Test Quality Lead", "Independent Review Lead"],
+  "tasks": [
+    {"task_id": "plan", "owner_role": "PM", "report_to": null, "depends_on": [], "write_paths": ["plans/mock-mission.json"], "result_contract": "STRUCTURED_JSON", "hidden_agent": false, "provider_mode": "SYNTHETIC_OFFLINE", "route_id": null},
+    {"task_id": "implement", "owner_role": "Engineering Lead", "report_to": "PM Secretary", "depends_on": ["plan"], "write_paths": ["work/implementation.json"], "result_contract": "STRUCTURED_JSON", "hidden_agent": false, "provider_mode": "SYNTHETIC_OFFLINE", "route_id": null},
+    {"task_id": "validate", "owner_role": "Test Quality Lead", "report_to": "PM Secretary", "depends_on": ["plan"], "write_paths": ["work/validation.json"], "result_contract": "STRUCTURED_JSON", "hidden_agent": false, "provider_mode": "SYNTHETIC_OFFLINE", "route_id": null},
+    {"task_id": "review", "owner_role": "Independent Review Lead", "report_to": "PM Secretary", "depends_on": ["implement", "validate"], "write_paths": ["work/review.json"], "result_contract": "STRUCTURED_JSON", "hidden_agent": false, "provider_mode": "SYNTHETIC_OFFLINE", "route_id": null},
+    {"task_id": "consolidate", "owner_role": "PM Secretary", "report_to": "PM", "depends_on": ["review"], "write_paths": ["work/summary.json"], "result_contract": "STRUCTURED_JSON", "hidden_agent": false, "provider_mode": "SYNTHETIC_OFFLINE", "route_id": null}
+  ]
+}
