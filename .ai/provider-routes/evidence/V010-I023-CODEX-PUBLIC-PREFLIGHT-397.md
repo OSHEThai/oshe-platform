@@ -58,7 +58,7 @@ activation_credit: NONE
 ## 4. Limitations and Non-Activation Controls
 
 - **Observation Only**: The observed runtime model `gpt-5.6-luna` is recorded as factual execution evidence only. It is not an approved registry selection, model configuration update, or qualification approval.
-- **Unresolved Gates**: Exact provider/service legal account identity, service tier, endpoint, model revision or digest, configuration digest, adapter version, independent policy review, technical validation suite, and H010-007 activation authority remain unresolved (`TBD`).
+- **Unresolved Gates**: Exact provider/service legal account identity, service tier, endpoint, model revision or digest, configuration digest, adapter version, independent policy review, technical validation suite, and evaluation evidence remain unresolved (`TBD`). H010-007 activation authority is conditionally owner-approved, but cannot become effective and route activation cannot occur until all listed exact-identity, policy/technical/evaluation, quota-control, and activation prerequisites pass. No route is activated.
 - **Preserved Status**:
   - Route decision remains `DENY`.
   - Dispatch default remains `DENY`.
