@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_id": "FIX-V020-WALKING-SKELETON-001",
+  "governing_issue": "Issue #71 (V020-I036)",
+  "governing_lease": "LEASE-V020-I036-INTEGRATION-HARNESS-PREWORK-312",
+  "release": "v0.2.0",
+  "topic": "V020-T08",
+  "tenants": {
+    "primary": {
+      "tenant_id": "ten_safety_corp",
+      "company_id": "comp_safety_industrial",
+      "name": "Safety Corp Thailand"
+    },
+    "secondary": {
+      "tenant_id": "ten_heavy_industry",
+      "company_id": "comp_heavy_manufacturing",
+      "name": "Heavy Industry Ltd"
+    }
+  },
+  "subjects": {
+    "inspector": {
+      "subject_id": "sub_inspector_somchai",
+      "tenant_id": "ten_safety_corp",
+      "roles": ["INSPECTOR"]
+    },
+    "safety_officer": {
+      "subject_id": "sub_officer_alice",
+      "tenant_id": "ten_safety_corp",
+      "roles": ["SAFETY_OFFICER"]
+    },
+    "compliance_lead": {
+      "subject_id": "sub_lead_bob",
+      "tenant_id": "ten_safety_corp",
+      "roles": ["COMPLIANCE_LEAD"]
+    },
+    "unauthorized_intruder": {
+      "subject_id": "sub_intruder_charlie",
+      "tenant_id": "ten_heavy_industry",
+      "roles": ["GUEST"]
+    }
+  },
+  "checklist_template": {
+    "template_id": "tmpl_scaffold_safety",
+    "version_id": "v1.0.0",
+    "title": "Industrial Scaffolding Safety Inspection",
+    "questions": [
+      {
+        "id": "q1_base_plates",
+        "text": "Are scaffold base plates firmly grounded on solid foundation?",
+        "type": "BOOLEAN",
+        "required": true
+      },
+      {
+        "id": "q2_guardrails",
+        "text": "Are top rails, mid rails, and toe boards properly installed?",
+        "type": "BOOLEAN",
+        "required": true
+      },
+      {
+        "id": "q3_load_capacity",
+        "text": "Record maximum rated load capacity (kg)",
+        "type": "DECIMAL",
+        "required": true
+      }
+    ]
+  },
+  "evidence": {
+    "evidence_id": "evd_scaffold_photo_001",
+    "tenant_id": "ten_safety_corp",
+    "filename": "scaffold_platform_inspection.jpg",
+    "media_type": "image/jpeg",
+    "size_bytes": 1048576,
+    "sha256_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "corrective_action": {
+    "action_id": "act_repair_guardrail_001",
+    "tenant_id": "ten_safety_corp",
+    "title": "Replace Missing Mid-Rail on Tower Section 3",
+    "owner": "sub_officer_alice",
+    "reviewer": "sub_lead_bob",
+    "required_evidence_count": 1
+  },
+  "report_and_export": {
+    "metric_id": "metric_ws_closure_rate",
+    "template_id": "tmpl_inspection_export",
+    "version_id": "1.0.0",
+    "expected_non_authority_notice": "DERIVED_OUTPUT_NON_AUTHORITY: Reports, metrics, and analytics are derived outputs and never constitute operational authority or replace authoritative records."
+  },
+  "feature_flags": {
+    "flag_id": "feat_advanced_hazard_analytics",
+    "default_off": true,
+    "enabled": false,
+    "stage": "ALPHA",
+    "authority_disclaimer": "FEATURE_FLAG_NON_AUTHORITY: Feature flags control client exposure and operational gates only. Flags never grant security authority or bypass authorization controls."
+  }
+}
