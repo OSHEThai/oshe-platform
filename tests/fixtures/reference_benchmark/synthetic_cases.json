@@ -12,6 +12,18 @@
       "input": {"task": "summarize-schema", "fields": ["id", "status"]},
       "expected_output": {"field_count": 2, "schema_valid": true},
       "max_turns": 3
+    },
+    {
+      "fixture_id": "synthetic-json-validator-valid-record",
+      "input": {"task": "validate-json", "document": {"record_id": "alpha", "status": "OPEN"}, "required_fields": ["record_id", "status"]},
+      "expected_output": {"valid": true, "missing_fields": [], "schema_valid": true},
+      "max_turns": 2
+    },
+    {
+      "fixture_id": "synthetic-json-validator-missing-required-field",
+      "input": {"task": "validate-json", "document": {"record_id": "alpha"}, "required_fields": ["record_id", "status"]},
+      "expected_output": {"valid": false, "missing_fields": ["status"], "schema_valid": false},
+      "max_turns": 2
     }
   ]
 }

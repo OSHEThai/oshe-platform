@@ -27,7 +27,16 @@ class ReferenceBenchmarkTests(unittest.TestCase):
         first = benchmark.scorecard(self.fixtures, "NONE")
         second = benchmark.scorecard(self.fixtures, "NONE")
         self.assertEqual(first, second)
-        self.assertEqual(first["summary"], {"completed": 2, "failed": 0, "total": 2})
+        self.assertEqual(first["summary"], {"completed": 4, "failed": 0, "total": 4})
+        self.assertEqual(
+            [item["fixture_id"] for item in first["fixtures"]],
+            [
+                "synthetic-json-echo",
+                "synthetic-schema-summary",
+                "synthetic-json-validator-valid-record",
+                "synthetic-json-validator-missing-required-field",
+            ],
+        )
         self.assertTrue(all(item["measures"]["route_selection"] == "NONE" for item in first["fixtures"]))
 
     def test_failure_injections_fail_closed(self) -> None:
