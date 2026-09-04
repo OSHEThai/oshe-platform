@@ -201,11 +201,11 @@ routes:
     provider_web_access_enabled: false
     provider_subagents_enabled: false
   usage_controls:
-    cost_class: TBD
-    quota_profile_id: TBD
-    concurrency_limit: TBD
-    soft_warning: TBD
-    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    cost_class: C2
+    quota_profile_id: QP-V010-LIVE-QUALIFICATION-C2-001
+    concurrency_limit: 1
+    soft_warning: 70%
+    hard_stop: 100%_NO_FALLBACK
     actual_usage_evidence_required: true
   fallback_route_ids: []
   data_policy_review:
@@ -482,11 +482,11 @@ routes:
     provider_web_access_enabled: false
     provider_subagents_enabled: false
   usage_controls:
-    cost_class: TBD
-    quota_profile_id: TBD
-    concurrency_limit: TBD
-    soft_warning: TBD
-    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    cost_class: C2
+    quota_profile_id: QP-V010-LIVE-QUALIFICATION-C2-001
+    concurrency_limit: 1
+    soft_warning: 70%
+    hard_stop: 100%_NO_FALLBACK
     actual_usage_evidence_required: true
   fallback_route_ids: []
   data_policy_review:

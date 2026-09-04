@@ -45,7 +45,19 @@ quota_states:
   UNKNOWN:
     threshold: null
     behavior: Use conservative bounded test mission or deny dispatch.
-route_usage_profiles: []
+route_usage_profiles:
+- quota_profile_id: QP-V010-LIVE-QUALIFICATION-C2-001
+  bound_route_ids:
+  - route-openai-codex-candidate
+  - route-google-antigravity-qwen3.6-35b-a3b-candidate
+  cost_class: C2
+  concurrency_limit: 1
+  soft_warning: 70%
+  hard_stop: 100%_NO_FALLBACK
+  billing_mode: EXISTING_SUBSCRIPTION_OR_PREPAID_ONLY
+  emergency_reserve_allowed: false
+  auto_top_up_allowed: false
+  fallback_allowed: false
 usage_evidence:
   required_fields_when_available:
   - mission_id
