@@ -1,6 +1,8 @@
 package reporting
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,6 +33,7 @@ var (
 	ErrMustDefaultOff            = errors.New("governed feature flags must explicitly declare DefaultOff as true")
 	ErrAuthorityBypassDenied     = errors.New("feature flags cannot grant authority or bypass authorization controls")
 	ErrAccessibilityNonCompliant = errors.New("feature flag fails accessibility qualification standards")
+	ErrInvalidRolloutPercentage  = errors.New("rollout percentage must be between 0 and 100 inclusive")
 )
 
 // RolloutMetadata governs targeted tenant, role, and temporal exposure.
@@ -122,6 +125,9 @@ func (r *FeatureFlagRegistry) RegisterFlag(flag FeatureFlag) error {
 		return ErrMustDefaultOff
 	}
 
+	if flag.Rollout.Percentage < 0 || flag.Rollout.Percentage > 100 {
+		return ErrInvalidRolloutPercentage
+	}
 	tenantsCopy := make([]string, len(flag.Rollout.AllowedTenants))
 	copy(tenantsCopy, flag.Rollout.AllowedTenants)
 
@@ -169,6 +175,27 @@ func (r *FeatureFlagRegistry) SetFlagState(flagID string, enabled bool) error {
 	return nil
 }
 
+// SetRolloutPercentage updates the rollout percentage for an existing flag.
+func (r *FeatureFlagRegistry) SetRolloutPercentage(flagID string, percentage int) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	id := strings.TrimSpace(flagID)
+	f, exists := r.flags[id]
+	if !exists {
+		return ErrFlagNotFound
+	}
+
+	if percentage < 0 || percentage > 100 {
+		return ErrInvalidRolloutPercentage
+	}
+
+	f.Rollout.Percentage = percentage
+	f.UpdatedAt = r.clock().UTC()
+	r.flags[id] = f
+	return nil
+}
+
 // Evaluate evaluates whether a feature flag should be exposed to a caller context.
 // Invariant Guarantees:
 // 1. If caller is not authorized (ctx.IsAuthorized == false), exposure is ALWAYS denied.
@@ -177,6 +204,8 @@ func (r *FeatureFlagRegistry) SetFlagState(flagID string, enabled bool) error {
 // 4. If current time is outside effective time window, exposure is denied (stale config).
 // 5. If tenant is not in allowed tenants list, exposure is denied.
 // 6. If caller roles do not intersect with allowed roles, exposure is denied.
+// 7. If rollout percentage is 0%, exposure is denied.
+// 8. If fractional rollout (<100%), caller subject must be deterministically assigned to a qualifying cohort bucket.
 func (r *FeatureFlagRegistry) Evaluate(flagID string, ctx EvaluationContext) EvaluationResult {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -285,6 +314,40 @@ func (r *FeatureFlagRegistry) Evaluate(flagID string, ctx EvaluationContext) Eva
 			}
 		}
 	}
+	// 6. Rollout Percentage & Deterministic Cohort Evaluation
+	if f.Rollout.Percentage <= 0 {
+		return EvaluationResult{
+			FlagID:        id,
+			Exposed:       false,
+			Reason:        "subject excluded: rollout percentage is 0%",
+			Accessibility: f.Accessibility,
+			AuthorityNote: DefaultFlagAuthorityNotice,
+		}
+	}
+
+	if f.Rollout.Percentage < 100 {
+		trimmedSubject := strings.TrimSpace(ctx.SubjectID)
+		if trimmedSubject == "" {
+			return EvaluationResult{
+				FlagID:        id,
+				Exposed:       false,
+				Reason:        "subject identifier required for fractional rollout cohort evaluation",
+				Accessibility: f.Accessibility,
+				AuthorityNote: DefaultFlagAuthorityNotice,
+			}
+		}
+
+		bucket := ComputeCohortBucket(id, trimmedSubject)
+		if bucket >= f.Rollout.Percentage {
+			return EvaluationResult{
+				FlagID:        id,
+				Exposed:       false,
+				Reason:        fmt.Sprintf("subject %q assigned to cohort bucket %d outside rollout percentage %d%%", trimmedSubject, bucket, f.Rollout.Percentage),
+				Accessibility: f.Accessibility,
+				AuthorityNote: DefaultFlagAuthorityNotice,
+			}
+		}
+	}
 
 	return EvaluationResult{
 		FlagID:        id,
@@ -293,4 +356,14 @@ func (r *FeatureFlagRegistry) Evaluate(flagID string, ctx EvaluationContext) Eva
 		Accessibility: f.Accessibility,
 		AuthorityNote: DefaultFlagAuthorityNotice,
 	}
+}
+
+// ComputeCohortBucket deterministically maps a flag ID and subject ID to a bucket in [0, 99].
+// It uses a SHA-256 hash to ensure uniform, reproducible cohort assignment across synthetic subjects.
+func ComputeCohortBucket(flagID, subjectID string) int {
+	cleanFlag := strings.TrimSpace(flagID)
+	cleanSubject := strings.TrimSpace(subjectID)
+	h := sha256.Sum256([]byte(cleanFlag + ":" + cleanSubject))
+	val := binary.BigEndian.Uint64(h[:8])
+	return int(val % 100)
 }
