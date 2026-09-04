@@ -12,7 +12,8 @@
         "tests.test_permission_delegation",
         "tests.test_local_ci",
         "tests.test_supply_chain",
-        "tests.test_evidence_bundle"
+        "tests.test_evidence_bundle",
+        "tests.test_reference_benchmark"
       ]
     },
     {
