@@ -1,0 +1,24 @@
+schema_version: 1.0.0
+evidence_id: EVD-V010-I031-LIVE-PUBLIC-QUALIFICATION-002
+evidence_class: CONTRACT
+claim: One temporary PUBLIC-only structured response matches the bounded response schema.
+repository: OSHEThai/oshe-platform
+commit: 4f48210fee5acdb078f05de7ec952c0c1baec9de
+environment: temporary-owner-authorized-public-only-qualification
+command_or_method: One temporary sole-human-owner-approved PUBLIC-only structured-response operation followed by JSON Schema validation and independent read-only review.
+result: PASS
+artifact_refs:
+- .ci/evidence/V010-I031/live-public-response-002.json
+- https://github.com/OSHEThai/oshe-platform/issues/34#issuecomment-5542061729
+captured_at: '2026-09-04T21:56:00+07:00'
+captured_by: documentation-lead
+limitations:
+- no route activation
+- no full mission completion
+- no provider qualification
+- no release/deployment
+- no production/customer-data authorization
+- no Issue #34 closure
+- predecessor 001 remains preserved failure with no response written and no retry/fallback
+review_ref: ASN-V010-I031-LIVE-PUBLIC-INDEPENDENT-REVIEW-005
+human_decision_ref: HDEC-V010-I031-H010-007-LIVE-PUBLIC-ACTIVATION-002
