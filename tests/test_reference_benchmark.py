@@ -17,6 +17,7 @@ SPEC.loader.exec_module(benchmark)
 
 
 FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures" / "reference_benchmark" / "synthetic_cases.json"
+PUBLIC_OBSERVATIONS = pathlib.Path(__file__).resolve().parent / "fixtures" / "reference_benchmark" / "public_response_observations.json"
 
 
 class ReferenceBenchmarkTests(unittest.TestCase):
@@ -61,6 +62,27 @@ class ReferenceBenchmarkTests(unittest.TestCase):
             benchmark.write_scorecard(output, benchmark.scorecard(self.fixtures, "NONE"))
             with self.assertRaises(FileExistsError):
                 benchmark.write_scorecard(output, benchmark.scorecard(self.fixtures, "NONE"))
+
+    def test_recorded_public_responses_compare_without_dispatch(self) -> None:
+        observations = benchmark.load_public_response_observations(PUBLIC_OBSERVATIONS)
+        comparison = benchmark.compare_public_response_observations(observations)
+        self.assertEqual(comparison["execution_mode"], "RECORDED_PUBLIC_OBSERVATIONS_NO_DISPATCH")
+        self.assertEqual(comparison["provider_routes_enabled"], 0)
+        self.assertEqual(
+            comparison["summary"],
+            {"observed": 2, "structured_output_matches": 2, "structured_output_mismatches": 0, "warnings": 1},
+        )
+        self.assertEqual(
+            [candidate["route_id"] for candidate in comparison["candidates"]],
+            ["route-openai-codex-candidate", "route-google-antigravity-qwen3.6-35b-a3b-candidate"],
+        )
+
+    def test_malformed_public_response_observation_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            invalid = pathlib.Path(temporary) / "invalid-observations.json"
+            invalid.write_text(json.dumps({"schema_version": "1.0.0", "observations": [{"route_id": "x"}]}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "response and expected_response"):
+                benchmark.load_public_response_observations(invalid)
 
 
 if __name__ == "__main__":
