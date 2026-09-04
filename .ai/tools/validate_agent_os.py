@@ -487,48 +487,98 @@ def validate_repository_workflow(validation: Validation) -> None:
             validation.error("Every local CI check must have a non-empty command list")
 
 
-def validate_provider_routes_fail_closed(validation: Validation, role_ids: set[str]) -> None:
+def validate_provider_routes_fail_closed(validation: Validation, role_ids: set[str]) -> int:
     routing = validation.load_yaml(AI_ROOT / "policies" / "provider-routing.yaml") or {}
-    if routing.get("routing_status") != "NO_APPROVED_ROUTES":
-        validation.error("Canonical provider routing must remain NO_APPROVED_ROUTES")
     if set((routing.get("role_routes") or {}).keys()) != role_ids:
         validation.error("Provider routing role keys must exactly match canonical roles")
-    for role_id, route in (routing.get("role_routes") or {}).items():
-        if route.get("dispatch_enabled") is not False:
-            validation.error(f"Provider routing unexpectedly enables {role_id}")
-        if route.get("primary_route_id") is not None or route.get("fallback_route_ids"):
-            validation.error(f"Provider routing assigns an unapproved route to {role_id}")
 
     models = validation.load_yaml(AI_ROOT / "policies" / "model-registry.yaml") or {}
     if models.get("dispatch_default") != "DENY":
         validation.error("Model registry dispatch default must be DENY")
-    if models.get("approved_model_refs") or models.get("enabled_model_record_ids"):
-        validation.error("Model registry must not approve or enable a model in this preparation")
-    for model in models.get("models", []):
-        if model.get("dispatch_enabled") is not False:
-            validation.error(f"Model is unexpectedly enabled: {model.get('model_record_id')}")
+    model_by_id = {model.get("model_record_id"): model for model in models.get("models", [])}
+    approved_model_ids = set(models.get("approved_model_refs") or [])
+    enabled_model_ids = set(models.get("enabled_model_record_ids") or [])
+    if approved_model_ids != enabled_model_ids:
+        validation.error("Approved and enabled model ID sets must match")
+    for model_id in enabled_model_ids:
+        model = model_by_id.get(model_id)
+        if not model:
+            validation.error(f"Enabled model is missing: {model_id}")
+            continue
+        if model.get("dispatch_enabled") is not True:
+            validation.error(f"Enabled model is not dispatch-enabled: {model_id}")
+        if model.get("approval_status") not in {"APPROVED", "APPROVED_WITH_LIMITS"}:
+            validation.error(f"Enabled model lacks approved status: {model_id}")
+        if not model.get("approved_roles") or not model.get("allowed_data_classes"):
+            validation.error(f"Enabled model lacks role or data authority: {model_id}")
+    for model_id, model in model_by_id.items():
+        if model.get("dispatch_enabled") is True and model_id not in enabled_model_ids:
+            validation.error(f"Dispatch-enabled model is absent from enabled IDs: {model_id}")
 
     routes = validation.load_yaml(AI_ROOT / "provider-routes" / "ai-service-route-registry.yaml") or {}
     if routes.get("dispatch_default") != "DENY" or routes.get("default_dispatch_policy") != "DENY_UNLESS_EXACT_ROUTE_APPROVED":
         validation.error("Provider route registry must fail closed")
-    if routes.get("active_route_ids") or routes.get("approved_route_ids") or routes.get("enabled_route_ids"):
-        validation.error("Provider route registry must have no active, approved, or enabled routes")
     if routes.get("global_controls", {}).get("hidden_subagents") != "PROHIBITED":
         validation.error("Provider route registry must prohibit hidden subagents")
-    for route in routes.get("routes", []):
-        route_id = route.get("provider_route_id")
-        if route.get("approved_roles") or route.get("allowed_data_classes"):
-            validation.error(f"Candidate route has authority before approval: {route_id}")
-        if route.get("lifecycle", {}).get("dispatch_enabled") is not False:
-            validation.error(f"Candidate route is unexpectedly enabled: {route_id}")
-
     reviews = validation.load_yaml(AI_ROOT / "provider-routes" / "provider-policy-review-register.yaml") or {}
+    review_by_id = {review.get("review_id"): review for review in reviews.get("reviews", [])}
+    route_by_id = {route.get("provider_route_id"): route for route in routes.get("routes", [])}
+    active_route_ids = set(routes.get("active_route_ids") or [])
+    approved_route_ids = set(routes.get("approved_route_ids") or [])
+    enabled_route_ids = set(routes.get("enabled_route_ids") or [])
+    if active_route_ids != approved_route_ids or active_route_ids != enabled_route_ids:
+        validation.error("Active, approved, and enabled route ID sets must match")
+    if active_route_ids:
+        if routing.get("routing_status") != "APPROVED_ROUTES_CONFIGURED":
+            validation.error("Enabled routes require APPROVED_ROUTES_CONFIGURED routing status")
+    elif routing.get("routing_status") != "NO_APPROVED_ROUTES":
+        validation.error("No enabled routes require NO_APPROVED_ROUTES routing status")
+
+    for route_id, route in route_by_id.items():
+        enabled = route_id in enabled_route_ids
+        lifecycle = route.get("lifecycle", {})
+        if lifecycle.get("dispatch_enabled") is True and not enabled:
+            validation.error(f"Dispatch-enabled route is absent from enabled IDs: {route_id}")
+        if not enabled:
+            if route.get("approved_roles") or route.get("allowed_data_classes"):
+                validation.error(f"Unapproved route has authority: {route_id}")
+            if lifecycle.get("dispatch_enabled") is not False:
+                validation.error(f"Unapproved route is dispatch-enabled: {route_id}")
+            continue
+        model = model_by_id.get(route.get("model_record_id"))
+        if not model or route.get("model_record_id") not in enabled_model_ids:
+            validation.error(f"Enabled route lacks an enabled model: {route_id}")
+        if lifecycle.get("dispatch_enabled") is not True or lifecycle.get("status") not in {"APPROVED", "APPROVED_WITH_LIMITS"}:
+            validation.error(f"Enabled route lacks approved lifecycle: {route_id}")
+        if not route.get("approved_roles") or not route.get("allowed_data_classes"):
+            validation.error(f"Enabled route lacks role or data authority: {route_id}")
+        if model and (not set(route.get("approved_roles") or []).issubset(set(model.get("approved_roles") or [])) or not set(route.get("allowed_data_classes") or []).issubset(set(model.get("allowed_data_classes") or []))):
+            validation.error(f"Enabled route authority exceeds its model: {route_id}")
+        data_policy = route.get("data_policy_review") or {}
+        review = review_by_id.get(data_policy.get("review_id"))
+        if not review or route_id not in (review.get("route_ids") or []):
+            validation.error(f"Enabled route lacks matching policy review: {route_id}")
+        elif review.get("route_decision") not in {"APPROVED", "APPROVED_WITH_LIMITS"}:
+            validation.error(f"Enabled route policy review is not approved: {route_id}")
+        if set(route.get("allowed_data_classes") or []) != set(data_policy.get("allowed_data_classes") or []):
+            validation.error(f"Enabled route data-policy scope does not match route scope: {route_id}")
+
     for review in reviews.get("reviews", []):
-        if review.get("route_decision") != "DENY":
-            validation.error(f"Provider review is not fail-closed: {review.get('review_id')}")
         document = AI_ROOT / "provider-routes" / "reviews" / str(review.get("document", ""))
         if not document.is_file():
             validation.error(f"Provider review document is missing: {review.get('document')}")
+
+    for role_id, route in (routing.get("role_routes") or {}).items():
+        dispatch_enabled = route.get("dispatch_enabled") is True
+        primary_route_id = route.get("primary_route_id")
+        if dispatch_enabled:
+            if primary_route_id not in enabled_route_ids:
+                validation.error(f"Enabled role route is not enabled: {role_id}")
+            if route.get("selection_state") not in {"APPROVED", "APPROVED_WITH_LIMITS"}:
+                validation.error(f"Enabled role route lacks approved selection state: {role_id}")
+        elif primary_route_id is not None or route.get("fallback_route_ids"):
+            validation.error(f"Disabled role has a route assignment: {role_id}")
+    return len(enabled_route_ids)
 
 
 def validate_examples(validation: Validation) -> None:
@@ -584,7 +634,7 @@ def main() -> int:
     validate_policies(validation)
     validate_github_authority(validation)
     validate_repository_workflow(validation)
-    validate_provider_routes_fail_closed(validation, role_ids)
+    enabled_route_count = validate_provider_routes_fail_closed(validation, role_ids)
     validate_examples(validation)
     validate_readiness_and_runbooks(validation)
 
@@ -596,7 +646,7 @@ def main() -> int:
 
     print("AI Agent OS validation PASSED")
     print(f"roles={len(role_ids)} profiles>=17 skills={len(skill_ids)} policies>=18 runbooks>=15 schemas>=20")
-    print(f"parsed_or_checked_files={len(validation.checked_files)} provider_routes_enabled=0")
+    print(f"parsed_or_checked_files={len(validation.checked_files)} provider_routes_enabled={enabled_route_count}")
     return 0
 
 
