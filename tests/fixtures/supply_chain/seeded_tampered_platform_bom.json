@@ -1,0 +1,14 @@
+{
+  "components": [
+    {
+      "name": "tampered/component",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "format": "OSHE-PLATFORM-BOM-1",
+  "release": "v0.2.0-tampered",
+  "repository_digest": {
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "source_commit": "tampered_commit"
+}
