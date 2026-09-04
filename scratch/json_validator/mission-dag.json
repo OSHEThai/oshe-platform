@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "mission_id": "V010-I031-LOCAL-REHEARSAL",
+  "steps": [
+    {
+      "step_id": "preflight-valid-record",
+      "input": "fixtures/valid-record.json",
+      "schema": "fixtures/record-schema.json",
+      "expected_exit_code": 0,
+      "expected_output": {"errors": [], "valid": true}
+    },
+    {
+      "step_id": "inject-missing-status",
+      "input": "fixtures/missing-status.json",
+      "schema": "fixtures/record-schema.json",
+      "expected_exit_code": 1,
+      "expected_output": {"errors": ["missing_required_field:status"], "valid": false}
+    },
+    {
+      "step_id": "recovery-valid-record",
+      "input": "fixtures/valid-record.json",
+      "schema": "fixtures/record-schema.json",
+      "expected_exit_code": 0,
+      "expected_output": {"errors": [], "valid": true}
+    }
+  ]
+}
