@@ -1,0 +1,83 @@
+schema_version: 1.0.0
+manifest_id: DB-MIG-MANIFEST-001
+title: v0.2.0 Module-Owned Database Migration Manifest
+lifecycle_status: PROVISIONAL
+status: PROVISIONAL_PENDING_H020_005
+governing_issue: 'Issue #64 (V020-I029)'
+governing_decision: HDEC-V020-GATE-B-APPROVAL-051
+human_gate: H020-005
+execution_state: NOT_RUNTIME_EXECUTED
+rules:
+  cross_module_direct_writes: PROHIBITED
+  shared_tables: PROHIBITED
+  private_table_joins: PROHIBITED
+  runtime_execution_status: NOT_EXECUTED_PROVISIONAL_SPECIFICATION_ONLY
+migration_phases:
+  M0: Clean installation baseline on empty database
+  M1: Forward schema and data migration upgrade
+  M2: Partial failure recovery and non-destructive forward-fix
+  M3: Destructive migration (strictly prohibited without separate owner decision)
+modules:
+  - module_id: MOD-ORG
+    module_name: Organization and Tenancy
+    schema_namespace: org
+    table_prefix: org_
+    dependency_module_ids: []
+    order_index: 1
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-IAM
+    module_name: Identity and Authorization
+    schema_namespace: iam
+    table_prefix: iam_
+    dependency_module_ids: [MOD-ORG]
+    order_index: 2
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-REC
+    module_name: Records and Audit
+    schema_namespace: rec
+    table_prefix: rec_
+    dependency_module_ids: [MOD-ORG, MOD-IAM]
+    order_index: 3
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-EVD
+    module_name: Files and Evidence
+    schema_namespace: evd
+    table_prefix: evd_
+    dependency_module_ids: [MOD-ORG, MOD-IAM]
+    order_index: 4
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-CFG
+    module_name: Configuration and Checklist
+    schema_namespace: cfg
+    table_prefix: cfg_
+    dependency_module_ids: [MOD-ORG, MOD-IAM, MOD-REC]
+    order_index: 5
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-EVT
+    module_name: Events, Outbox and Jobs
+    schema_namespace: evt
+    table_prefix: evt_
+    dependency_module_ids: [MOD-ORG, MOD-IAM]
+    order_index: 6
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-WFA
+    module_name: Workflow and Action
+    schema_namespace: wfa
+    table_prefix: wfa_
+    dependency_module_ids: [MOD-CFG, MOD-IAM, MOD-EVD, MOD-REC, MOD-EVT]
+    order_index: 7
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-REP
+    module_name: Reporting, Localization and Feature Control
+    schema_namespace: rep
+    table_prefix: rep_
+    dependency_module_ids: [MOD-WFA, MOD-REC, MOD-EVD]
+    order_index: 8
+    phases_supported: [M0, M1, M2]
+  - module_id: MOD-CTR
+    module_name: Contract and Migration Governance
+    schema_namespace: ctr
+    table_prefix: ctr_
+    dependency_module_ids: [MOD-ORG, MOD-IAM, MOD-EVD, MOD-REC, MOD-CFG, MOD-WFA, MOD-EVT, MOD-REP]
+    order_index: 9
+    phases_supported: [M0, M1, M2]
