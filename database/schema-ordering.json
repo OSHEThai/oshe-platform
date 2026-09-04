@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "ordering_id": "DB-SCHEMA-ORDERING-001",
+  "lifecycle_status": "PROVISIONAL",
+  "status": "PROVISIONAL_PENDING_H020_005",
+  "governing_issue": "Issue #64 (V020-I029)",
+  "governing_decision": "HDEC-V020-GATE-B-APPROVAL-051",
+  "human_gate": "H020-005",
+  "runtime_execution": false,
+  "topological_ordering": [
+    "MOD-ORG",
+    "MOD-IAM",
+    "MOD-REC",
+    "MOD-EVD",
+    "MOD-CFG",
+    "MOD-EVT",
+    "MOD-WFA",
+    "MOD-REP",
+    "MOD-CTR"
+  ],
+  "phases": {
+    "M0": {
+      "name": "Clean Installation Baseline",
+      "description": "Baseline schema creation on clean database in strict topological order",
+      "provisional": true,
+      "executed": false
+    },
+    "M1": {
+      "name": "Forward Schema and Data Migration",
+      "description": "Incremental non-destructive version upgrades following module DAG order",
+      "provisional": true,
+      "executed": false
+    },
+    "M2": {
+      "name": "Partial Failure Recovery and Forward-Fix",
+      "description": "Tested recovery and forward-fix procedures without destructive table drops",
+      "provisional": true,
+      "executed": false
+    }
+  },
+  "invariants": {
+    "cross_module_direct_writes": "PROHIBITED",
+    "shared_tables": "PROHIBITED",
+    "private_table_joins": "PROHIBITED",
+    "destructive_migrations_m3": "PROHIBITED_WITHOUT_OWNER_DECISION"
+  }
+}
