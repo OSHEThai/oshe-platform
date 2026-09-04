@@ -480,8 +480,8 @@ def validate_repository_workflow(validation: Validation) -> None:
     checks = config.get("checks") or []
     check_ids = [item.get("id") for item in checks if isinstance(item, dict)]
     unique_values(validation, check_ids, "local CI checks")
-    if set(check_ids) != {"agent-os-regression", "foundation-validation"}:
-        validation.error("Platform local CI must include agent regression and foundation validation")
+    if set(check_ids) != {"agent-os-regression", "foundation-validation", "supply-chain-verification"}:
+        validation.error("Platform local CI must include agent regression, foundation validation, and supply-chain verification")
     for item in checks:
         if not isinstance(item, dict) or not isinstance(item.get("command"), list) or not item.get("command"):
             validation.error("Every local CI check must have a non-empty command list")
