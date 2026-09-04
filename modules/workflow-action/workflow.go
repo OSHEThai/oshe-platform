@@ -2,6 +2,7 @@ package workflowaction
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -46,6 +47,7 @@ var (
 	ErrStaleRevision               = errors.New("optimistic concurrency conflict: stale revision")
 	ErrAuthorizationDenied         = errors.New("caller authorization denied by predicate")
 	ErrConflictingDuplicateRequest = errors.New("idempotency violation: conflicting request with same request ID")
+	ErrInvalidRollback             = errors.New("invalid rollback: target revision must be strictly earlier and valid")
 )
 
 // AuthPredicate is a caller-provided function asserting whether a specific transition is authorized.
@@ -269,4 +271,62 @@ func (e *Engine) AuditHistory(workflowID string) []AuditEntry {
 		}
 	}
 	return history
+}
+
+// Checkpoint captures an immutable snapshot of a workflow instance for rollback boundaries.
+func (e *Engine) Checkpoint(workflowID string) (WorkflowInstance, error) {
+	return e.GetWorkflow(workflowID)
+}
+
+// Rollback restores an active workflow instance to a previously captured checkpoint.
+// Fails closed if:
+// - workflow does not exist (ErrNotFound)
+// - workflow is in a terminal state (ErrTerminalState: CLOSED, ARCHIVED cannot be rolled back)
+// - checkpoint ID does not match workflow ID (ErrInvalidRollback)
+// - checkpoint revision is not strictly earlier than current revision (ErrInvalidRollback)
+// Monotonically increments revision to invalidate pending stale transitions and appends an audit entry.
+func (e *Engine) Rollback(workflowID string, checkpoint WorkflowInstance, reason string) (WorkflowInstance, error) {
+	wID := strings.TrimSpace(workflowID)
+	if wID == "" {
+		return WorkflowInstance{}, ErrBlankID
+	}
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	inst, exists := e.instances[wID]
+	if !exists {
+		return WorkflowInstance{}, ErrNotFound
+	}
+
+	if TerminalStates[inst.CurrentState] {
+		return WorkflowInstance{}, ErrTerminalState
+	}
+
+	if checkpoint.ID != inst.ID {
+		return WorkflowInstance{}, fmt.Errorf("%w: checkpoint ID %q does not match workflow ID %q", ErrInvalidRollback, checkpoint.ID, inst.ID)
+	}
+
+	if checkpoint.Revision >= inst.Revision || checkpoint.Revision < 1 {
+		return WorkflowInstance{}, fmt.Errorf("%w: checkpoint revision %d must be strictly earlier than current revision %d", ErrInvalidRollback, checkpoint.Revision, inst.Revision)
+	}
+
+	now := e.clock()
+	priorState := inst.CurrentState
+	inst.CurrentState = checkpoint.CurrentState
+	inst.Revision++
+	inst.UpdatedAt = now
+	e.instances[wID] = inst
+
+	e.auditLog = append(e.auditLog, AuditEntry{
+		WorkflowID:    wID,
+		CorrelationID: "rollback",
+		RequestID:     fmt.Sprintf("rollback-rev-%d-to-%d", checkpoint.Revision, inst.Revision),
+		PriorState:    priorState,
+		CurrentState:  inst.CurrentState,
+		Revision:      inst.Revision,
+		Timestamp:     now,
+	})
+
+	return inst, nil
 }
