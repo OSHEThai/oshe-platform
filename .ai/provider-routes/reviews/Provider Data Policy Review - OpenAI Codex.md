@@ -71,7 +71,7 @@ No role, task family, data class, tool, network profile, credential, quota, fail
 
 Include identity readback, configuration digest, data-class denial, hidden-tool or subagent denial, invalid-task rejection, quota and hard-stop behavior, failure recovery, output-contract validation, independent review, and evidence bundle.
 
-These tests and the independent review have not been completed.
+A single ephemeral, read-only PUBLIC-only connectivity preflight was executed under Sole Human Owner authorization (LEASE-V010-I023-CODEX-PUBLIC-PREFLIGHT-397) and exited 0 with token `OSHE_V010_PUBLIC_PREFLIGHT_OK` (recorded in [V010-I023-CODEX-PUBLIC-PREFLIGHT-397](../evidence/V010-I023-CODEX-PUBLIC-PREFLIGHT-397.md)). The observed runtime session model was `gpt-5.6-luna`. Full route qualification tests, independent review, and activation gates remain incomplete.
 
 ## Approval
 
@@ -94,3 +94,4 @@ The Sole Human Owner recorded H010-004 approval in Issue #26 comment 5536206761:
 - Evaluation: not started
 - Route lifecycle: `UNDER_POLICY_REVIEW`
 - Dispatch: prohibited
+- Technical preflight evidence: [V010-I023-CODEX-PUBLIC-PREFLIGHT-397](../evidence/V010-I023-CODEX-PUBLIC-PREFLIGHT-397.md) (ephemeral read-only exit 0; observed session model gpt-5.6-luna; no qualification or activation credit)
