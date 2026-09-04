@@ -1,0 +1,7 @@
+{
+  "document_id": "META-V020-FLAG-ROLLOUT-001",
+  "environment": "SYNTHETIC_ONLY",
+  "default_state": "DEFAULT_OFF",
+  "production_exposure": "PROHIBITED",
+  "rollouts": []
+}

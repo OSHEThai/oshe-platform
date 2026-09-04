@@ -1,0 +1,9 @@
+[
+  {
+    "key": "inspection.preview",
+    "default_enabled": false,
+    "stage": "SYNTHETIC_ONLY",
+    "allowed_tenants": ["ten_demo"],
+    "allowed_roles": ["inspector"]
+  }
+]
