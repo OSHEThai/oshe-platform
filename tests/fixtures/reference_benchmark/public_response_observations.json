@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_ref": ".ai/provider-routes/evidence/V010-I023-PUBLIC-TECHNICAL-RESPONSE-R2.md",
+  "classification": "PUBLIC",
+  "observations": [
+    {
+      "route_id": "route-openai-codex-candidate",
+      "cli_version": "codex-cli 0.152.0",
+      "observed_runtime_model": "gpt-5.6-luna",
+      "response": {"case_id": "V010_I023_CODEX_TECH_QUAL_R2", "classification": "PUBLIC", "status": "OK"},
+      "expected_response": {"case_id": "V010_I023_CODEX_TECH_QUAL_R2", "classification": "PUBLIC", "status": "OK"},
+      "warning": null
+    },
+    {
+      "route_id": "route-google-antigravity-qwen3.6-35b-a3b-candidate",
+      "cli_version": "1.1.26",
+      "observed_runtime_model": null,
+      "response": {"case_id": "V010_I023_ANTIGRAVITY_TECH_QUAL_R2", "classification": "PUBLIC", "status": "OK"},
+      "expected_response": {"case_id": "V010_I023_ANTIGRAVITY_TECH_QUAL_R2", "classification": "PUBLIC", "status": "OK"},
+      "warning": "--mode plan has no effect while slash command expansion is disabled"
+    }
+  ]
+}
