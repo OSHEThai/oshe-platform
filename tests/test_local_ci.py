@@ -65,6 +65,24 @@ class LocalCiTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("--milestone-close", completed.stderr)
 
+    def test_repository_configuration_includes_supply_chain_verification_check(self) -> None:
+        config_path = ROOT / ".ci" / "local-ci.json"
+        self.assertTrue(config_path.is_file(), "missing .ci/local-ci.json")
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        checks = config.get("checks", [])
+        supply_chain_checks = [
+            check
+            for check in checks
+            if isinstance(check, dict)
+            and check.get("command") == ["python", "tools/supply_chain.py", "--verify"]
+        ]
+        self.assertEqual(
+            len(supply_chain_checks),
+            1,
+            "expected exactly one local CI check invoking 'python tools/supply_chain.py --verify'",
+        )
+        self.assertEqual(supply_chain_checks[0].get("id"), "supply-chain-verification")
+
 
 if __name__ == "__main__":
     unittest.main()
