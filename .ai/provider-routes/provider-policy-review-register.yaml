@@ -26,11 +26,23 @@ reviews:
   route_ids:
   - route-google-gemini-candidate
   document: Provider Data Policy Review - Google Gemini.md
+  status: SUPERSEDED
+  route_decision: DENY
+  source_of_truth: LOCAL_REPOSITORY
+  independent_review_status: HISTORICAL_NOT_ADOPTED
+  owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
+  terms_status: SUPERSEDED_IDENTITY_INTERPRETATION
+  successor_review_id: PDR-ANTIGRAVITY-QWEN-001
+- review_id: PDR-ANTIGRAVITY-QWEN-001
+  provider_family: Google Antigravity via Gemini CLI
+  route_ids:
+  - route-google-antigravity-qwen3.6-35b-a3b-candidate
+  document: Provider Data Policy Review - Google Antigravity Qwen.md
   status: IN_REVIEW
   route_decision: DENY
   source_of_truth: LOCAL_REPOSITORY
   independent_review_status: REQUIRED_NOT_COMPLETED
-  owner_authority_ref: H010-004 / Issue-26-comment-5536206761
+  owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
   terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
   proposed_data_classes: [PUBLIC]
 - review_id: PDR-ANTHROPIC-CLAUDE-001

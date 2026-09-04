@@ -254,10 +254,10 @@ routes:
   provider_id: google
   service_id: gemini
   candidate_selection:
-    selected_candidate: Google Gemini CLI
-    selection_status: OWNER_APPROVED_SECONDARY_H010_004_PENDING_EXACT_IDENTITY
-    authority_ref: H010-004 / Issue-26-comment-5536206761
-    identity_resolution_status: UNRESOLVED
+    selected_candidate: Historical Google Gemini interpretation
+    selection_status: SUPERSEDED_BY_OWNER_CORRECTION_H010_004_R2
+    authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
+    identity_resolution_status: SUPERSEDED
   route_kind: ONLINE_SERVICE
   account_profile_id: TBD
   service_tier: TBD
@@ -310,12 +310,12 @@ routes:
   fallback_route_ids: []
   data_policy_review:
     review_id: PDR-GOOGLE-GEMINI-001
-    status: IN_REVIEW_OWNER_SCOPE_RECORDED
+    status: SUPERSEDED
     allowed_data_classes: []
     source_of_truth: LOCAL_REPOSITORY
     route_decision: DENY
-    owner_authority_ref: H010-004 / Issue-26-comment-5536206761
-    terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+    owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
+    terms_status: SUPERSEDED_IDENTITY_INTERPRETATION
     review_trigger: Complete before any provider submission or route activation
   evaluation:
     status: NOT_STARTED
@@ -323,7 +323,7 @@ routes:
     aft_case_ids: []
     evidence_bundle_ids: []
   lifecycle:
-    status: UNDER_POLICY_REVIEW
+    status: RETIRED
     dispatch_enabled: false
     effective_date: null
     review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
@@ -333,8 +333,9 @@ routes:
     - MISSING_POLICY_REVIEW
     - MISSING_APPROVAL
     - MATERIAL_DRIFT
-  source_basis: Sole Human Owner H010-004 approved Gemini as secondary with PUBLIC-only
-    scope and accepted terms; no exact route identity or dispatch authority is approved.
+  source_basis: Historical interpretation of H010-004. The Sole Human Owner corrected
+    this identity to Google Antigravity via Gemini CLI with Qwen3.6-35B-A3B selected;
+    this retained record has no dispatch authority.
   unknowns:
   - account_profile_id
   - service_tier
@@ -423,6 +424,105 @@ routes:
   - exact_model_id
   - model_revision_or_digest
   - cli_id_and_version
+  - adapter_id_and_version
+  - configuration_digest
+  - provider_data_policy_review
+  - quota_and_usage_limits
+  - technical_validation
+  - evaluation_evidence
+  - human_approval
+- provider_route_id: route-google-antigravity-qwen3.6-35b-a3b-candidate
+  provider_id: google-antigravity
+  service_id: antigravity
+  candidate_selection:
+    selected_candidate: Google Antigravity via Gemini CLI / Qwen3.6-35B-A3B
+    selection_status: OWNER_CORRECTED_SECONDARY_H010_004_PENDING_EXACT_IDENTITY
+    authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
+    identity_resolution_status: PARTIALLY_OBSERVED_NOT_QUALIFIED
+  route_kind: ONLINE_SERVICE
+  account_profile_id: TBD
+  service_tier: TBD
+  location:
+    region_or_host_profile: TBD
+    endpoint_or_runtime_source: TBD
+    network_destination: TBD
+  model_record_id: model-google-antigravity-qwen3.6-35b-a3b-candidate
+  cli:
+    cli_id: gemini-cli
+    version: 0.57.0
+    installation_source: LOCAL_READBACK_2026_09_04
+  adapter:
+    adapter_id: TBD
+    version: TBD
+  configuration_digest: TBD
+  auth_profile_ref: TBD_NO_SECRET_VALUE
+  approved_roles: []
+  approved_task_families: []
+  allowed_data_classes: []
+  proposed_data_scope:
+    data_classes:
+    - PUBLIC
+    limitation: REPOSITORY_METADATA_ONLY
+    approval_status: OWNER_APPROVED_PUBLIC_ONLY_PENDING_ACTIVATION
+    explicit_exclusions:
+    - SECRETS
+    - CUSTOMER_DATA
+    - PRODUCTION_DATA
+  prohibited_data_classes: *id001
+  maximum_change_risk: TBD
+  minimum_assurance: TBD
+  execution_controls:
+    tool_profile_ids: []
+    network_profile_id: TBD
+    sandbox_profile_id: TBD
+    path_scope_policy_id: TBD
+    write_lease_required: true
+    provider_native_tools_enabled: false
+    provider_memory_enabled: false
+    provider_web_access_enabled: false
+    provider_subagents_enabled: false
+  usage_controls:
+    cost_class: TBD
+    quota_profile_id: TBD
+    concurrency_limit: TBD
+    soft_warning: TBD
+    hard_stop: DENY_DISPATCH_UNTIL_APPROVED
+    actual_usage_evidence_required: true
+  fallback_route_ids: []
+  data_policy_review:
+    review_id: PDR-ANTIGRAVITY-QWEN-001
+    status: IN_REVIEW_OWNER_SCOPE_RECORDED
+    allowed_data_classes: []
+    source_of_truth: LOCAL_REPOSITORY
+    route_decision: DENY
+    owner_authority_ref: H010-004 / Issue-26-comment-5536206761 / Issue-26-comment-5536683519
+    terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
+    review_trigger: Complete before any provider submission or route activation
+  evaluation:
+    status: NOT_STARTED
+    ql_coverage: []
+    aft_case_ids: []
+    evidence_bundle_ids: []
+  lifecycle:
+    status: UNDER_POLICY_REVIEW
+    dispatch_enabled: false
+    effective_date: null
+    review_trigger: Any provider, service, account, model, CLI, adapter, policy, tool,
+      quota, cost, or configuration change
+    suspension_triggers:
+    - UNKNOWN_IDENTITY
+    - MISSING_POLICY_REVIEW
+    - MISSING_APPROVAL
+    - MATERIAL_DRIFT
+  source_basis: Sole Human Owner correction identifies Google Antigravity via Gemini
+    CLI with Qwen3.6-35B-A3B selected. PUBLIC-only scope and terms acceptance are
+    owner-supplied policy input, not activation authority.
+  unknowns:
+  - account_profile_id
+  - service_tier
+  - region_or_host_profile
+  - endpoint_or_runtime_source
+  - model_revision_or_digest
   - adapter_id_and_version
   - configuration_digest
   - provider_data_policy_review
@@ -597,7 +697,7 @@ routes:
 candidate_service_families:
 - route-qwen-local-candidate
 - route-openai-codex-candidate
-- route-google-gemini-candidate
+- route-google-antigravity-qwen3.6-35b-a3b-candidate
 - route-anthropic-claude-candidate
 - route-deepseek-pro-api-candidate
 - route-deepseek-flash-api-candidate

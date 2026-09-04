@@ -44,14 +44,14 @@ models:
   - SECURITY_CASE
   - LEGAL_PRIVILEGED
   - PRODUCTION_SECRET
-  cli_id: codex-cli
-  cli_version: 0.152.0
+  cli_id: TBD
+  cli_version: TBD
   adapter_id: TBD
   adapter_version: TBD
   configuration_digest: TBD
   evaluated_at: null
   evaluation_status: NOT_STARTED
-  approval_status: UNDER_POLICY_REVIEW
+  approval_status: INTAKE_INCOMPLETE
   dispatch_enabled: false
   review_trigger: Resolve exact identity and complete route qualification before use
 - model_record_id: model-openai-codex-candidate
@@ -70,8 +70,8 @@ models:
   approved_roles: []
   allowed_data_classes: []
   prohibited_data_classes: *id001
-  cli_id: gemini-cli
-  cli_version: 0.57.0
+  cli_id: codex-cli
+  cli_version: 0.152.0
   adapter_id: TBD
   adapter_version: TBD
   configuration_digest: TBD
@@ -103,9 +103,39 @@ models:
   configuration_digest: TBD
   evaluated_at: null
   evaluation_status: NOT_STARTED
-  approval_status: INTAKE_INCOMPLETE
+  approval_status: RETIRED
   dispatch_enabled: false
-  review_trigger: Resolve exact identity and complete route qualification before use
+  review_trigger: Superseded by the owner-corrected Google Antigravity via Gemini CLI
+    candidate; retain this historical record without dispatch authority.
+  successor_model_record_id: model-google-antigravity-qwen3.6-35b-a3b-candidate
+- model_record_id: model-google-antigravity-qwen3.6-35b-a3b-candidate
+  provider_id: google-antigravity
+  service_family: antigravity
+  route_kind: ONLINE_SERVICE
+  model_id: qwen3.6-35b-a3b
+  deployment_name_or_alias: qwen3.6-35b-a3b
+  revision_or_digest: TBD
+  package_source: null
+  package_checksum: null
+  license: TBD
+  context_limit: TBD
+  tool_capabilities: []
+  structured_output_capability: NOT_ASSESSED
+  approved_roles: []
+  allowed_data_classes: []
+  prohibited_data_classes: *id001
+  cli_id: gemini-cli
+  cli_version: 0.57.0
+  adapter_id: TBD
+  adapter_version: TBD
+  configuration_digest: TBD
+  evaluated_at: null
+  evaluation_status: NOT_STARTED
+  approval_status: UNDER_POLICY_REVIEW
+  dispatch_enabled: false
+  identity_basis: Owner correction in Issue-26-comment-5536683519; local readback only.
+  review_trigger: Resolve exact account, authentication, service terms version, model revision,
+    and route qualification before use
 - model_record_id: model-anthropic-claude-candidate
   provider_id: anthropic
   service_family: claude
