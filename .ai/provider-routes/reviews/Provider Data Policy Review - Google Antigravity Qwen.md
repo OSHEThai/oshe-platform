@@ -28,7 +28,7 @@ terms_status: OWNER_ACCEPTED_PENDING_EXACT_IDENTITY
   client/service candidate, with `qwen3.6-35b-a3b` selected.
 - H010-004 policy scope: `PUBLIC` only, limited to repository metadata; terms are
   owner-accepted for the applicable service pending exact identity confirmation.
-- Current route decision: `DENY`; dispatch is prohibited.
+- Current route decision: `DENY`; dispatch is prohibited. The active-lease independent policy review is completed with `DENY_MAINTAINED`.
 
 No route is approved. Unknown or conflicting facts fail closed.
 
@@ -57,10 +57,7 @@ subagents, fallback route, quota, or cost authority is approved.
 
 ## Required evidence before reconsideration
 
-Require independent policy review, exact identity and configuration readback,
-data-class denial tests, hidden-tool and subagent denial tests, task rejection,
-quota/hard-stop behavior, output-contract validation, technical qualification, and
-the required owner activation decision. Until then, retain `DENY`.
+The active-lease [Independent Policy Review - Google Antigravity Qwen R2](Independent%20Policy%20Review%20-%20Google%20Antigravity%20Qwen%20R2.md) is complete with `DENY_MAINTAINED`. Exact identity and configuration readback, data-class denial tests, hidden-tool and subagent denial tests, task rejection, quota/hard-stop behavior, output-contract validation, technical qualification, evaluation evidence, and the required owner activation decision remain required. Until then, retain `DENY`.
 
 ## Historical lineage
 
