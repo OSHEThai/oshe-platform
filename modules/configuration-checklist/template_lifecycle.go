@@ -28,6 +28,12 @@ var (
 	ErrImmutableContent = errors.New("published or retired template content is immutable and cannot be modified")
 	// ErrInvalidProvenance indicates missing source template or version identifiers during a copy operation.
 	ErrInvalidProvenance = errors.New("source template_id and version_id are required for copy provenance")
+	// ErrNotPublished indicates an attempt to instantiate an unapproved or unpublished template version.
+	ErrNotPublished = errors.New("cannot instantiate checklist from unapproved or non-published template version")
+	// ErrEmptyInstanceID indicates that the instance identifier is empty.
+	ErrEmptyInstanceID = errors.New("instance_id cannot be empty")
+	// ErrEmptyTenantID indicates that the tenant identifier is empty.
+	ErrEmptyTenantID = errors.New("tenant_id cannot be empty")
 )
 
 // LifecycleState represents the discrete governance states of a checklist template version.
@@ -285,4 +291,55 @@ func (t *TemplateVersion) Copy(newTemplateID, newVersionID, newTitle string) (*T
 			DerivedAt:        time.Now().UTC(),
 		},
 	}, nil
+}
+
+// VersionReference provides an immutable reference to a specific template version.
+type VersionReference struct {
+	TemplateID string `json:"template_id"`
+	VersionID  string `json:"version_id"`
+}
+
+// ChecklistInstance represents an execution instance pinned to an exact published template snapshot.
+// Prior instances retain the exact version used even after newer versions are published or prior versions are retired.
+type ChecklistInstance struct {
+	InstanceID  string           `json:"instance_id"`
+	TenantID    string           `json:"tenant_id"`
+	TemplateRef VersionReference `json:"template_ref"`
+	Snapshot    TemplateSnapshot `json:"snapshot"`
+	CreatedAt   time.Time        `json:"created_at"`
+}
+
+// Instantiate creates an operational checklist instance pinned to this published version snapshot.
+// Requires StatePublished. Fails closed on Draft, InReview, Approved, or Retired.
+func (t *TemplateVersion) Instantiate(instanceID, tenantID string) (*ChecklistInstance, error) {
+	if t.State != StatePublished || t.PublishedSnapshot == nil {
+		return nil, ErrNotPublished
+	}
+	tInstID := strings.TrimSpace(instanceID)
+	if tInstID == "" {
+		return nil, ErrEmptyInstanceID
+	}
+	tTenantID := strings.TrimSpace(tenantID)
+	if tTenantID == "" {
+		return nil, ErrEmptyTenantID
+	}
+
+	snap := *t.PublishedSnapshot
+	snap.Questions = cloneQuestions(t.PublishedSnapshot.Questions)
+
+	return &ChecklistInstance{
+		InstanceID: tInstID,
+		TenantID:   tTenantID,
+		TemplateRef: VersionReference{
+			TemplateID: t.TemplateID,
+			VersionID:  t.VersionID,
+		},
+		Snapshot:  snap,
+		CreatedAt: time.Now().UTC(),
+	}, nil
+}
+
+// IsStale evaluates whether this instance was created from a version preceding the latest active version.
+func (ci *ChecklistInstance) IsStale(latestVersionID string) bool {
+	return ci.TemplateRef.VersionID != strings.TrimSpace(latestVersionID)
 }
