@@ -684,3 +684,90 @@ func TestNegativeControl_NEG_V030_06_InactiveProfileMutationDenial(t *testing.T)
 		t.Fatalf("expected ErrProfileInactive when mutating inactive profile, got: %v", err)
 	}
 }
+
+func TestNegativeControl_ExternalUser_MissingSponsor(t *testing.T) {
+	tenantID := "ten_neg_ext"
+	from := time.Now()
+	to := from.Add(24 * time.Hour)
+
+	// Blank sponsor rejected
+	_, err := localidentity.NewExternalUserProfile(
+		"usr_ext_01", tenantID, "cmp_01", localidentity.ExternalTypeTemporaryWorker,
+		"", "Firm", "Worker", "ref_01", from, to, nil,
+	)
+	if !errors.Is(err, localidentity.ErrMissingInternalSponsor) {
+		t.Errorf("expected ErrMissingInternalSponsor, got %v", err)
+	}
+
+	// External user acting as sponsor rejected (anti-chain sponsorship)
+	_, err = localidentity.NewExternalUserProfile(
+		"usr_ext_02", tenantID, "cmp_01", localidentity.ExternalTypeTemporaryWorker,
+		"usr_ext_other_contractor", "Firm", "Worker", "ref_01", from, to, nil,
+	)
+	if !errors.Is(err, localidentity.ErrInvalidInternalSponsor) {
+		t.Errorf("expected ErrInvalidInternalSponsor, got %v", err)
+	}
+}
+
+func TestNegativeControl_ExternalUser_CompanyAdminDenial(t *testing.T) {
+	// Negative control: external user cannot be assigned TenantAdmin or ProjectManager
+	for uType := range localidentity.KnownExternalUserTypes {
+		err := localidentity.AssertNoCompanyAdministration(uType, localidentity.RoleTenantAdmin)
+		if !errors.Is(err, localidentity.ErrCompanyAdminDenied) {
+			t.Errorf("expected ErrCompanyAdminDenied for %s as TenantAdmin, got %v", uType, err)
+		}
+		err = localidentity.AssertNoCompanyAdministration(uType, localidentity.RoleProjectManager)
+		if !errors.Is(err, localidentity.ErrCompanyAdminDenied) {
+			t.Errorf("expected ErrCompanyAdminDenied for %s as ProjectManager, got %v", uType, err)
+		}
+	}
+}
+
+func TestNegativeControl_ExternalUser_ExpiredEnrollment(t *testing.T) {
+	tenantID := "ten_neg_ext"
+	baseTime := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	from := baseTime
+	to := baseTime.Add(24 * time.Hour) // expired on Sept 2
+
+	profile, _ := localidentity.NewExternalUserProfile(
+		"usr_ext_exp", tenantID, "cmp_01", localidentity.ExternalTypeContractorWorker,
+		"usr_manager", "Vendor Firm", "Worker Exp", "ref_synth_01", from, to, nil,
+	)
+
+	// Check expired evaluation at Sept 5
+	now := time.Date(2026, 9, 5, 0, 0, 0, 0, time.UTC)
+	if profile.IsValidAt(now) {
+		t.Errorf("expected IsValidAt false for expired external user")
+	}
+	if profile.EffectiveStatus(now) != localidentity.EnrollmentStatusExpired {
+		t.Errorf("expected EnrollmentStatusExpired, got %v", profile.EffectiveStatus(now))
+	}
+}
+
+func TestNegativeControl_ExternalUser_ProfileMinimization(t *testing.T) {
+	tenantID := "ten_neg_ext"
+	from := time.Now()
+	to := from.Add(24 * time.Hour)
+
+	// PII in display name or contact reference fails closed
+	piiPayloads := []struct {
+		name       string
+		contactRef string
+	}{
+		{"Somchai somchai@email.com", "ref_01"},
+		{"Somchai", "contact: user@vendor.com"},
+		{"Somchai Phone: 0812345678", "ref_01"},
+		{"Somchai", "+66891234567"},
+		{"Somchai Citizen ID: 1234567890123", "ref_01"},
+	}
+
+	for _, tc := range piiPayloads {
+		_, err := localidentity.NewExternalUserProfile(
+			"usr_ext_pii", tenantID, "cmp_01", localidentity.ExternalTypeTemporaryWorker,
+			"usr_manager", "Firm", tc.name, tc.contactRef, from, to, nil,
+		)
+		if !errors.Is(err, localidentity.ErrPIIDetected) {
+			t.Errorf("expected ErrPIIDetected for %v, got %v", tc, err)
+		}
+	}
+}
