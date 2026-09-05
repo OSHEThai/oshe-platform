@@ -2,6 +2,7 @@ package orgtenancy
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -505,5 +506,218 @@ func TestHierarchy_CanonicalPrefixesVerification(t *testing.T) {
 	}
 	if err := ValidateCanonicalID(partyID, PrefixParty); err != nil {
 		t.Errorf("expected valid canonical party ID %q, got err: %v", partyID, err)
+	}
+}
+
+func TestHierarchy_SiteTimeZoneAndLocale(t *testing.T) {
+	company, _ := NewCompany("ten-01", "cmp-01", "Acme")
+	bu, _ := NewBusinessUnit(company, "bu-01", "Operations")
+	project, _ := NewProjectUnderBusinessUnit(bu, "prj-01", "Expansion")
+
+	// 1. Default time zone and locale
+	siteDefault, err := NewSite(project, "site-default", "Default Site")
+	if err != nil {
+		t.Fatalf("NewSite failed: %v", err)
+	}
+	if siteDefault.TimeZone() != DefaultTimeZone {
+		t.Errorf("expected default time zone %s, got %s", DefaultTimeZone, siteDefault.TimeZone())
+	}
+	if siteDefault.Locale() != DefaultLocale {
+		t.Errorf("expected default locale %s, got %s", DefaultLocale, siteDefault.Locale())
+	}
+
+	// 2. Explicit valid time zone and locale
+	siteExplicit, err := NewSiteWithLocale(project, "site-tokyo", "Tokyo Site", "Asia/Tokyo", "en-US")
+	if err != nil {
+		t.Fatalf("NewSiteWithLocale failed: %v", err)
+	}
+	if siteExplicit.TimeZone() != "Asia/Tokyo" {
+		t.Errorf("expected Asia/Tokyo, got %s", siteExplicit.TimeZone())
+	}
+	if siteExplicit.Locale() != "en-US" {
+		t.Errorf("expected en-US, got %s", siteExplicit.Locale())
+	}
+
+	// 3. Invalid IANA time zone rejected
+	_, err = NewSiteWithLocale(project, "site-bad-tz", "Bad TZ", "Mars/Olympus", "th-TH")
+	if !errors.Is(err, ErrInvalidTimeZone) {
+		t.Errorf("expected ErrInvalidTimeZone for invalid time zone, got: %v", err)
+	}
+
+	// 4. Invalid BCP 47 locale rejected
+	_, err = NewSiteWithLocale(project, "site-bad-loc", "Bad Locale", "Asia/Bangkok", "invalid_locale_with_special!@#")
+	if !errors.Is(err, ErrInvalidLocale) {
+		t.Errorf("expected ErrInvalidLocale for invalid locale, got: %v", err)
+	}
+}
+
+func TestHierarchy_AreaTimeZoneAndLocaleInheritance(t *testing.T) {
+	company, _ := NewCompany("ten-01", "cmp-01", "Acme")
+	bu, _ := NewBusinessUnit(company, "bu-01", "Operations")
+	project, _ := NewProjectUnderBusinessUnit(bu, "prj-01", "Expansion")
+	site, _ := NewSiteWithLocale(project, "site-custom", "Custom Site", "Asia/Singapore", "en-US")
+
+	// 1. Inherited from site
+	areaInherited, err := NewArea(site, "area-inherited", "Inherited Area")
+	if err != nil {
+		t.Fatalf("NewArea failed: %v", err)
+	}
+	if areaInherited.TimeZone() != "Asia/Singapore" {
+		t.Errorf("expected inherited time zone Asia/Singapore, got %s", areaInherited.TimeZone())
+	}
+	if areaInherited.Locale() != "en-US" {
+		t.Errorf("expected inherited locale en-US, got %s", areaInherited.Locale())
+	}
+
+	// 2. Explicit override on Area
+	areaExplicit, err := NewAreaWithLocale(site, "area-explicit", "Explicit Area", "Asia/Bangkok", "th-TH")
+	if err != nil {
+		t.Fatalf("NewAreaWithLocale failed: %v", err)
+	}
+	if areaExplicit.TimeZone() != "Asia/Bangkok" {
+		t.Errorf("expected Asia/Bangkok, got %s", areaExplicit.TimeZone())
+	}
+	if areaExplicit.Locale() != "th-TH" {
+		t.Errorf("expected th-TH, got %s", areaExplicit.Locale())
+	}
+
+	// 3. Invalid time zone on Area rejected
+	_, err = NewAreaWithLocale(site, "area-bad-tz", "Bad TZ", "Invalid/Zone", "th-TH")
+	if !errors.Is(err, ErrInvalidTimeZone) {
+		t.Errorf("expected ErrInvalidTimeZone on area, got: %v", err)
+	}
+
+	// 4. Invalid locale on Area rejected
+	_, err = NewAreaWithLocale(site, "area-bad-loc", "Bad Loc", "Asia/Bangkok", "bad-loc-@#$")
+	if !errors.Is(err, ErrInvalidLocale) {
+		t.Errorf("expected ErrInvalidLocale on area, got: %v", err)
+	}
+}
+
+func TestHierarchy_ProjectSiteAndAreaParentValidation(t *testing.T) {
+	company, _ := NewCompany("ten-01", "cmp-01", "Acme")
+	projectA, _ := NewProject(company, "prj-a", "Project A")
+	siteA, _ := NewSite(projectA, "ste-a", "Site under Project A")
+	areaA, _ := NewArea(siteA, "ara-a", "Area under Site A")
+
+	// ValidateParentProject
+	if err := siteA.ValidateParentProject("prj-a"); err != nil {
+		t.Errorf("expected matching project to validate, got: %v", err)
+	}
+	if err := siteA.ValidateParentProject("prj-b"); !errors.Is(err, ErrProjectSiteMismatch) {
+		t.Errorf("expected ErrProjectSiteMismatch for project B, got: %v", err)
+	}
+
+	// ValidateParentSite
+	if err := areaA.ValidateParentSite("ste-a"); err != nil {
+		t.Errorf("expected matching site to validate, got: %v", err)
+	}
+	if err := areaA.ValidateParentSite("ste-other"); !errors.Is(err, ErrParentMismatch) {
+		t.Errorf("expected ErrParentMismatch for other site, got: %v", err)
+	}
+}
+
+func TestHierarchy_CanonicalIdentifierEnforcementWithSyntheticCompatibility(t *testing.T) {
+	company, _ := NewCompany("ten-01", "cmp-01", "Acme")
+	project, _ := NewProject(company, "prj-01", "Project")
+
+	// 1. Valid canonical IDs with prefix
+	siteCanonical, err := NewSite(project, "ste_01j9876543210zyxwvutsrqpon", "Canonical Site")
+	if err != nil {
+		t.Errorf("expected valid canonical site ID to succeed, got: %v", err)
+	}
+	if siteCanonical.SiteID() != "ste_01j9876543210zyxwvutsrqpon" {
+		t.Errorf("site ID mismatch: %s", siteCanonical.SiteID())
+	}
+
+	// 2. Malformed canonical ID (missing token or invalid trailing underscore)
+	_, err = NewSite(project, "ste_", "Bad Site")
+	if !errors.Is(err, ErrMalformedIdentifier) {
+		t.Errorf("expected ErrMalformedIdentifier for ste_, got: %v", err)
+	}
+
+	// 3. Invalid characters in canonical ID
+	_, err = NewSite(project, "ste_BAD@ID!", "Bad Chars Site")
+	if !errors.Is(err, ErrInvalidCharacters) {
+		t.Errorf("expected ErrInvalidCharacters for ste_BAD@ID!, got: %v", err)
+	}
+
+	// 4. Wrong prefix canonical ID
+	_, err = NewSite(project, "prj_01j9876543210zyxwvutsrqpon", "Wrong Prefix Site")
+	if !errors.Is(err, ErrPrefixMismatch) {
+		t.Errorf("expected ErrPrefixMismatch for prj_ prefix on site, got: %v", err)
+	}
+
+	// 5. Backward-compatible synthetic slug (no underscore)
+	siteSlug, err := NewSite(project, "site-rayong-complex", "Slug Site")
+	if err != nil {
+		t.Errorf("expected synthetic slug without underscore to succeed, got: %v", err)
+	}
+	if siteSlug.SiteID() != "site-rayong-complex" {
+		t.Errorf("slug site ID mismatch: %s", siteSlug.SiteID())
+	}
+}
+
+func TestHierarchy_ResolvedScope_NonAuthoritative(t *testing.T) {
+	tenantID := "ten-synth-alpha"
+	company, err := NewCompany(tenantID, "cmp-01", "Acme")
+	if err != nil {
+		t.Fatalf("NewCompany failed: %v", err)
+	}
+	bu, err := NewBusinessUnit(company, "bu-01", "Operations")
+	if err != nil {
+		t.Fatalf("NewBusinessUnit failed: %v", err)
+	}
+	project, err := NewProjectUnderBusinessUnit(bu, "prj-01", "Expansion")
+	if err != nil {
+		t.Fatalf("NewProjectUnderBusinessUnit failed: %v", err)
+	}
+	site, err := NewSiteWithLocale(project, "ste-01", "Site Rayong", "Asia/Bangkok", "th-TH")
+	if err != nil {
+		t.Fatalf("NewSiteWithLocale failed: %v", err)
+	}
+	area, err := NewArea(site, "ara-01", "Cracker 1")
+	if err != nil {
+		t.Fatalf("NewArea failed: %v", err)
+	}
+
+	// 1. Scope resolution produces descriptive canonical path
+	scopeArea := area.ResolveScope()
+	expectedPath := "ten-synth-alpha/cmp-01/bu-01/prj-01/ste-01/ara-01"
+	if scopeArea.CanonicalPath != expectedPath {
+		t.Errorf("expected canonical path %q, got %q", expectedPath, scopeArea.CanonicalPath)
+	}
+	if scopeArea.TimeZone != "Asia/Bangkok" || scopeArea.Locale != "th-TH" {
+		t.Errorf("scope time zone or locale mismatch: tz=%s, loc=%s", scopeArea.TimeZone, scopeArea.Locale)
+	}
+	if !strings.Contains(scopeArea.NonAuthorityNotice, "DERIVED_OUTPUT_NON_AUTHORITY") {
+		t.Errorf("expected non-authority notice, got %q", scopeArea.NonAuthorityNotice)
+	}
+
+	// 2. ValidateScope only asserts tenant equality
+	claimsSameTenant := &TrustedClaims{
+		Subject:         "usr-01",
+		TenantID:        tenantID,
+		IsAuthenticated: true,
+	}
+	ctxSame, err := DeriveTenantContext(claimsSameTenant, nil)
+	if err != nil {
+		t.Fatalf("DeriveTenantContext failed: %v", err)
+	}
+	if err := scopeArea.ValidateScope(ctxSame); err != nil {
+		t.Errorf("expected same tenant scope to validate, got: %v", err)
+	}
+
+	claimsOtherTenant := &TrustedClaims{
+		Subject:         "usr-02",
+		TenantID:        "ten-synth-other",
+		IsAuthenticated: true,
+	}
+	ctxOther, err := DeriveTenantContext(claimsOtherTenant, nil)
+	if err != nil {
+		t.Fatalf("DeriveTenantContext other failed: %v", err)
+	}
+	if err := scopeArea.ValidateScope(ctxOther); !errors.Is(err, ErrTenantMismatch) {
+		t.Errorf("expected ErrTenantMismatch on cross-tenant scope validation, got: %v", err)
 	}
 }

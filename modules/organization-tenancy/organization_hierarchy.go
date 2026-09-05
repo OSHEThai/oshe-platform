@@ -2,8 +2,18 @@ package orgtenancy
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+)
+
+// Default locale and time zone standards for physical site operations.
+const (
+	DefaultTimeZone = "Asia/Bangkok"
+	DefaultLocale   = "th-TH"
+	FallbackLocale  = "en-US"
+
+	DefaultNonAuthorityScopeNotice = "DERIVED_OUTPUT_NON_AUTHORITY: Resolved hierarchy scopes are descriptive projections only and never grant lateral, upward, or implicit operational authority."
 )
 
 // LifecycleState represents the operational lifecycle state of a hierarchy entity.
@@ -35,7 +45,117 @@ var (
 	ErrInvalidTimeWindow = errors.New("valid_to must be strictly after valid_from")
 	// ErrSponsorshipExpired indicates the sponsored party relationship has expired.
 	ErrSponsorshipExpired = errors.New("sponsored party relationship has expired")
+	// ErrInvalidTimeZone indicates that the time zone identifier is not a valid IANA time zone.
+	ErrInvalidTimeZone = errors.New("invalid IANA time zone identifier")
+	// ErrInvalidLocale indicates that the locale identifier is not a valid BCP 47 language tag.
+	ErrInvalidLocale = errors.New("invalid BCP 47 locale tag")
+	// ErrProjectSiteMismatch indicates a mismatch between a site and its parent project.
+	ErrProjectSiteMismatch = errors.New("site does not belong to the specified project")
 )
+
+var knownCanonicalPrefixes = map[string]bool{
+	PrefixTenant:       true,
+	PrefixCompany:      true,
+	PrefixBusinessUnit: true,
+	PrefixProject:      true,
+	PrefixSite:         true,
+	PrefixArea:         true,
+	PrefixParty:        true,
+	PrefixUser:         true,
+	PrefixCorrelation:  true,
+	PrefixCausation:    true,
+	PrefixIdempotency:  true,
+	PrefixExternalRef:  true,
+}
+
+// ValidateTimeZone validates that tz is a recognized IANA time zone identifier.
+func ValidateTimeZone(tz string) error {
+	trimmed := strings.TrimSpace(tz)
+	if trimmed == "" {
+		return nil
+	}
+	if _, err := time.LoadLocation(trimmed); err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidTimeZone, trimmed)
+	}
+	return nil
+}
+
+// ValidateLocale validates that loc is a well-formed BCP 47 language tag (e.g. th-TH, en-US, th, en).
+func ValidateLocale(loc string) error {
+	trimmed := strings.TrimSpace(loc)
+	if trimmed == "" {
+		return nil
+	}
+	parts := strings.Split(trimmed, "-")
+	if len(parts) == 0 || len(parts) > 3 {
+		return fmt.Errorf("%w: %q", ErrInvalidLocale, trimmed)
+	}
+	for _, p := range parts {
+		if len(p) == 0 {
+			return fmt.Errorf("%w: %q", ErrInvalidLocale, trimmed)
+		}
+		for i := 0; i < len(p); i++ {
+			c := p[i]
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+				return fmt.Errorf("%w: %q", ErrInvalidLocale, trimmed)
+			}
+		}
+	}
+	return nil
+}
+
+// validateEntityID validates an entity identifier.
+// If the identifier contains an underscore and has a canonical prefix format, it enforces canonical prefix matching
+// and valid lowercase character sets, while preserving backward compatibility for synthetic slugs.
+func validateEntityID(id, expectedPrefix string) error {
+	trimmed := strings.TrimSpace(id)
+	if trimmed == "" {
+		return ErrBlankID
+	}
+	if strings.Contains(trimmed, "_") {
+		idx := strings.IndexByte(trimmed, '_')
+		if idx <= 0 || idx == len(trimmed)-1 {
+			return ErrMalformedIdentifier
+		}
+		prefix := trimmed[:idx]
+		token := trimmed[idx+1:]
+		if knownCanonicalPrefixes[prefix] && prefix != expectedPrefix {
+			return fmt.Errorf("%w: expected prefix %q, got %q", ErrPrefixMismatch, expectedPrefix, prefix)
+		}
+		for i := 0; i < len(token); i++ {
+			c := token[i]
+			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
+				return ErrInvalidCharacters
+			}
+		}
+	}
+	return nil
+}
+
+func validateTenantID(tenantID string) error {
+	trimmed := strings.TrimSpace(tenantID)
+	if trimmed == "" {
+		return ErrBlankTenantID
+	}
+	if strings.Contains(trimmed, "_") {
+		idx := strings.IndexByte(trimmed, '_')
+		if idx <= 0 || idx == len(trimmed)-1 {
+			return ErrMalformedIdentifier
+		}
+		prefix := trimmed[:idx]
+		token := trimmed[idx+1:]
+		if knownCanonicalPrefixes[prefix] && prefix != PrefixTenant {
+			return fmt.Errorf("%w: expected prefix %q, got %q", ErrPrefixMismatch, PrefixTenant, prefix)
+		}
+		for i := 0; i < len(token); i++ {
+			c := token[i]
+			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
+				return ErrInvalidCharacters
+			}
+		}
+	}
+	return nil
+}
 
 // Company represents a company entity strictly bounded to a tenant.
 type Company struct {
@@ -73,13 +193,11 @@ func (c Company) ValidateScope(ctx TenantContext) error {
 
 // NewCompany constructs and validates a new Company under the specified tenant.
 func NewCompany(tenantID, companyID, name string) (Company, error) {
-	trimmedTenant := strings.TrimSpace(tenantID)
-	if trimmedTenant == "" {
-		return Company{}, ErrBlankTenantID
+	if err := validateTenantID(tenantID); err != nil {
+		return Company{}, err
 	}
-	trimmedCompany := strings.TrimSpace(companyID)
-	if trimmedCompany == "" {
-		return Company{}, ErrBlankID
+	if err := validateEntityID(companyID, PrefixCompany); err != nil {
+		return Company{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
@@ -87,8 +205,8 @@ func NewCompany(tenantID, companyID, name string) (Company, error) {
 	}
 
 	return Company{
-		tenantID:  trimmedTenant,
-		companyID: trimmedCompany,
+		tenantID:  strings.TrimSpace(tenantID),
+		companyID: strings.TrimSpace(companyID),
 		name:      trimmedName,
 		state:     StateActive,
 	}, nil
@@ -140,9 +258,8 @@ func NewBusinessUnit(company Company, businessUnitID, name string) (BusinessUnit
 	if !company.IsActive() {
 		return BusinessUnit{}, ErrParentArchived
 	}
-	trimmedBU := strings.TrimSpace(businessUnitID)
-	if trimmedBU == "" {
-		return BusinessUnit{}, ErrBlankID
+	if err := validateEntityID(businessUnitID, PrefixBusinessUnit); err != nil {
+		return BusinessUnit{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
@@ -152,7 +269,7 @@ func NewBusinessUnit(company Company, businessUnitID, name string) (BusinessUnit
 	return BusinessUnit{
 		tenantID:       company.TenantID(),
 		companyID:      company.CompanyID(),
-		businessUnitID: trimmedBU,
+		businessUnitID: strings.TrimSpace(businessUnitID),
 		name:           trimmedName,
 		state:          StateActive,
 	}, nil
@@ -208,9 +325,8 @@ func NewProjectUnderBusinessUnit(bu BusinessUnit, projectID, name string) (Proje
 	if !bu.IsActive() {
 		return Project{}, ErrParentArchived
 	}
-	trimmedProject := strings.TrimSpace(projectID)
-	if trimmedProject == "" {
-		return Project{}, ErrBlankID
+	if err := validateEntityID(projectID, PrefixProject); err != nil {
+		return Project{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
@@ -221,12 +337,11 @@ func NewProjectUnderBusinessUnit(bu BusinessUnit, projectID, name string) (Proje
 		tenantID:       bu.TenantID(),
 		companyID:      bu.CompanyID(),
 		businessUnitID: bu.BusinessUnitID(),
-		projectID:      trimmedProject,
+		projectID:      strings.TrimSpace(projectID),
 		name:           trimmedName,
 		state:          StateActive,
 	}, nil
 }
-
 
 // NewProject constructs and validates a new Project under the specified parent Company.
 func NewProject(company Company, projectID, name string) (Project, error) {
@@ -236,9 +351,8 @@ func NewProject(company Company, projectID, name string) (Project, error) {
 	if !company.IsActive() {
 		return Project{}, ErrParentArchived
 	}
-	trimmedProject := strings.TrimSpace(projectID)
-	if trimmedProject == "" {
-		return Project{}, ErrBlankID
+	if err := validateEntityID(projectID, PrefixProject); err != nil {
+		return Project{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
@@ -248,7 +362,7 @@ func NewProject(company Company, projectID, name string) (Project, error) {
 	return Project{
 		tenantID:  company.TenantID(),
 		companyID: company.CompanyID(),
-		projectID: trimmedProject,
+		projectID: strings.TrimSpace(projectID),
 		name:      trimmedName,
 		state:     StateActive,
 	}, nil
@@ -262,6 +376,8 @@ type Site struct {
 	projectID      string
 	siteID         string
 	name           string
+	timeZone       string
+	locale         string
 	state          LifecycleState
 }
 
@@ -283,6 +399,22 @@ func (s Site) SiteID() string { return s.siteID }
 // Name returns the site display name.
 func (s Site) Name() string { return s.name }
 
+// TimeZone returns the site IANA time zone identifier (default Asia/Bangkok).
+func (s Site) TimeZone() string {
+	if s.timeZone == "" {
+		return DefaultTimeZone
+	}
+	return s.timeZone
+}
+
+// Locale returns the site BCP 47 locale identifier (default th-TH).
+func (s Site) Locale() string {
+	if s.locale == "" {
+		return DefaultLocale
+	}
+	return s.locale
+}
+
 // State returns the operational lifecycle state.
 func (s Site) State() LifecycleState { return s.state }
 
@@ -300,21 +432,47 @@ func (s Site) ValidateScope(ctx TenantContext) error {
 	return ctx.AuthorizeTenantScope(s.tenantID)
 }
 
-// NewSite constructs and validates a new Site under the specified parent Project.
+// ValidateParentProject ensures that the site belongs to the expected project.
+func (s Site) ValidateParentProject(expectedProjectID string) error {
+	if s.projectID != strings.TrimSpace(expectedProjectID) {
+		return ErrProjectSiteMismatch
+	}
+	return nil
+}
+
+// NewSite constructs and validates a new Site under the specified parent Project with default time zone and locale.
 func NewSite(project Project, siteID, name string) (Site, error) {
+	return NewSiteWithLocale(project, siteID, name, DefaultTimeZone, DefaultLocale)
+}
+
+// NewSiteWithLocale constructs and validates a new Site with explicit time zone and locale.
+func NewSiteWithLocale(project Project, siteID, name, timeZone, locale string) (Site, error) {
 	if project.TenantID() == "" || project.CompanyID() == "" || project.ProjectID() == "" {
 		return Site{}, ErrParentMismatch
 	}
 	if !project.IsActive() {
 		return Site{}, ErrParentArchived
 	}
-	trimmedSite := strings.TrimSpace(siteID)
-	if trimmedSite == "" {
-		return Site{}, ErrBlankID
+	if err := validateEntityID(siteID, PrefixSite); err != nil {
+		return Site{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
 		return Site{}, ErrBlankName
+	}
+
+	tz := strings.TrimSpace(timeZone)
+	if tz == "" {
+		tz = DefaultTimeZone
+	} else if err := ValidateTimeZone(tz); err != nil {
+		return Site{}, err
+	}
+
+	loc := strings.TrimSpace(locale)
+	if loc == "" {
+		loc = DefaultLocale
+	} else if err := ValidateLocale(loc); err != nil {
+		return Site{}, err
 	}
 
 	return Site{
@@ -322,8 +480,10 @@ func NewSite(project Project, siteID, name string) (Site, error) {
 		companyID:      project.CompanyID(),
 		businessUnitID: project.BusinessUnitID(),
 		projectID:      project.ProjectID(),
-		siteID:         trimmedSite,
+		siteID:         strings.TrimSpace(siteID),
 		name:           trimmedName,
+		timeZone:       tz,
+		locale:         loc,
 		state:          StateActive,
 	}, nil
 }
@@ -337,6 +497,8 @@ type Area struct {
 	siteID         string
 	areaID         string
 	name           string
+	timeZone       string
+	locale         string
 	state          LifecycleState
 }
 
@@ -361,6 +523,12 @@ func (a Area) AreaID() string { return a.areaID }
 // Name returns the area display name.
 func (a Area) Name() string { return a.name }
 
+// TimeZone returns the inherited or configured time zone identifier.
+func (a Area) TimeZone() string { return a.timeZone }
+
+// Locale returns the inherited or configured locale identifier.
+func (a Area) Locale() string { return a.locale }
+
 // State returns the operational lifecycle state.
 func (a Area) State() LifecycleState { return a.state }
 
@@ -378,21 +546,48 @@ func (a Area) ValidateScope(ctx TenantContext) error {
 	return ctx.AuthorizeTenantScope(a.tenantID)
 }
 
-// NewArea constructs and validates a new Area under the specified parent Site.
+// ValidateParentSite ensures that the area belongs to the expected site.
+func (a Area) ValidateParentSite(expectedSiteID string) error {
+	if a.siteID != strings.TrimSpace(expectedSiteID) {
+		return ErrParentMismatch
+	}
+	return nil
+}
+
+// NewArea constructs and validates a new Area under the specified parent Site, inheriting time zone and locale from the site.
 func NewArea(site Site, areaID, name string) (Area, error) {
+	return NewAreaWithLocale(site, areaID, name, "", "")
+}
+
+// NewAreaWithLocale constructs and validates a new Area. If timeZone or locale are unspecified/blank,
+// they are inherited from the parent site.
+func NewAreaWithLocale(site Site, areaID, name, timeZone, locale string) (Area, error) {
 	if site.TenantID() == "" || site.CompanyID() == "" || site.ProjectID() == "" || site.SiteID() == "" {
 		return Area{}, ErrParentMismatch
 	}
 	if !site.IsActive() {
 		return Area{}, ErrParentArchived
 	}
-	trimmedArea := strings.TrimSpace(areaID)
-	if trimmedArea == "" {
-		return Area{}, ErrBlankID
+	if err := validateEntityID(areaID, PrefixArea); err != nil {
+		return Area{}, err
 	}
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
 		return Area{}, ErrBlankName
+	}
+
+	tz := strings.TrimSpace(timeZone)
+	if tz == "" {
+		tz = site.TimeZone()
+	} else if err := ValidateTimeZone(tz); err != nil {
+		return Area{}, err
+	}
+
+	loc := strings.TrimSpace(locale)
+	if loc == "" {
+		loc = site.Locale()
+	} else if err := ValidateLocale(loc); err != nil {
+		return Area{}, err
 	}
 
 	return Area{
@@ -401,8 +596,10 @@ func NewArea(site Site, areaID, name string) (Area, error) {
 		businessUnitID: site.BusinessUnitID(),
 		projectID:      site.ProjectID(),
 		siteID:         site.SiteID(),
-		areaID:         trimmedArea,
+		areaID:         strings.TrimSpace(areaID),
 		name:           trimmedName,
+		timeZone:       tz,
+		locale:         loc,
 		state:          StateActive,
 	}, nil
 }
@@ -492,6 +689,9 @@ func NewSponsoredParty(site Site, partyID, companyName, sponsorID string, validF
 	if validTo.Before(validFrom) || validTo.Equal(validFrom) {
 		return SponsoredParty{}, ErrInvalidTimeWindow
 	}
+	if err := validateEntityID(trimmedPartyID, PrefixParty); err != nil {
+		return SponsoredParty{}, err
+	}
 
 	return SponsoredParty{
 		tenantID:    site.TenantID(),
@@ -504,4 +704,112 @@ func NewSponsoredParty(site Site, partyID, companyName, sponsorID string, validF
 		validTo:     validTo,
 		state:       StateActive,
 	}, nil
+}
+
+// ResolvedScope captures an immutable, non-authoritative description of resolved hierarchy scope.
+// It is a descriptive projection only and does not confer lateral, upward, or implicit operational authority.
+type ResolvedScope struct {
+	TenantID           string `json:"tenant_id"`
+	CompanyID          string `json:"company_id"`
+	BusinessUnitID     string `json:"business_unit_id,omitempty"`
+	ProjectID          string `json:"project_id,omitempty"`
+	SiteID             string `json:"site_id,omitempty"`
+	AreaID             string `json:"area_id,omitempty"`
+	TimeZone           string `json:"time_zone,omitempty"`
+	Locale             string `json:"locale,omitempty"`
+	CanonicalPath      string `json:"canonical_path"`
+	NonAuthorityNotice string `json:"non_authority_notice"`
+}
+
+// ValidateScope checks that the resolved scope matches the trusted tenant context.
+// Invariant: It validates tenant equality only and conveys zero extra authority.
+func (rs ResolvedScope) ValidateScope(ctx TenantContext) error {
+	return ctx.AuthorizeTenantScope(rs.TenantID)
+}
+
+// ResolveScope resolves the hierarchy scope for a Company.
+func (c Company) ResolveScope() ResolvedScope {
+	return ResolvedScope{
+		TenantID:           c.tenantID,
+		CompanyID:          c.companyID,
+		CanonicalPath:      fmt.Sprintf("%s/%s", c.tenantID, c.companyID),
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
+}
+
+// ResolveScope resolves the hierarchy scope for a BusinessUnit.
+func (b BusinessUnit) ResolveScope() ResolvedScope {
+	return ResolvedScope{
+		TenantID:           b.tenantID,
+		CompanyID:          b.companyID,
+		BusinessUnitID:     b.businessUnitID,
+		CanonicalPath:      fmt.Sprintf("%s/%s/%s", b.tenantID, b.companyID, b.businessUnitID),
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
+}
+
+// ResolveScope resolves the hierarchy scope for a Project.
+func (p Project) ResolveScope() ResolvedScope {
+	path := fmt.Sprintf("%s/%s/%s", p.tenantID, p.companyID, p.projectID)
+	if p.businessUnitID != "" {
+		path = fmt.Sprintf("%s/%s/%s/%s", p.tenantID, p.companyID, p.businessUnitID, p.projectID)
+	}
+	return ResolvedScope{
+		TenantID:           p.tenantID,
+		CompanyID:          p.companyID,
+		BusinessUnitID:     p.businessUnitID,
+		ProjectID:          p.projectID,
+		CanonicalPath:      path,
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
+}
+
+// ResolveScope resolves the hierarchy scope for a Site.
+func (s Site) ResolveScope() ResolvedScope {
+	path := fmt.Sprintf("%s/%s/%s/%s", s.tenantID, s.companyID, s.projectID, s.siteID)
+	if s.businessUnitID != "" {
+		path = fmt.Sprintf("%s/%s/%s/%s/%s", s.tenantID, s.companyID, s.businessUnitID, s.projectID, s.siteID)
+	}
+	return ResolvedScope{
+		TenantID:           s.tenantID,
+		CompanyID:          s.companyID,
+		BusinessUnitID:     s.businessUnitID,
+		ProjectID:          s.projectID,
+		SiteID:             s.siteID,
+		TimeZone:           s.TimeZone(),
+		Locale:             s.Locale(),
+		CanonicalPath:      path,
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
+}
+
+// ResolveScope resolves the hierarchy scope for an Area.
+func (a Area) ResolveScope() ResolvedScope {
+	path := fmt.Sprintf("%s/%s/%s/%s/%s", a.tenantID, a.companyID, a.projectID, a.siteID, a.areaID)
+	if a.businessUnitID != "" {
+		path = fmt.Sprintf("%s/%s/%s/%s/%s/%s", a.tenantID, a.companyID, a.businessUnitID, a.projectID, a.siteID, a.areaID)
+	}
+	return ResolvedScope{
+		TenantID:           a.tenantID,
+		CompanyID:          a.companyID,
+		BusinessUnitID:     a.businessUnitID,
+		ProjectID:          a.projectID,
+		SiteID:             a.siteID,
+		AreaID:             a.areaID,
+		TimeZone:           a.TimeZone(),
+		Locale:             a.Locale(),
+		CanonicalPath:      path,
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
+}
+
+// ResolveScope resolves the hierarchy scope for a SponsoredParty.
+func (sp SponsoredParty) ResolveScope() ResolvedScope {
+	return ResolvedScope{
+		TenantID:           sp.tenantID,
+		ProjectID:          sp.projectID,
+		SiteID:             sp.siteID,
+		CanonicalPath:      fmt.Sprintf("%s/%s/%s/%s", sp.tenantID, sp.projectID, sp.siteID, sp.partyID),
+		NonAuthorityNotice: DefaultNonAuthorityScopeNotice,
+	}
 }
