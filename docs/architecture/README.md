@@ -2,6 +2,10 @@
 
 Stakeholder snapshots remain in Drive; engineering-authoritative records are versioned here.
 
+## Release Evidence Bundles
+
+- [V0.3 Release Evidence Bundle and Gate Reconciliation](v030-release-evidence-bundle.md) (`REL-V030-EVD-001` / `V030-I037`)
+
 ## Evidence Gates & Qualification Matrices
 
 - [v0.3.0 Deterministic Local Evidence Gates and Traceable Required-Check Matrix](v030-evidence-gates.md) (`ARC-V030-EVGATES-001` / `V030-I035`)
