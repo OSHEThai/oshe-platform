@@ -2,10 +2,10 @@
 
 - Module ID: `MOD-PUB`
 - Roadmap topic: `V030-T06`
-- Governing issues: GitHub Issue #102 (`V030-I029`), GitHub Issue #103 (`V030-I030`)
-- Implementation state: candidate local synthetic schema, deterministic lifecycle controls, and qualification test fixtures
+- Governing issues: GitHub Issue #102 (`V030-I029`), GitHub Issue #103 (`V030-I030`), GitHub Issue #104 (`V030-I031`)
+- Implementation state: candidate local synthetic schema, deterministic lifecycle controls, immutable storage, and qualification test fixtures
 
-Provides standalone, synthetic immutable publication snapshot models, source entity mapping, approved-field allowlists, deny-by-default redaction, reviewer approval context, version identity, cryptographic integrity verification, controlled export packaging, and deterministic publication lifecycle state machines for OSHE Platform external publication previews and regulatory audit packages.
+Provides standalone, synthetic immutable publication snapshot models, source entity mapping, approved-field allowlists, deny-by-default redaction, reviewer approval context, version identity, cryptographic integrity verification, controlled export packaging, deterministic publication lifecycle state machines, sealed published-version storage, source-change isolation, and tamper-evident audit reconstruction for OSHE Platform external publication previews and regulatory audit packages.
 
 ## Architectural Components
 
@@ -55,6 +55,13 @@ Provides standalone, synthetic immutable publication snapshot models, source ent
 - **Replacement & Supersession:** Replaces published snapshots with linked successor IDs (`Replace`), recording justification and predecessor linkage. Supersedes prior versions upon publishing a new iteration (`Supersede`).
 - **Append-Only Historical Audit Ledger (`LifecycleAuditLedger`):** An in-memory, append-only ledger capturing immutable chronological records (`LifecycleAuditRecord`) with tamper-evident SHA-256 audit digests for every state change. Strictly isolates tenant boundaries (`GetHistory`) and guarantees zero hard deletion.
 
+### 8. Immutable Published-Version Storage, Source Isolation & Audit Reconstruction (`immutable_publication.go`)
+
+- **Sealed Version Store (`ImmutablePublicationStore`):** Sealed in-memory store indexing published versions by `(TenantID, SnapshotID, Version)`. Once stored, records cannot be modified or overwritten (`ErrPublicationVersionImmutable`). Defensive deep-copying on all reads and writes prevents caller mutations.
+- **Source-Change Isolation:** Published snapshots capture an immutable snapshot of the operational source at publication time (`SourceEntityRef`). Operational updates to the underlying entity do not mutate the sealed snapshot. Source drift is detected via `CheckSourceDrift`, and direct mutation attempts are rejected (`ErrDirectSourceMutationForbidden`).
+- **Replacement & Successor Lineage:** Successor versions explicitly link predecessor versions (`PredecessorVersion`, `PredecessorDigest`) and update predecessor successor pointers (`SuccessorVersion`, `SuccessorDigest`, `ReplacementType`, `ReplacementReason`).
+- **Tamper-Evident Audit Reconstruction:** `ReconstructPublicationAuditTrail` verifies full cryptographic continuity across version chains (validating canonical payload digests, signature digests, predecessor-successor digest chaining, and monotonic version numbering). Returns `VERIFIED_INTACT` with unbroken chain digests or detects tamper (`StatusTamperDetected`).
+
 ## Negative Controls Catalog
 
 | Control ID | Threat / Scenario | Hostile Input | Expected Failure |
@@ -71,6 +78,12 @@ Provides standalone, synthetic immutable publication snapshot models, source ent
 | **`NEG-LIFE-04`** | Unattributed withdrawal, unauthorized withdrawer, or invalid replacement | Blank reason, unauthorized withdrawer role, duplicate withdrawal, or replacing withdrawn record | Fails with `ErrMissingWithdrawalReason`, `ErrUnauthorizedReviewer`, or `ErrDuplicateTransition` |
 | **`NEG-LIFE-05`** | Duplicate transitions or invalid state leaps | Re-submitting under-review draft or re-publishing published snapshot | Fails with `ErrDuplicateTransition` or `ErrIllegalStateTransition` |
 | **`NEG-LIFE-06`** | False claims of live external route activation or persistence | Testing in-memory synthetic fixture assertions against non-live invariants | Strictly operates in-memory on local fixtures; zero live external routes or database persistence |
+| **`NEG-IMM-01`** | Overwriting existing sealed published versions | Storing duplicate version with altered payload or signature | Fails with `ErrPublicationVersionImmutable` |
+| **`NEG-IMM-02`** | Creating successor versions with invalid predecessor links | Non-contiguous version, wrong predecessor version, or mismatched digest | Fails with `ErrInvalidPredecessor` or `ErrBrokenLineageChain` |
+| **`NEG-IMM-03`** | Undetected payload tampering or signature corruption | In-memory corruption of stored record verified via audit reconstruction | `ReconstructPublicationAuditTrail` reports `StatusTamperDetected` |
+| **`NEG-IMM-04`** | Direct mutation of published snapshots from operational source | Attempting direct write into sealed published record upon source change | Fails with `ErrDirectSourceMutationForbidden` |
+| **`NEG-IMM-05`** | Blank replacement justification, missing successor, or non-existent snapshot | Registering replacement with blank reason, blank successor ID, or invalid version | Fails with `ErrBlankReplacementReason`, `ErrBlankSuccessorID`, or `ErrSnapshotNotFound` |
+| **`NEG-IMM-06`** | False claims of live external publication routes or persistence | Asserting non-live synthetic invariants for immutable store | Strictly operates in-memory on local fixtures; zero live routes or persistent DB |
 
 ## Governance & Non-Claims Invariant
 
