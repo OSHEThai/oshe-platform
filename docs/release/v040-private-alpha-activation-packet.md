@@ -1,8 +1,8 @@
 ---
 document_id: REL-V040-ACTPKT-001
-title: v0.4.0 OSHE Inspect Private Alpha Controlled Activation Prework Packet (H040-010 HOLD)
+title: v0.4.0 OSHE Inspect Private Alpha Controlled Activation Prework Planning Packet (H040-010 HOLD)
 document_type: release_activation_packet
-document_version: 1.0.0
+document_version: 1.0.1
 lifecycle_status: DRAFT
 status: HELD_PENDING_SOLE_HUMAN_OWNER_ACTIVATION_H040_010
 date: "2026-09-05"
@@ -40,213 +40,217 @@ retained_unselected_choices:
   pilot_user_accounts: NOT_COLLECTED
   budget_and_cost_ceiling: NOT_SELECTED
   production_seed_data: NOT_COLLECTED
+  runtime_environment_activation: NOT_VERIFIED
 credit_boundary: PLANNING_ONLY_ACTIVATION_PREWORK_NO_EXTERNAL_ACTION_OR_LIVE_DEPLOYMENT
 ---
 
-# v0.4.0 OSHE Inspect Private Alpha Controlled Activation Prework Packet (H040-010 HOLD)
+# v0.4.0 OSHE Inspect Private Alpha Controlled Activation Prework Planning Packet (H040-010 HOLD)
 
 ## 1. Executive Summary & Governance Posture
 
 ### 1.1 Authority Baseline & Purpose
-This document establishes the authoritative, planning-only **Controlled Private Alpha Environment Activation Prework Packet** for **Milestone v0.4.0 - OSHE Inspect Private Alpha** within `OSHEThai/oshe-platform`. It fulfills the deliverable specifications of **GitHub Issue #146 (`[V040-I035] Private Alpha Environment, Test Devices, Accounts, Routes, Monitoring, and Maintenance Activation Packet`)** under Roadmap Topic `V040-T08` and standing owner foundation decision `HDEC-V040-FOUNDATION-054`.
+This document establishes the planning-only **Controlled Private Alpha Environment Activation Prework Planning Packet** for **Milestone v0.4.0 - OSHE Inspect Private Alpha** within `OSHEThai/oshe-platform`. It fulfills the planning deliverable specifications of **GitHub Issue #146 (`[V040-I035] Prepare Private-Alpha Environment, Device, Account, Identity, Storage, Notification, Seed, Observability, Backup, and Restore Activation Packet`)** under Roadmap Topic `V040-T08` and standing owner foundation decision `HDEC-V040-FOUNDATION-054`.
 
-The primary objective is to define a comprehensive, fail-closed prework baseline covering:
-- Declarative synthetic-only environment and resource inventory schemas.
-- Least-privilege configuration checklists for compute, storage, and networking.
-- Rigorous route-disabled verification protocols asserting zero public internet exposure.
-- Health, conflict, and quarantine monitoring architectures.
-- Tabletop disaster recovery, backup, and restore verification runbooks.
-- Safe post-alpha rollback, state purge, and infrastructure cleanup procedures.
-- A structured Sole Human Owner activation decision checklist.
+The sole purpose of this document is to provide **unexecuted planning templates and structural specifications** covering:
+- Declarative inventory schemas for potential future environment resources.
+- A least-privilege configuration checklist framework.
+- A proposed route-disabled verification protocol.
+- Proposed monitoring and observability specifications.
+- A proposed tabletop disaster recovery and restore runbook template.
+- Proposed rollback and cleanup procedural templates.
+- An unexecuted Sole Human Owner activation decision checklist.
 
-### 1.2 Gate H040-010 HOLD Invariant
-In strict accordance with `HDEC-V040-FOUNDATION-054` and `ASN-V040-I035-ALPHA-ACTIVATION-PREWORK-001`, **Human Gate `H040-010` (External Environment, Account, Route, Storage, Notification, or External-Effect Activation) remains strictly on `HOLD`**.
+### 1.2 Non-Execution Invariant & Gate H040-010 HOLD Status
+In strict accordance with `HDEC-V040-FOUNDATION-054` and `ASN-V040-I035-UNSUPPORTED-CLAIM-CORRECTION-003`, **Human Gate `H040-010` (External Environment, Account, Route, Storage, Notification, or External-Effect Activation) remains strictly on `HOLD`**.
 
-- **Planning-Only Boundary:** This packet defines architecture, schemas, verification procedures, and risk models. It carries **zero authority to execute, activate, provision, or mutate** any external system, cloud service, domain record, or credential.
-- **Explicit Unselected Placeholders:** Wherever an operational choice requires real cloud infrastructure, external provider selection, device procurement, real participant onboarding, or commercial cost commitment, this packet explicitly records `HOLD`, `NOT_SELECTED`, or `NOT_COLLECTED`.
+- **No Executed or Verified Runtime Claims:** This document is an unexecuted planning specification. It contains **zero claims** that any local runtime, route, network socket, database, audit ledger, notification queue, backup/restore runbook, or security control has been deployed, executed, tested, or verified.
+- **Unselected & Uncollected Value Policy:** Wherever an operational choice requires real cloud infrastructure, external provider selection, device procurement, real participant onboarding, or commercial spend commitment, this document explicitly records `NOT_SELECTED`, `NOT_COLLECTED`, `NOT_VERIFIED`, or `HUMAN_GATE_REQUIRED`.
 - **Prohibitions Strictly Observed:**
-  1. Zero external public routes, DNS records, or ingress controllers are activated.
+  1. Zero external public routes, DNS records, or ingress controllers are activated or configured.
   2. Zero cloud provider accounts, API keys, credentials, or payment profiles are created or modified.
-  3. Zero real participant, contractor, or workforce personal data is collected or ingested (`H040-003` / `H040-008` HOLD).
+  3. Zero real participant, contractor, or workforce personal data is collected, onboarded, or ingested (`H040-003` / `H040-008` HOLD).
   4. Zero software release tagging, commercial distribution, or cryptographic signing is performed (`H040-007` HOLD).
   5. Zero residual risk acceptance or Milestone v0.5.0 entry authorization is claimed (`H040-011` HOLD).
 
 ---
 
-## 2. Synthetic-Only Resource & Environment Inventory Schema
+## 2. Unexecuted Resource & Environment Inventory Planning Schema
 
-The private alpha operates strictly on local loopback and in-memory synthetic adapters. The declarative inventory schema below defines all required infrastructure parameters, with all real external choices explicitly designated as `HOLD`, `NOT_SELECTED`, or `NOT_COLLECTED`:
+The following declarative schema defines the parameters required should the Sole Human Owner authorize a controlled environment in the future. All values reflect unconfigured, unselected, or uncollected planning placeholders:
 
 ```yaml
-# Schema: OSHE-Inspect-Alpha-Environment-Inventory-v1.0
+# Schema: OSHE-Inspect-Alpha-Environment-Inventory-Template-v1.0
 schema_version: "1.0.0"
-inventory_id: "inv_syn_alpha_environment_v1"
+inventory_id: "inv_template_alpha_environment_v1"
 governing_gate: "H040-010"
 gate_status: "HOLD"
 
 environment_profile:
-  environment_tier: "LOCAL_SYNTHETIC_ALPHA"
-  hosting_provider: "NOT_SELECTED"          # HOLD: Requires Sole Human Owner decision
-  cloud_region: "NOT_SELECTED"              # HOLD: Default evaluation anchor Asia/Bangkok
-  target_cluster_id: "NOT_SELECTED"         # HOLD: Zero cloud clusters provisioned
-  compute_architecture: "x86_64 / arm64 local development hosts only"
+  environment_tier: "UNEXECUTED_PLANNING_TEMPLATE"
+  hosting_provider: "NOT_SELECTED"          # HUMAN_GATE_REQUIRED: Requires Sole Human Owner decision
+  cloud_region: "NOT_SELECTED"              # HUMAN_GATE_REQUIRED: Default evaluation anchor Asia/Bangkok
+  target_cluster_id: "NOT_SELECTED"         # HUMAN_GATE_REQUIRED: Zero cloud clusters provisioned
+  compute_architecture: "NOT_SELECTED"      # HUMAN_GATE_REQUIRED: Architecture unselected
 
 network_and_routing:
-  public_dns_zone: "NOT_SELECTED"           # HOLD: Zero public domains registered
-  canonical_hostname: "NOT_SELECTED"        # HOLD: No external hostname configured
-  ingress_controller: "NOT_SELECTED"        # HOLD: Ingress routes disabled
-  tls_certificate_source: "NOT_SELECTED"    # HOLD: Zero public CA certificates requested
-  bind_address: "127.0.0.1"                 # Loopback only for local alpha verification
-  bind_port: 8080                           # Private local development port
+  public_dns_zone: "NOT_SELECTED"           # HUMAN_GATE_REQUIRED: Zero public domains registered
+  canonical_hostname: "NOT_SELECTED"        # HUMAN_GATE_REQUIRED: No external hostname configured
+  ingress_controller: "NOT_SELECTED"        # HUMAN_GATE_REQUIRED: Ingress routes disabled
+  tls_certificate_source: "NOT_SELECTED"    # HUMAN_GATE_REQUIRED: Zero public CA certificates requested
+  bind_address: "NOT_CONFIGURED"            # HUMAN_GATE_REQUIRED: Socket unconfigured
+  bind_port: "NOT_CONFIGURED"               # HUMAN_GATE_REQUIRED: Port unconfigured
 
 persistence_and_storage:
-  database_engine: "LOCAL_SQLITE_SYNTHETIC" # In-memory or ephemeral local sqlite
-  database_host: "localhost"
-  database_encryption_at_rest: "NOT_SELECTED" # Production KMS unselected
-  evidence_blob_storage: "LOCAL_SYNTHETIC_MEMORY" # MemoryStorageAdapter (modules/files-evidence)
-  cloud_storage_bucket: "NOT_SELECTED"      # HOLD: AWS S3 / R2 / GCS unselected
-  backup_storage_target: "LOCAL_EPHEMERAL_PATH" # Target directory under .local-ci/
+  database_engine: "NOT_CONFIGURED"         # HUMAN_GATE_REQUIRED: Storage engine unconfigured
+  database_host: "NOT_CONFIGURED"           # HUMAN_GATE_REQUIRED: Host unconfigured
+  database_encryption_at_rest: "NOT_SELECTED" # HUMAN_GATE_REQUIRED: Production KMS unselected
+  evidence_blob_storage: "NOT_CONFIGURED"   # HUMAN_GATE_REQUIRED: Blob storage adapter unconfigured
+  cloud_storage_bucket: "NOT_SELECTED"      # HUMAN_GATE_REQUIRED: AWS S3 / R2 / GCS unselected
+  backup_storage_target: "NOT_CONFIGURED"   # HUMAN_GATE_REQUIRED: Backup path unconfigured
 
 identities_and_accounts:
-  authentication_mode: "LOCAL_SYNTHETIC_IAM" # Modular in-memory bearer token hashing
-  external_idp_provider: "NOT_SELECTED"    # HOLD: Zero Okta / Entra / Auth0 integrations
-  pilot_user_accounts: "NOT_COLLECTED"      # HOLD: Zero real users onboarded
-  synthetic_test_subjects:
-    - subject_id: "usr_syn_inspector_01"
-      role: "Inspector"
-    - subject_id: "usr_syn_author_01"
-      role: "Checklist Author"
-    - subject_id: "usr_syn_capa_01"
-      role: "CAPA Owner"
-    - subject_id: "usr_syn_reviewer_01"
-      role: "Independent Reviewer"
+  authentication_mode: "NOT_CONFIGURED"     # HUMAN_GATE_REQUIRED: Auth mode unconfigured
+  external_idp_provider: "NOT_SELECTED"    # HUMAN_GATE_REQUIRED: Zero Okta / Entra / Auth0 integrations
+  pilot_user_accounts: "NOT_COLLECTED"      # HUMAN_GATE_REQUIRED: Zero real users onboarded
+  synthetic_test_subject_template:
+    - subject_template_id: "NOT_COLLECTED"
+      role_placeholder: "Inspector"
+    - subject_template_id: "NOT_COLLECTED"
+      role_placeholder: "Checklist Author"
+    - subject_template_id: "NOT_COLLECTED"
+      role_placeholder: "CAPA Owner"
+    - subject_template_id: "NOT_COLLECTED"
+      role_placeholder: "Independent Reviewer"
 
 client_devices:
-  procurement_status: "NOT_COLLECTED"       # HOLD: No physical hardware procured
-  supported_platforms:
+  procurement_status: "NOT_COLLECTED"       # HUMAN_GATE_REQUIRED: No physical hardware procured
+  planned_platform_targets:
     - platform: "Desktop Chrome / Edge"
-      test_mode: "Local Headless & DevTools Emulation"
+      status: "NOT_VERIFIED"
     - platform: "Android Chrome Mobile"
-      test_mode: "Local Viewport Emulation (360x640)"
+      status: "NOT_VERIFIED"
 
 notifications_and_messaging:
-  delivery_channel: "LOCAL_SYNTHETIC_QUEUE" # In-app SQLite queue (ChannelLocalSink)
-  smtp_relay_host: "NOT_SELECTED"           # HOLD: Outbound email disabled
-  sms_gateway_provider: "NOT_SELECTED"      # HOLD: Twilio / SMS disabled
-  push_notification_service: "NOT_SELECTED" # HOLD: FCM / APNS disabled
+  delivery_channel: "NOT_CONFIGURED"        # HUMAN_GATE_REQUIRED: Messaging unconfigured
+  smtp_relay_host: "NOT_SELECTED"           # HUMAN_GATE_REQUIRED: Outbound email disabled
+  sms_gateway_provider: "NOT_SELECTED"      # HUMAN_GATE_REQUIRED: Twilio / SMS disabled
+  push_notification_service: "NOT_SELECTED" # HUMAN_GATE_REQUIRED: FCM / APNS disabled
 
 financial_and_budget:
-  cost_center: "NOT_SELECTED"               # HOLD: Zero commercial billing accounts
-  monthly_spend_ceiling_usd: "0.00"         # Strict zero-cost invariant for local alpha
-  authorized_payment_method: "NOT_SELECTED" # HOLD: Zero credit cards or invoices linked
+  cost_center: "NOT_SELECTED"               # HUMAN_GATE_REQUIRED: Zero commercial billing accounts
+  monthly_spend_ceiling_usd: "0.00"         # Strict zero-cost invariant
+  authorized_payment_method: "NOT_SELECTED" # HUMAN_GATE_REQUIRED: Zero credit cards or invoices linked
 ```
 
 ---
 
-## 3. Least-Privilege Configuration Checklist
+## 3. Least-Privilege Configuration Planning Checklist (Unexecuted)
 
-To guarantee defense-in-depth and prevent inadvertent exposure, any potential activation of a private-alpha environment must enforce the following technical controls:
+The following checklist represents a **proposed security template** for potential future environment deployment. **None of these controls are claimed as executed or verified at this stage**:
 
-| Domain | Control Specification | Verification Method | Pre-Activation Status |
+| Domain | Control Specification (Proposed) | Proposed Verification Method | Current Verification Status |
 | :--- | :--- | :--- | :--- |
-| **Network Ingress** | Bind listeners strictly to localhost (`127.0.0.1`) or private VPC subnet; zero listening on `0.0.0.0`. | `netstat` / port socket assertion | **VERIFIED_LOCAL_ONLY** |
-| **Public Egress** | Restrict outbound traffic; block SMTP (ports 25, 465, 587) and unwhitelisted external HTTP/S. | Firewall egress rule check | **VERIFIED_LOCAL_ONLY** |
-| **IAM Authority** | Enforce Default-Deny RBAC (`H040-004`); reject unauthenticated calls with 401; reject cross-tenant IDOR. | Automated security regression suite | **VERIFIED_LOCAL_ONLY** |
-| **Storage Access** | File system storage paths jailed to application working directory; reject path traversal (`../`). | Negative test suite `NEG-TEST-03` | **VERIFIED_LOCAL_ONLY** |
-| **Credential Hygiene** | Zero plaintext secrets or passwords in configuration files; API tokens generated with 32-byte entropy. | `.ai/tools/validate_agent_os.py` scan | **VERIFIED_LOCAL_ONLY** |
-| **Database Scoping** | Every database transaction scoped by `tenant_id` foreign key filter; zero cross-tenant joins. | Database query predicate auditor | **VERIFIED_LOCAL_ONLY** |
-| **Audit Immutability** | Append-only audit logging for all protected state transitions; monotonic state versioning (`H040-005`). | Concurrency & quarantine test harness | **VERIFIED_LOCAL_ONLY** |
+| **Network Ingress** | Listener binding proposal: limit to loopback (`127.0.0.1`) or private VPC subnet; zero listening on `0.0.0.0`. | Proposed socket check | **NOT_VERIFIED** |
+| **Public Egress** | Outbound traffic filtering proposal: block SMTP (ports 25, 465, 587) and unwhitelisted HTTP/S. | Proposed firewall rule audit | **NOT_VERIFIED** |
+| **IAM Authority** | Default-Deny RBAC specification (`H040-004`): reject unauthenticated calls with 401; reject cross-tenant IDOR. | Proposed security test suite | **NOT_VERIFIED** |
+| **Storage Access** | File system jailing proposal: confine storage to dedicated working directory; reject path traversal (`../`). | Proposed negative test suite | **NOT_VERIFIED** |
+| **Credential Hygiene** | Secret management specification: zero plaintext secrets; tokens generated with 32-byte entropy. | Proposed static scanner rule | **NOT_VERIFIED** |
+| **Database Scoping** | Multi-tenant isolation specification: require `tenant_id` foreign key predicate on every query. | Proposed query auditor | **NOT_VERIFIED** |
+| **Audit Immutability** | Append-only audit specification: monotonic state versioning (`H040-005`). | Proposed state test harness | **NOT_VERIFIED** |
 
 ---
 
-## 4. Route-Disabled Verification Protocol
+## 4. Route-Disabled Verification Protocol Template (Unexecuted)
 
-Prior to connecting any network interface, the system must execute the following automated route-disabled verification protocol:
+The following protocol defines a **proposed verification sequence** to be executed if and when an environment is stood up. **This protocol has not been executed against a live environment**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   ROUTE-DISABLED VERIFICATION PIPELINE                 │
+│             PROPOSED ROUTE-DISABLED VERIFICATION PROTOCOL              │
+│                     (Status: NOT_VERIFIED)                             │
 │                                                                        │
-│  [Step 1: DNS Resolution Check]                                        │
-│  Assert query for alpha hostname returns NXDOMAIN (No public record).  │
+│  [Proposed Step 1: DNS Resolution Check]                               │
+│  Target: Query for proposed hostname must return NXDOMAIN.             │
+│  Verification Status: NOT_VERIFIED                                     │
 │                                                                        │
-│  [Step 2: Socket Listener Audit]                                       │
-│  Assert zero listeners on 0.0.0.0 or public interface IPs.             │
+│  [Proposed Step 2: Socket Listener Audit]                              │
+│  Target: Assert zero listeners on 0.0.0.0 or public interface IPs.     │
+│  Verification Status: NOT_VERIFIED                                     │
 │                                                                        │
-│  [Step 3: Ingress Proxy Inspection]                                    │
-│  Assert external ingress routes return HTTP 404 / Connection Refused.  │
+│  [Proposed Step 3: Ingress Proxy Inspection]                           │
+│  Target: External ingress routes must return 404 / Connection Refused. │
+│  Verification Status: NOT_VERIFIED                                     │
 │                                                                        │
-│  [Step 4: Anti-Indexing Header Verification]                           │
-│  Assert X-Robots-Tag: noindex, nofollow, noarchive on all responses.   │
+│  [Proposed Step 4: Anti-Indexing Header Verification]                  │
+│  Target: X-Robots-Tag: noindex, nofollow, noarchive on all responses.  │
+│  Verification Status: NOT_VERIFIED                                     │
 │                                                                        │
-│  [Step 5: External Notification Block Audit]                           │
-│  Assert ChannelLocalSink exclusivity; external gateways return error.  │
+│  [Proposed Step 5: External Notification Block Audit]                  │
+│  Target: Assert zero external network notification dispatch.           │
+│  Verification Status: NOT_VERIFIED                                     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Pass Criteria:** 100% of checks must confirm that the application is unreachable from the public internet. If any check detects a live public listener or routable DNS record, the environment must immediately halt.
+- **Execution Gate:** This verification protocol requires explicit authorization under Gate `H040-010` prior to execution.
 
 ---
 
-## 5. Operational Monitoring & Observability Baseline
+## 5. Operational Monitoring & Observability Planning Template (Unexecuted)
 
-The monitoring architecture provides real-time diagnostic visibility across operational health, concurrency conflicts, and failure modes:
+The following specifications outline a **proposed monitoring architecture** for future operational evaluation. **No active monitoring agents, scrapers, or alert channels are configured or running**:
 
-### 5.1 Monitored Diagnostic Telemetry
-1. **Application Health (`/healthz`):** Ephemeral loopback check reporting process uptime, memory consumption, and SQLite connection pool status.
-2. **Conflict Quarantine Rate (Gate `H040-005`):** Monitored count of concurrent update collisions routed to `QUARANTINED_CONFLICT`. A spike indicates offline synchronization contention or client clock drift.
-3. **Evidence Ingestion & Digest Verification:** Tracks evidence upload volumes, average byte size, and digest verification latency. Alerts emitted on `ErrTamperDetected` or `ErrInvalidMediaType`.
-4. **Local Notification Sink Queue:** Tracks queued, delivered, and failed synthetic in-app notifications. Alerts emitted on `DIAG_NOTIFICATION_QUARANTINED`.
-5. **Session Revocation Volume:** Monitors active bearer token invalidations and security logouts.
+### 5.1 Proposed Telemetry Metrics (Template Only)
+1. **Application Health (`/healthz` proposal):** Proposed check for process uptime, memory consumption, and connection pool status. Status: `NOT_CONFIGURED`.
+2. **Conflict Quarantine Rate (Gate `H040-005` proposal):** Proposed tracking of concurrent update collisions routed to `QUARANTINED_CONFLICT`. Status: `NOT_CONFIGURED`.
+3. **Evidence Ingestion Telemetry proposal:** Proposed tracking of upload volumes and verification latency. Status: `NOT_CONFIGURED`.
+4. **Notification Queue Telemetry proposal:** Proposed monitoring of internal dispatch queue status. Status: `NOT_CONFIGURED`.
+5. **Session Revocation Telemetry proposal:** Proposed tracking of token revocations. Status: `NOT_CONFIGURED`.
 
-### 5.2 Alert Thresholds & Escalation
-- **Warning:** Concurrency conflict rate $> 5\%$ of sync batches.
-- **Critical:** Any occurrence of `ErrTamperDetected`, `ErrCrossTenantLinkage`, or `ErrProhibitedFieldDetected`.
-- **Action:** Critical alerts trigger an immediate administrative hold on affected tenant sessions.
-
----
-
-## 6. Backup, Restore, and Disaster Recovery Tabletop Runbook
-
-To validate operational resilience without risking customer data, the following tabletop procedure defines disaster recovery verification:
-
-### 6.1 Tabletop Backup Execution
-1. **Snapshot Creation:** Freeze in-memory/sqlite write transactions.
-2. **Deterministic State Export:** Export application graph (tenants, checklists, inspections, findings, evidence metadata, audit log) to canonical JSON artifact.
-3. **Cryptographic Sealing:** Compute SHA-256 root digest across the exported backup payload.
-4. **Storage Target:** Write backup archive to encrypted local staging directory (`.local-ci/backups/`).
-
-### 6.2 Tabletop Restore & Verification
-1. **Clean Slate Initialization:** Instantiate a fresh, empty application runtime in an isolated scratch worktree.
-2. **Integrity Pre-Check:** Recompute SHA-256 digest of the backup archive; assert exact match against recorded manifest digest.
-3. **State Ingestion:** Hydrate relational tables and in-memory caches from the backup archive.
-4. **Lineage & Audit Validation:** Verify that 100% of historical audit records, state versions, and evidence digests reconstruct with zero variance.
-5. **Pass Criterion:** The restored instance must pass the complete regression test suite (`test_v040_walking_skeleton_integration_harness.py`) with zero errors.
+### 5.2 Proposed Alert Thresholds (Template Only)
+- Proposed Warning Threshold: Concurrency collision rate $> 5\%$ of sync batches (`NOT_CONFIGURED`).
+- Proposed Critical Threshold: Any occurrence of data integrity or cross-tenant violations (`NOT_CONFIGURED`).
+- Alert Delivery Channel: `NOT_SELECTED` (Zero external alert destinations linked).
 
 ---
 
-## 7. Rollback, Purge & Post-Alpha Cleanup Procedure
+## 6. Tabletop Backup, Restore, and Disaster Recovery Runbook Template (Unexecuted)
 
-Following the conclusion of any private-alpha testing cycle, the environment must be decommissioned cleanly:
+The following procedures represent an **unexecuted tabletop runbook template**. **No backup, export, or restore exercise has been conducted or verified under this packet**:
 
-### 7.1 Rollback Protocol
-1. **Session Termination:** Invalidate all active synthetic bearer tokens in `session_revocation_registry`.
-2. **Listener Shutdown:** Terminate local application processes and release network sockets.
-3. **Storage Purge:**
-   - Execute secure wipe of local SQLite database files (`oshe_alpha.db*`).
-   - Remove ephemeral IndexedDB stores and browser session storage from test devices.
-   - Delete temporary evidence blobs from local storage staging directories.
-4. **Worktree & Branch Cleanup:** Remove isolated git worktrees and delete short-lived feature branches.
+### 6.1 Proposed Backup Procedure (Template Only)
+1. Proposal: Freeze write transactions during backup window. Status: `NOT_EXECUTED`.
+2. Proposal: Export application graph to canonical JSON structure. Status: `NOT_EXECUTED`.
+3. Proposal: Compute SHA-256 root digest across exported payload. Status: `NOT_EXECUTED`.
+4. Proposed Storage Location: `NOT_CONFIGURED` (Requires human path designation).
 
-### 7.2 Post-Alpha Artifact Preservation
-- Historical audit journals and qualification test reports are archived to permanent repository governance records.
-- Zero residual unencrypted credentials, test caches, or temporary logs remain on development workstations.
+### 6.2 Proposed Restore Verification Procedure (Template Only)
+1. Proposal: Initialize empty application runtime in isolated scratch environment. Status: `NOT_EXECUTED`.
+2. Proposal: Verify backup archive digest against recorded manifest. Status: `NOT_EXECUTED`.
+3. Proposal: Hydrate tables and verify state version reconstruction. Status: `NOT_EXECUTED`.
+4. Proposal: Run regression tests against restored state. Status: `NOT_EXECUTED`.
+- Current Operational Status: **`NOT_VERIFIED`** (Awaiting formal tabletop scheduling).
+
+---
+
+## 7. Rollback, Purge & Cleanup Procedural Template (Unexecuted)
+
+The following runbook defines **proposed cleanup and teardown steps** for post-alpha decommissioning. **No teardown or wipe actions have been executed**:
+
+### 7.1 Proposed Rollback Procedure (Template Only)
+1. Proposal: Invalidate all active session tokens in revocation registry. Status: `NOT_EXECUTED`.
+2. Proposal: Terminate running application processes and release network sockets. Status: `NOT_EXECUTED`.
+3. Proposal: Execute secure purge of local database files and temporary media caches. Status: `NOT_EXECUTED`.
+4. Proposal: Remove ephemeral git worktrees and delete short-lived feature branches. Status: `NOT_EXECUTED`.
+
+### 7.2 Proposed Artifact Preservation Guidelines (Template Only)
+- Audit ledgers and test evidence are proposed for archival to permanent governance records.
+- Verification that all temporary scratch stores are cleared: `NOT_VERIFIED`.
 
 ---
 
 ## 8. Sole Human Owner Activation Decision Checklist (UNFILLED / HOLD)
 
-> **MANDATORY GOVERNANCE NOTICE:** This section is strictly reserved for the Sole Human Owner. Automated agents, subagents, and scripts possess zero authority to populate, check, or execute this decision.
+> **MANDATORY GOVERNANCE NOTICE:** This decision template is reserved exclusively for the Sole Human Owner. Automated agents, subagents, and scripts possess zero authority to populate, check, or execute this decision.
 
 Prior to authorizing any potential transition of Gate **`H040-010` from `HOLD`**, the Sole Human Owner must review and sign:
 
@@ -258,17 +262,17 @@ activation_status: "HOLD_PENDING_SOLE_HUMAN_OWNER"
 
 prerequisite_review_checklist:
   - requirement: "Independent security review of private-alpha architecture completed"
-    verified: false
+    verified: NOT_VERIFIED
   - requirement: "Route-disabled verification protocol executed with 100% pass rate"
-    verified: false
+    verified: NOT_VERIFIED
   - requirement: "Tabletop backup and restore exercise verified with zero data loss"
-    verified: false
+    verified: NOT_VERIFIED
   - requirement: "Real participant selection and consent policy approved under H040-008"
-    verified: false
+    verified: NOT_VERIFIED
   - requirement: "Operational support and manual-fallback ownership staffed under H040-009"
-    verified: false
+    verified: NOT_VERIFIED
   - requirement: "Commercial spend ceiling and cloud provider selection confirmed"
-    verified: false
+    verified: NOT_VERIFIED
 
 # Sole Human Owner Execution Block:
 decision_selection: "HOLD"              # Options: [ HOLD | AUTHORIZE_CONTROLLED_ACTIVATION | REJECT ]
