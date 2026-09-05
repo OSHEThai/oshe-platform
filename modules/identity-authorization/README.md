@@ -35,3 +35,29 @@ Entitlement does not replace authorization. Clients, integrations, extensions, a
 - **Safe Profile Inactivation:** Inactivation transitions active profiles to `INACTIVE` (`InactivateProfile`), automatically excluding them from default directory discovery while preserving full historical identity. Inactive profiles reject attribute updates (`ErrProfileInactive`).
 - **Append-Only Context History Ledger (`DirectoryResolutionLedger`):** An in-memory, thread-safe audit trail capturing immutable historical records (`DirectoryProfileHistoryRecord`) for all initial registrations, non-structural attribute mutations, and inactivation events.
 - **Tenant Boundary Isolation:** Profile and subject audit trails (`GetProfileAuditTrail`, `GetSubjectAuditTrail`) strictly enforce caller tenant equality, preventing cross-tenant information leakage and guaranteeing zero physical record deletion.
+
+## Provisional Scoped Authorization Matrix & Delegation Engine (`authorization_matrix.go`)
+
+- **Provisional Prework Governance (`H030-003` / Issue #90):** Implements a provisional, local-only authorization matrix, least-privilege role/permission catalog, separation-of-duty (SOD) conflict engine, source-authority verification, and delegation bounds as an AI prework candidate. Invariant: It does NOT select or bind a final authority model or protected authority owner. All bindings remain strictly provisional, in-memory, and local-only.
+- **Hierarchical Scope Levels:** Formalizes explicit scope levels (`ScopeLevelTenant` > `ScopeLevelCompany` > `ScopeLevelProject` > `ScopeLevelSite` > `ScopeLevelArea`) and validates that role assignments and delegation requests remain strictly within permitted scope depths.
+- **Protected Sovereign Authorities:** Categorizes sensitive sovereign permissions (`PermOrgTenantManage`, `PermIdentityUserManage`, `PermIdentityRoleAssign`, `PermIdentitySessionRevoke`, `PermAuditExport`, `PermLegalHoldManage`, `PermPortalSnapshotPublish`, `PermPortalSnapshotWithdraw`, `PermDelegationGrant`) and protected roles (`RoleTenantAdmin`) which can never be delegated (`ErrProtectedAuthorityNonDelegable`).
+- **Least-Privilege Role Catalog:**
+  - `RoleTenantAdmin`: Sovereign tenant administration; bounded strictly to `TENANT` scope; non-delegable (`MaxDelegationDays = 0`).
+  - `RoleProjectManager`: Operational inspection and site leadership (`PROJECT`, `SITE` scopes); max delegation 14 days.
+  - `RoleInspector`: Field inspection execution and finding creation (`PROJECT`, `SITE`, `AREA` scopes); cannot approve inspections; max delegation 7 days.
+  - `RoleAuditor`: Independent oversight; strictly read-only inspection and audit export access (`TENANT`, `COMPANY`, `PROJECT`, `SITE` scopes); zero operational create/update rights; max delegation 14 days.
+  - `RoleViewer`: Passive read-only observer across hierarchy scopes; max delegation 30 days.
+  - `RoleContractor`: External bounded partner (`PROJECT`, `SITE`, `AREA` scopes); submit inspection responses and remediate assigned findings only; max delegation 7 days.
+  - `RoleSupport`: Technical diagnostic review (`PROJECT`, `SITE` scopes); max delegation 3 days.
+- **Separation-of-Duties (SOD) Conflict Engine:**
+  - `SOD-01`: Inspector vs. Auditor separation across overlapping project/company scopes (`ErrSODConflict`).
+  - `SOD-02`: External Contractor vs. Tenant Administrator prohibition (scope-insensitive; `ErrSODConflict`).
+  - `SOD-02B`: External Contractor vs. Project Manager conflict on overlapping scopes (`ErrSODConflict`).
+  - `SOD-03`: Submitter vs. Formal Approver conflict (`ErrSODConflict`).
+  - `SOD-05`: Self-delegation prohibition (`ErrSelfDelegationForbidden`).
+- **Source-Authority Verification & Delegation Bounding:**
+  - **No Multi-Hop Delegation:** Re-delegating previously delegated authorities is strictly forbidden (`ErrMultiHopDelegationForbidden`).
+  - **No Self-Delegation:** Delegators cannot assign delegated roles to themselves (`ErrSelfDelegationForbidden`).
+  - **Duration Ceiling:** All delegations are capped at a strict maximum of 30 days (`MaxDelegationDuration`) or the delegator role's configured maximum (`ErrDelegationDurationExceeded`).
+  - **Permission Containment:** Delegator must possess every permission granted to the delegatee; escalation beyond source authority is denied (`ErrExceedsSourceAuthority`).
+  - **Scope Containment:** Delegated scope must be contained within or equal to delegator scope; cross-tenant or sibling-project escalation is denied (`ErrScopeExceedsSourceAuthority`).
