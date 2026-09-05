@@ -2,10 +2,10 @@
 
 - Module ID: `MOD-PUB`
 - Roadmap topic: `V030-T06`
-- Governing issue: GitHub Issue #102 (`V030-I029`)
-- Implementation state: candidate local synthetic schema and qualification test fixtures
+- Governing issues: GitHub Issue #102 (`V030-I029`), GitHub Issue #103 (`V030-I030`)
+- Implementation state: candidate local synthetic schema, deterministic lifecycle controls, and qualification test fixtures
 
-Provides standalone, synthetic immutable publication snapshot models, source entity mapping, approved-field allowlists, deny-by-default redaction, reviewer approval context, version identity, cryptographic integrity verification, and controlled export packaging for OSHE Platform external publication previews and regulatory audit packages.
+Provides standalone, synthetic immutable publication snapshot models, source entity mapping, approved-field allowlists, deny-by-default redaction, reviewer approval context, version identity, cryptographic integrity verification, controlled export packaging, and deterministic publication lifecycle state machines for OSHE Platform external publication previews and regulatory audit packages.
 
 ## Architectural Components
 
@@ -46,6 +46,15 @@ Provides standalone, synthetic immutable publication snapshot models, source ent
 - **Unpublished Record Exclusion:** Ensures only active `PUBLISHED` snapshots can be exported, rejecting draft or superseded records (`ErrUnpublishedSnapshotInExport`).
 - **Cross-Tenant Isolation:** Enforces tenant consistency across all bundled snapshots (`ErrCrossTenantAccessDenied`).
 
+### 7. Deterministic Publication Lifecycle Controls (`publication_lifecycle.go`)
+
+- **Explicit State Machine:** Formalizes states `DRAFT` -> `UNDER_REVIEW` -> `APPROVED` -> `PUBLISHED` -> `EXPIRED`, `WITHDRAWN`, `REPLACED`, `SUPERSEDED`. Arbitrary state leaps and transitions from terminal states are rejected (`ErrIllegalStateTransition`, `ErrDuplicateTransition`).
+- **Authorized Review & Approval Evidence (`ApprovalEvidence`):** Publication requires explicit approval by an authorized role (`AUDITOR` or `TENANT_ADMIN`). Approvals include cryptographic decision hashes, content digest verification (`ErrApprovalDigestMismatch`), and freshness bounds. Stale approvals exceeding maximum validity (default 7 days) are rejected (`ErrStaleApproval`).
+- **Effective & Expiry Window Enforcement (`EffectiveWindow`):** Defines temporal validity windows (`EffectiveFrom`, `ExpiresAt`). Inverted dates, zero-duration, or windows exceeding 365 days are rejected (`ErrInvalidPublicationWindow`). Snapshots before `EffectiveFrom` return `ErrNotYetEffective`. Snapshots past `ExpiresAt` automatically evaluate to `EXPIRED` and fail closed (`ErrSnapshotExpired`).
+- **Withdrawal Attribution:** Snapshots can be retracted with mandatory justification (`Withdraw`), permanently recording the authorized withdrawer, timestamp, and justification (`ErrMissingWithdrawalReason`). Withdrawn snapshots reject reactivation (`ErrCannotReactivateWithdrawn`).
+- **Replacement & Supersession:** Replaces published snapshots with linked successor IDs (`Replace`), recording justification and predecessor linkage. Supersedes prior versions upon publishing a new iteration (`Supersede`).
+- **Append-Only Historical Audit Ledger (`LifecycleAuditLedger`):** An in-memory, append-only ledger capturing immutable chronological records (`LifecycleAuditRecord`) with tamper-evident SHA-256 audit digests for every state change. Strictly isolates tenant boundaries (`GetHistory`) and guarantees zero hard deletion.
+
 ## Negative Controls Catalog
 
 | Control ID | Threat / Scenario | Hostile Input | Expected Failure |
@@ -56,6 +65,12 @@ Provides standalone, synthetic immutable publication snapshot models, source ent
 | **`NEG-SNAP-04`** | Undetected payload tampering or digest desynchronization | In-memory payload modification after digest calculation | `VerifyIntegrity()` fails with `ErrIntegrityVerificationFailed` |
 | **`NEG-SNAP-05`** | In-place mutation of published snapshots or unapproved publishing | Re-publishing published snapshot, versioning unpublished draft, or unapproved reviewer status | Fails with `ErrSnapshotAlreadyPublished`, `ErrSnapshotImmutable`, or `ErrSnapshotNotApproved` |
 | **`NEG-SNAP-06`** | Exporting unvetted draft snapshots or cross-tenant leakage | Invalid classification, unapproved destination scope, or cross-tenant snapshot in export package | Fails with `ErrInvalidClassification`, `ErrUnapprovedDestinationScope`, or `ErrCrossTenantAccessDenied` |
+| **`NEG-LIFE-01`** | Unauthorized approval or publication attempts | Non-auditor/non-admin roles approving/publishing or publishing unapproved drafts | Fails with `ErrUnauthorizedReviewer`, `ErrUnauthorizedPublish`, or `ErrIllegalStateTransition` |
+| **`NEG-LIFE-02`** | Stale approvals or content digest drift prior to publication | Approval older than 7 days, content modified after approval, or approval expiring before publish | Fails with `ErrStaleApproval` or `ErrApprovalDigestMismatch` |
+| **`NEG-LIFE-03`** | Inverted, excessively long, or past publication windows | `ExpiresAt <= EffectiveFrom`, window > 365 days, or publishing into expired window | Fails with `ErrInvalidPublicationWindow` or `ErrSnapshotExpired` |
+| **`NEG-LIFE-04`** | Unattributed withdrawal, unauthorized withdrawer, or invalid replacement | Blank reason, unauthorized withdrawer role, duplicate withdrawal, or replacing withdrawn record | Fails with `ErrMissingWithdrawalReason`, `ErrUnauthorizedReviewer`, or `ErrDuplicateTransition` |
+| **`NEG-LIFE-05`** | Duplicate transitions or invalid state leaps | Re-submitting under-review draft or re-publishing published snapshot | Fails with `ErrDuplicateTransition` or `ErrIllegalStateTransition` |
+| **`NEG-LIFE-06`** | False claims of live external route activation or persistence | Testing in-memory synthetic fixture assertions against non-live invariants | Strictly operates in-memory on local fixtures; zero live external routes or database persistence |
 
 ## Governance & Non-Claims Invariant
 
