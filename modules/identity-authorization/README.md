@@ -95,3 +95,13 @@ Entitlement does not replace authorization. Clients, integrations, extensions, a
 - **Temporal Validity & Revocation:** Enforces explicit start/end enrollment windows (`ValidFrom`, `ValidTo`). Users past `ValidTo` automatically evaluate as `EXPIRED` (`ErrEnrollmentExpired`). In-memory revocation transitions status to `REVOKED` (`ErrEnrollmentRevoked`) with full audit trail attribution.
 - **Append-Only Enrollment Audit Ledger (`ExternalUserLedger`):** An in-memory, thread-safe audit log recording immutable history records (`ExternalUserAuditRecord`) for every external user enrollment and revocation event, enforcing strict tenant boundary isolation and zero hard deletion.
 - **Local Synthetic Prework Boundary (H030-004, H030-005):** Confined strictly to in-memory synthetic fixtures without external IdP integration, database persistence, or final user-model binding.
+
+## Scoped Role Assignments, Revocation & Audit Ledger (`scoped_assignment.go`)
+
+- **Explicit Scoped Role Assignments (`ScopedAssignment`):** Binds a discrete security role (`Role`) and explicit organizational hierarchy scope (`ScopeGrant`) to a synthetic subject (`usr_*`) with start/end temporal boundaries (`ValidFrom`, `ValidTo`) and an internal approval source (`usr_*`).
+- **Temporal Validity & Expiration:** Evaluates active validity at any timestamp (`IsValidAt`). Assignments past `ValidTo` automatically evaluate as `EXPIRED` (`ErrAssignmentExpired`) and fail closed during access evaluation.
+- **Explicit Revocation Mechanics:** Revokes active assignments in memory via `Revoke(revokedBy, reason, at)`, transitioning status to `REVOKED` (`ErrAssignmentRevoked`) and recording immutable audit attribution.
+- **Segregation-of-Duties (SOD) Conflict Detection (`CheckRoleConflict`):** Prevents conflicting active role grants on overlapping scopes (e.g. Inspector + Auditor, Project Manager + Auditor, Contractor + Admin/PM, and duplicate active roles).
+- **Append-Only Historical Audit Ledger (`AssignmentLedger`):** Captures immutable records (`AssignmentAuditRecord`) for every assignment creation, revocation, and expiration. Guarantees strict tenant isolation and zero hard deletion of past authorization events.
+- **End-to-End Scoped Access Evaluation (`EvaluateScopedAccess`):** Integrates scoped role assignments with the `PolicyEvaluator` to dynamically assert active membership, time-valid role grants, and exact scope coverage, failing closed on scope mismatches or unauthorized actions.
+- **Provisional Local Boundary (`H030-003` / Issue #91):** Confined strictly to in-memory local fixtures without external identity provider synchronization, persistent database mutation, or final sovereign authority selection.
