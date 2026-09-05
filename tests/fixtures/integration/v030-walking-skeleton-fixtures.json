@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_id": "FIX-V030-WALKING-SKELETON-001",
+  "governing_issue": "Issue #109 (V030-I036)",
+  "governing_lease": "LEASE-V030-I036-WALKING-SKELETON-001",
+  "release": "v0.3.0",
+  "topic": "V030-T08",
+  "tenants": {
+    "primary": {
+      "tenant_id": "ten_safety_corp",
+      "company_id": "comp_safety_industrial",
+      "business_unit_id": "bnu_field_ops",
+      "project_id": "prj_scaffold_alpha",
+      "site_id": "ste_bangkok_yard",
+      "area_id": "ara_tower_zone_1",
+      "name": "Safety Corp Thailand",
+      "time_zone": "Asia/Bangkok",
+      "locale": "th-TH"
+    },
+    "secondary": {
+      "tenant_id": "ten_heavy_industry",
+      "company_id": "comp_heavy_manufacturing",
+      "business_unit_id": "bnu_marine_ops",
+      "project_id": "prj_rig_beta",
+      "site_id": "ste_rayong_dock",
+      "area_id": "ara_platform_c",
+      "name": "Heavy Industry Ltd",
+      "time_zone": "Asia/Bangkok",
+      "locale": "th-TH"
+    }
+  },
+  "external_parties": {
+    "contractor": {
+      "party_id": "prt_contractor_apex",
+      "tenant_id": "ten_safety_corp",
+      "name": "Apex Engineering Services",
+      "party_type": "CONTRACTOR",
+      "nesting_depth": 0,
+      "sponsor_id": "usr_pm_somchai"
+    },
+    "subcontractor": {
+      "party_id": "prt_subcon_scaffold",
+      "tenant_id": "ten_safety_corp",
+      "parent_party_id": "prt_contractor_apex",
+      "name": "Siam Scaffold Solutions",
+      "party_type": "SUBCONTRACTOR",
+      "nesting_depth": 1,
+      "sponsor_id": "usr_pm_somchai"
+    }
+  },
+  "subjects": {
+    "tenant_admin": {
+      "subject_id": "usr_admin_somchai",
+      "tenant_id": "ten_safety_corp",
+      "display_name": "Somchai Admin",
+      "roles": ["TENANT_ADMIN"]
+    },
+    "project_manager": {
+      "subject_id": "usr_pm_somchai",
+      "tenant_id": "ten_safety_corp",
+      "display_name": "Somchai Project Manager",
+      "roles": ["PROJECT_MANAGER"]
+    },
+    "inspector": {
+      "subject_id": "usr_inspector_chai",
+      "tenant_id": "ten_safety_corp",
+      "display_name": "Chai Field Inspector",
+      "roles": ["INSPECTOR"]
+    },
+    "auditor": {
+      "subject_id": "usr_auditor_alice",
+      "tenant_id": "ten_safety_corp",
+      "display_name": "Alice Compliance Auditor",
+      "roles": ["AUDITOR"]
+    },
+    "contractor_worker": {
+      "subject_id": "usr_contractor_bob",
+      "tenant_id": "ten_safety_corp",
+      "display_name": "Bob Contractor",
+      "category": "CONTRACTOR_WORKER",
+      "sponsor_id": "usr_pm_somchai",
+      "roles": ["CONTRACTOR"]
+    },
+    "unauthorized_intruder": {
+      "subject_id": "usr_intruder_eve",
+      "tenant_id": "ten_heavy_industry",
+      "display_name": "Eve Unauthorized",
+      "roles": ["VIEWER"]
+    }
+  },
+  "delegation": {
+    "delegator": "usr_pm_somchai",
+    "delegatee": "usr_inspector_chai",
+    "role": "PROJECT_MANAGER",
+    "scope_level": "PROJECT",
+    "scope_id": "prj_scaffold_alpha",
+    "duration_days": 7
+  },
+  "operational_record": {
+    "record_id": "rec_inspection_tower_001",
+    "tenant_id": "ten_safety_corp",
+    "project_id": "prj_scaffold_alpha",
+    "site_id": "ste_bangkok_yard",
+    "area_id": "ara_tower_zone_1",
+    "title": "Quarterly Tower Scaffold Safety Assessment",
+    "findings_count": 0,
+    "state": "VERIFIED_COMPLIANT"
+  },
+  "evidence": {
+    "evidence_id": "evd_scaffold_load_cert_001",
+    "tenant_id": "ten_safety_corp",
+    "filename": "tower_load_test_certificate.pdf",
+    "media_type": "application/pdf",
+    "size_bytes": 524288,
+    "sha256_digest": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0"
+  },
+  "publication_snapshot": {
+    "snapshot_id": "snp_pub_tower_safety_001",
+    "tenant_id": "ten_safety_corp",
+    "snapshot_type": "SAFETY_INSPECTION_SUMMARY",
+    "version": "v1.0.0",
+    "title": "Public Tower Scaffold Safety Certification",
+    "summary": "Official safety compliance summary for Bangkok Yard Tower Section 1.",
+    "status": "PUBLISHED_IMMUTABLE",
+    "source_entity_ref": "rec_inspection_tower_001",
+    "expected_non_authority_notice": "DERIVED_OUTPUT_NON_AUTHORITY: This snapshot is a derived informational projection and carries zero sovereign operational authority."
+  },
+  "portal_shielding": {
+    "expected_headers": {
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "Content-Security-Policy": "default-src 'self'",
+      "Cache-Control": "private, no-cache, no-store"
+    }
+  },
+  "export_package": {
+    "package_id": "pkg_export_regulatory_001",
+    "tenant_id": "ten_safety_corp",
+    "destination_scope": "REGULATORY_SUBMISSION"
+  },
+  "held_decisions": {
+    "H030-003": "PREWORK_HELD",
+    "H030-004": "PREWORK_HELD",
+    "H030-005": "PREWORK_HELD",
+    "H030-006": "PREWORK_HELD",
+    "H030-007": "PROHIBITED_HELD",
+    "H030-008": "PROHIBITED_HELD"
+  }
+}
