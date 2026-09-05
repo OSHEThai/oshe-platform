@@ -13,6 +13,7 @@ Stakeholder snapshots remain in Drive; engineering-authoritative records are ver
 ## Decision Packets
 
 - [v0.3.0 External Route Activation, Cache, Indexing, and Withdrawal Controls Decision Packet (H030-007 HOLD)](v030-external-route-activation-packet.md) (`ARC-V030-EXTROUTE-001` / `V030-I027`)
+- [v0.3.0 Sole Human Owner Release Decision Packet (H030-008 HOLD)](v030-human-release-decision-packet.md) (`ARC-V030-DECPKT-001` / `V030-I038`)
 
 ## Assurance Cases
 
