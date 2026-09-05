@@ -61,3 +61,13 @@ Entitlement does not replace authorization. Clients, integrations, extensions, a
   - **Duration Ceiling:** All delegations are capped at a strict maximum of 30 days (`MaxDelegationDuration`) or the delegator role's configured maximum (`ErrDelegationDurationExceeded`).
   - **Permission Containment:** Delegator must possess every permission granted to the delegatee; escalation beyond source authority is denied (`ErrExceedsSourceAuthority`).
   - **Scope Containment:** Delegated scope must be contained within or equal to delegator scope; cross-tenant or sibling-project escalation is denied (`ErrScopeExceedsSourceAuthority`).
+
+## Synthetic External User Profiles & Sponsor Controls (`external_user_profile.go`)
+
+- **Approved External User Categories (Issue #94):** Formalizes distinct external user classifications: `TEMPORARY_WORKER`, `SITE_LOCAL_WORKER`, `CONTRACTOR_WORKER`, `CLIENT_INSPECTOR`, `EXTERNAL_AUDITOR`, and `PARTNER_SPECIALIST`.
+- **Mandatory Internal Sponsor (`usr_*`):** All external user enrollments require an authoritative internal sponsor manager (`usr_*`). External self-sponsorship and multi-hop chain delegations are strictly rejected (`ErrMissingInternalSponsor`, `ErrInvalidInternalSponsor`).
+- **Company Administration Denial:** External users are categorically barred from holding internal Company, Business Unit, or Tenant administrative roles (`RoleTenantAdmin`, `RoleProjectManager`). Attempted escalation fails closed (`ErrCompanyAdminDenied`).
+- **Profile Data Minimization:** Restricts profile attributes to sanitized display names and opaque synthetic contact references (`ref_synth_*`). Strictly rejects personal identifiable information (raw emails, phone numbers, national/citizen IDs) via `ErrPIIDetected`.
+- **Temporal Validity & Revocation:** Enforces explicit start/end enrollment windows (`ValidFrom`, `ValidTo`). Users past `ValidTo` automatically evaluate as `EXPIRED` (`ErrEnrollmentExpired`). In-memory revocation transitions status to `REVOKED` (`ErrEnrollmentRevoked`) with full audit trail attribution.
+- **Append-Only Enrollment Audit Ledger (`ExternalUserLedger`):** An in-memory, thread-safe audit log recording immutable history records (`ExternalUserAuditRecord`) for every external user enrollment and revocation event, enforcing strict tenant boundary isolation and zero hard deletion.
+- **Local Synthetic Prework Boundary (H030-004, H030-005):** Confined strictly to in-memory synthetic fixtures without external IdP integration, database persistence, or final user-model binding.
