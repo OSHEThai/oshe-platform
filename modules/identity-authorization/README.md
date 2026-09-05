@@ -62,6 +62,30 @@ Entitlement does not replace authorization. Clients, integrations, extensions, a
   - **Permission Containment:** Delegator must possess every permission granted to the delegatee; escalation beyond source authority is denied (`ErrExceedsSourceAuthority`).
   - **Scope Containment:** Delegated scope must be contained within or equal to delegator scope; cross-tenant or sibling-project escalation is denied (`ErrScopeExceedsSourceAuthority`).
 
+## Scoped Directory Visibility & Read Boundaries (`directory_visibility.go`)
+
+- **Privacy & Data Minimization Governance (`H030-005` / Issue #87 / `NFR-V030-PRIV-001`):** Implements local in-memory scoped directory discovery, field minimization, role-bounded read access, and anti-enumeration controls as approved privacy prework under `H030-005`.
+- **Exact-Scope Directory Partitioning:** Directory searches are strictly partitioned to the caller's authorized organizational boundary. Project-scoped callers (`RoleInspector`, `RoleProjectManager`, `RoleContractor`) are automatically partitioned to their assigned `ProjectID` and cannot discover workers or entities across project or company boundaries.
+- **Anti-Enumeration Defense (`NEG-V030-04`):** When a caller queries a cross-project or unassigned context, the query returns an empty result set (`[]MinimizedDirectoryProfile{}`) with a `nil` error (HTTP 200 equivalent). Direct profile lookups across projects or tenants fail closed with non-leaking `ErrProfileNotFound`, strictly preventing project existence reconnaissance or worker enumeration.
+- **Data Minimization & Sanitized Exposure (`MinimizedDirectoryProfile`):** Directory responses expose only operational attributes (`ProfileID`, `Subject`, `TenantID`, `CompanyID`, `ProjectID`, `SiteID`, `DisplayName`, `JobTitle`, `Department`, `AssignedAreas`, `Status`). Strictly excludes personal phone numbers, personal email addresses, national IDs, passwords, session hashes, bearer tokens, and administrative authority grants (`AssertDataMinimization`).
+- **Role-Bounded Read Controls:**
+  - **Authentication & Permission Enforcement:** Anonymous or unauthenticated callers are rejected (`ErrUnauthenticatedCaller`). Callers must hold active `iam:directory:read` permission (`ErrDirectoryReadPermissionDenied`).
+  - **External Contractor Boundary:** External contractors (`RoleContractor`) are strictly bounded to their assigned project and site, and are prohibited from accessing corporate directories or cross-project lists.
+  - **Inactive Profile Shielding:** Deactivated profiles (`INACTIVE`) are automatically hidden from operational directory searches; only `RoleTenantAdmin` and `RoleAuditor` with explicit inclusion flags may inspect inactive profiles for compliance purposes.
+  - **Anti-Harvesting Query Bounds:** Query pagination is strictly clamped between 1 and a maximum ceiling of 100 entries (`MaxSearchLimit`) to prevent automated bulk directory scraping.
+- **Local-Only Boundary Invariant:** All directory visibility mechanics operate strictly in-memory using local synthetic fixtures. Zero external identity providers, external address books, cloud directories, production data, or network routes are connected or claimed.
+
+## Directory Boundaries & Qualification Evidence (`directory_qualification_test.go`)
+
+- **Provisional Qualification Governance (`H030-003`, `H030-004`, `H030-005` / Issue #89 / `V030-I016`):** Establishes integrated end-to-end qualification evidence covering directory privacy, duplicate identity rejection, exact-scope partitioning, safe lifecycle transitions, and simulated migration/recovery lineage.
+- **Privacy & Data Minimization Verification:** Proves exposed profiles strictly contain sanitized operational attributes (`AssertDataMinimization`). Confirms absence of sensitive personal PII (personal emails, phone numbers, national IDs) and cryptographic credentials (passwords, bearer tokens, digests).
+- **Duplicate Collision & False-Merge Rejection:** Proves uniqueness of profile identifiers within tenant scopes (`ErrDuplicateIdentifierCollision`) and enforces that distinct synthetic subjects (`usr_*`) can never be merged, aliased, or consolidated (`AssertNoFalseMerge`, `AssertDistinctSubjects`, `ErrFalseMergeProhibited`). Structural identifiers remain strictly immutable.
+- **Exact-Scope Discovery & Anti-Enumeration Defense (`NEG-V030-04`):** Proves project-scoped queries are partitioned strictly to the caller's assigned project boundary. Hostile or out-of-scope queries return empty results (`[]MinimizedDirectoryProfile{}`) with nil error, preventing project existence or worker enumeration.
+- **Multi-Project Subject Isolation:** Confirms a worker active in multiple projects exposes only the profile relevant to the viewer's authorized project context.
+- **Safe Lifecycle & Active-by-Default Discovery:** Confirms inactive profiles (`INACTIVE`) are excluded from operational discovery, reject non-structural updates (`ErrProfileInactive`), and are visible only to authorized audit roles (`RoleTenantAdmin`, `RoleAuditor`).
+- **Simulated Migration & Recovery Lineage:** Demonstrates end-to-end ingestion, attribute mutation, deactivation, and reactivation. Confirms full historical state can be reconstructed from the append-only ledger (`DirectoryResolutionLedger`) with zero data loss or cross-tenant leakage.
+- **Separation of Concerns & Non-Claims:** Confirms directory projections convey zero operational authorization (`AssertNoAuthorizationBypass`). Operates strictly on local in-memory synthetic fixtures; zero real directory migration, external identity provider sync, production persistence, or runtime execution is claimed or enacted.
+
 ## Synthetic External User Profiles & Sponsor Controls (`external_user_profile.go`)
 
 - **Approved External User Categories (Issue #94):** Formalizes distinct external user classifications: `TEMPORARY_WORKER`, `SITE_LOCAL_WORKER`, `CONTRACTOR_WORKER`, `CLIENT_INSPECTOR`, `EXTERNAL_AUDITOR`, and `PARTNER_SPECIALIST`.
