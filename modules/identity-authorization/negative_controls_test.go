@@ -506,3 +506,120 @@ func TestNegativeControl_NonLeakingDiagnostics(t *testing.T) {
 		}
 	}
 }
+
+func TestNegativeControl_ScopedAssignment_Expired(t *testing.T) {
+	eval := localidentity.NewPolicyEvaluator()
+	reg := localidentity.NewScopedAssignmentRegistry(nil)
+	tenantID := "ten_neg_01"
+	subject := "usr_synth_exp"
+
+	eval.SetMembership(tenantID, subject, localidentity.MembershipActive)
+
+	baseTime := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	from := baseTime
+	to := baseTime.Add(24 * time.Hour) // expired on Sept 2
+
+	asn, _ := localidentity.NewScopedAssignment("asn_exp", tenantID, subject, localidentity.RoleInspector,
+		localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}, from, to, "usr_admin")
+	_ = reg.RegisterAssignment(asn, "usr_admin", "Test", from)
+
+	// Evaluate access after expiration (Sept 5)
+	now := time.Date(2026, 9, 5, 0, 0, 0, 0, time.UTC)
+	req := localidentity.AccessRequest{
+		Identity: localidentity.SubjectIdentity{Subject: subject, TenantID: tenantID, IsAuthenticated: true},
+		Target:   localidentity.TargetResource{TenantID: tenantID, ProjectID: "prj_01", Lifecycle: localidentity.ResourceActive},
+		Action:   localidentity.ActionRead,
+	}
+
+	res := localidentity.EvaluateScopedAccess(reg, eval, req, now)
+	if res.Allowed || res.DenialReason != localidentity.DenialRoleNotGranted {
+		t.Errorf("expected DenialRoleNotGranted for expired assignment, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
+	}
+}
+
+func TestNegativeControl_ScopedAssignment_Revoked(t *testing.T) {
+	eval := localidentity.NewPolicyEvaluator()
+	reg := localidentity.NewScopedAssignmentRegistry(nil)
+	tenantID := "ten_neg_01"
+	subject := "usr_synth_rev"
+
+	eval.SetMembership(tenantID, subject, localidentity.MembershipActive)
+
+	from := time.Now().Add(-1 * time.Hour)
+	to := time.Now().Add(24 * time.Hour)
+	now := time.Now()
+
+	asn, _ := localidentity.NewScopedAssignment("asn_rev", tenantID, subject, localidentity.RoleInspector,
+		localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}, from, to, "usr_admin")
+	_ = reg.RegisterAssignment(asn, "usr_admin", "Test", now)
+
+	// Explicitly revoke assignment
+	_, err := reg.RevokeAssignment(tenantID, "asn_rev", "usr_admin", "Breach", now)
+	if err != nil {
+		t.Fatalf("RevokeAssignment error: %v", err)
+	}
+
+	req := localidentity.AccessRequest{
+		Identity: localidentity.SubjectIdentity{Subject: subject, TenantID: tenantID, IsAuthenticated: true},
+		Target:   localidentity.TargetResource{TenantID: tenantID, ProjectID: "prj_01", Lifecycle: localidentity.ResourceActive},
+		Action:   localidentity.ActionRead,
+	}
+
+	res := localidentity.EvaluateScopedAccess(reg, eval, req, now)
+	if res.Allowed || res.DenialReason != localidentity.DenialRoleNotGranted {
+		t.Errorf("expected DenialRoleNotGranted for revoked assignment, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
+	}
+}
+
+func TestNegativeControl_ScopedAssignment_RoleConflict(t *testing.T) {
+	reg := localidentity.NewScopedAssignmentRegistry(nil)
+	tenantID := "ten_neg_01"
+	subject := "usr_synth_conflict"
+
+	from := time.Now().Add(-1 * time.Hour)
+	to := time.Now().Add(24 * time.Hour)
+	now := time.Now()
+
+	scope := localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}
+
+	// Assign Inspector
+	asn1, _ := localidentity.NewScopedAssignment("asn_c1", tenantID, subject, localidentity.RoleInspector, scope, from, to, "usr_admin")
+	_ = reg.RegisterAssignment(asn1, "usr_admin", "Init", now)
+
+	// Attempting to assign Auditor to the same subject on overlapping scope must fail with role conflict
+	asn2, _ := localidentity.NewScopedAssignment("asn_c2", tenantID, subject, localidentity.RoleAuditor, scope, from, to, "usr_admin")
+	err := reg.RegisterAssignment(asn2, "usr_admin", "Conflict attempt", now)
+	if !errors.Is(err, localidentity.ErrRoleConflictDetected) {
+		t.Errorf("expected ErrRoleConflictDetected for Inspector + Auditor, got %v", err)
+	}
+}
+
+func TestNegativeControl_ScopedAssignment_ScopeMismatch(t *testing.T) {
+	eval := localidentity.NewPolicyEvaluator()
+	reg := localidentity.NewScopedAssignmentRegistry(nil)
+	tenantID := "ten_neg_01"
+	subject := "usr_synth_scopetest"
+
+	eval.SetMembership(tenantID, subject, localidentity.MembershipActive)
+
+	from := time.Now().Add(-1 * time.Hour)
+	to := time.Now().Add(24 * time.Hour)
+	now := time.Now()
+
+	// Assign Inspector strictly to Project Alpha
+	asn, _ := localidentity.NewScopedAssignment("asn_scope", tenantID, subject, localidentity.RoleInspector,
+		localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_alpha"}, from, to, "usr_admin")
+	_ = reg.RegisterAssignment(asn, "usr_admin", "Test", now)
+
+	// Attempt to access Project Bravo
+	req := localidentity.AccessRequest{
+		Identity: localidentity.SubjectIdentity{Subject: subject, TenantID: tenantID, IsAuthenticated: true},
+		Target:   localidentity.TargetResource{TenantID: tenantID, ProjectID: "prj_bravo", Lifecycle: localidentity.ResourceActive},
+		Action:   localidentity.ActionRead,
+	}
+
+	res := localidentity.EvaluateScopedAccess(reg, eval, req, now)
+	if res.Allowed || res.DenialReason != localidentity.DenialScopeMismatch {
+		t.Errorf("expected DenialScopeMismatch for out-of-scope project, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
+	}
+}
