@@ -432,3 +432,37 @@ func TestWalkingSkeleton_StaleMetricAndDisallowedFilterDenial(t *testing.T) {
 		t.Errorf("expected ErrUnsupportedFilter, got: %v", err)
 	}
 }
+
+func TestInspectionComplianceScoreMetric_NonAuthoritativeProjection(t *testing.T) {
+	c := NewReportCatalog(nil)
+	def := NewInspectionComplianceScoreMetricDefinition()
+
+	if !def.NonAuthority {
+		t.Errorf("expected NonAuthority to be true")
+	}
+	if def.DeclaredSource != "MOD-WFA:inspections_v1" {
+		t.Errorf("expected DeclaredSource to be MOD-WFA:inspections_v1, got %s", def.DeclaredSource)
+	}
+	if err := c.RegisterMetric(def); err != nil {
+		t.Fatalf("failed to register compliance score metric: %v", err)
+	}
+
+	tenantID := "ten_score_test"
+	readerID := "reader_score_test"
+	_ = c.AuthorizeReader(tenantID, readerID)
+	_ = c.LoadFixtures(tenantID, []SyntheticRecord{
+		{Category: "electrical", Status: "PASS", Value: 85.0},
+	}, time.Now())
+
+	res, err := c.ExecuteQuery(QueryRequest{
+		MetricID: def.MetricID,
+		TenantID: tenantID,
+		ReaderID: readerID,
+	})
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+	if !strings.Contains(res.NonAuthorityNotice, "DERIVED_OUTPUT_NON_AUTHORITY") {
+		t.Errorf("expected NonAuthorityNotice to contain DERIVED_OUTPUT_NON_AUTHORITY, got: %s", res.NonAuthorityNotice)
+	}
+}

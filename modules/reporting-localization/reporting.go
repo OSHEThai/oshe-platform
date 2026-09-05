@@ -60,6 +60,26 @@ type MetricDefinition struct {
 	NonAuthority   bool          `json:"non_authority"`
 }
 
+// InspectionComplianceScoreMetricID defines the canonical reporting projection metric for inspection compliance scores.
+const InspectionComplianceScoreMetricID = "metric_inspection_compliance_score"
+
+// NewInspectionComplianceScoreMetricDefinition returns the non-authoritative metric definition for compliance scores under HDEC-V040-SCORING-058.
+func NewInspectionComplianceScoreMetricDefinition() MetricDefinition {
+	return MetricDefinition{
+		MetricID:       InspectionComplianceScoreMetricID,
+		Title:          "Inspection Compliance Score Projection",
+		Owner:          "compliance-analytics-team",
+		Formula:        "MODEL_2_WEIGHTED (Normalized Section Compliance)",
+		DeclaredSource: "MOD-WFA:inspections_v1",
+		Grain:          GrainInstant,
+		AllowedFilters: []string{"category", "status", "template_id"},
+		FreshnessBound: 1 * time.Hour,
+		Exclusions:     []string{"NA_excluded_from_denominator", "draft_inspections_excluded"},
+		Limitations:    []string{"NON_AUTHORITATIVE_PROJECTION: operational source of truth remains MOD-WFA", "UNKNOWN_quarantined_from_denominator"},
+		NonAuthority:   true,
+	}
+}
+
 // QueryRequest contains caller parameters for evaluating a metric.
 type QueryRequest struct {
 	MetricID string            `json:"metric_id"`
@@ -98,9 +118,9 @@ type ReportCatalog struct {
 	mu          sync.RWMutex
 	clock       func() time.Time
 	metrics     map[string]MetricDefinition
-	readers     map[string]map[string]bool      // tenantID -> readerID -> authorized
-	fixtures    map[string][]SyntheticRecord    // tenantID -> records
-	sourceTimes map[string]time.Time            // tenantID -> last updated
+	readers     map[string]map[string]bool   // tenantID -> readerID -> authorized
+	fixtures    map[string][]SyntheticRecord // tenantID -> records
+	sourceTimes map[string]time.Time         // tenantID -> last updated
 }
 
 // NewReportCatalog constructs a new in-memory catalog with an injectable clock.
