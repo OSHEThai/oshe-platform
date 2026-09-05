@@ -22,3 +22,21 @@ Authoritative identity remains internal to this module. Other modules may use re
 - **Identifier Validation Behavior:** Enforces strict canonical prefix format (`<prefix>_<token>` with min 8 chars) when canonical prefixes are presented, while preserving backward-compatible non-blank synthetic slugs.
 - **Site Time Zone & Locale Ownership:** Site entities own operational IANA time zones (default `Asia/Bangkok`) and BCP 47 locales (default `th-TH`, fallback `en-US`). Unspecified values on child `Area` entities automatically inherit their parent Site's configuration.
 - **Non-Authoritative Scope Propagation:** `ResolvedScope` produces descriptive, immutable canonical path projections embedding `DERIVED_OUTPUT_NON_AUTHORITY`. Scope resolution validates tenant equality only and conveys zero lateral, upward, or implicit operational authority.
+
+## Lifecycle State Machine, Move Operations & Historical Preservation (`organization_lifecycle.go`)
+
+- **Terminal Closed Operational Policy:** Enforces `StateClosed` (`CLOSED`) as an operational completion state. Closed entities remain queryable for audit and compliance but reject new operational records (`ErrEntityClosed`). Reopening is prohibited in operational policy (`ErrCannotReopenClosed`).
+- **Reversible Local Simulation Harness:** Provides in-memory reversible state simulation (`SimulateReversibleTransition`) for preflight test assurance under Sole Human Owner decision H030-002 without enacting binding external authority.
+- **Safe Re-Parenting & Move Operations:** Governs same-tenant site and area move operations (`MoveSiteToProject`, `MoveAreaToSite`). Enforces active source and destination requirements and strictly rejects cross-tenant moves (`ErrCrossTenantMove`) or moves into archived/closed targets (`ErrParentArchived`, `ErrParentClosed`).
+- **Historical Attribution Preservation:** Employs `HistoricalScopeRecord` to capture immutable scope snapshots at transition points, ensuring past records and canonical paths remain permanently queryable without physical database deletions.
+
+## External Party Registry & Contractor/Subcontractor Nesting Boundaries (`party.go`)
+
+- **Tenant-Scoped External Party Registry:** Defines `Party` entities for clients, contractors, subcontractors, partners, and auditors (`PartyType`). External parties are strictly bounded to tenant scope and convey zero internal corporate membership or administrative rights.
+- **Mandatory Internal Sponsor (`usr_*`):** All contractor and subcontractor project participations mandate an internal sponsor manager (`usr_*`). Registrations with blank or non-user sponsor IDs fail closed (`ErrBlankSponsorID`, `ErrInvalidSponsorID`).
+- **Contractor-Subcontractor Nesting Ceiling (`MaxContractorNestingDepth = 1`):** Enforces a strict depth limit permitting only primary contractor (depth 0) to subcontractor (depth 1) nesting. Sub-subcontracting (depth 2+) is strictly prohibited (`ErrNestingDepthExceeded`).
+- **Temporal & Scope Containment:** A subcontractor's validity window must be strictly bounded within its parent contractor's window (`ErrValidityWindowExceedsParent`). Subcontractors inherit their parent's project and cannot expand beyond their parent's site bounds (`ErrScopeMismatch`).
+- **Parent Status Cascade:** Inactive, archived, or closed parent contractor participations cascade down, preventing subcontractor creation or active operations (`ErrParentClosed`, `ErrParentNotActive`).
+- **Strict Non-Elevation & Lateral Denial:** External parties are barred from administrative or internal authority roles (`ErrElevationForbidden`). Lateral sibling contractor and cross-project access attempts are rejected (`ErrSiblingAccessDenied`).
+- **Public Contract Redaction (`contracts/api/party_contract.go`):** Redacts internal database keys, bearer tokens, passwords, real PII (national IDs, emails, phone numbers), and authority fields from public views (`PartySummaryView`, `ProjectParticipationView`).
+- **H030-002 Provisional Governance:** Confined strictly to in-memory, reversible local simulation and preflight validation fixtures pending successor owner gates.

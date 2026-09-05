@@ -15,9 +15,9 @@ import (
 var (
 	// ErrEmptyPartyID indicates missing party identifier.
 	ErrEmptyPartyID = errors.New("party_id cannot be empty")
-	// ErrEmptyDisplayName indicates missing display name.
 	// ErrEmptyTenantID indicates missing tenant identifier.
 	ErrEmptyTenantID = errors.New("tenant_id cannot be empty")
+	// ErrEmptyDisplayName indicates missing display name.
 	ErrEmptyDisplayName = errors.New("display_name cannot be empty")
 	// ErrInvalidContractPartyType indicates an invalid party type string.
 	ErrInvalidContractPartyType = errors.New("party_type must be CLIENT, CONTRACTOR, SUBCONTRACTOR, PARTNER, or AUDITOR")
@@ -31,6 +31,8 @@ var (
 	ErrInvalidContractRole = errors.New("role must be CONTRACTOR_WORKER, SITE_SAFETY_LEAD, CLIENT_AUDITOR, CONSULTANT, or SUBCONTRACTOR_LEAD")
 	// ErrInvalidDateFormat indicates timestamp is not RFC3339.
 	ErrInvalidDateFormat = errors.New("timestamp must conform to RFC3339 format")
+	// ErrInvalidNestingDepth indicates that nesting_depth exceeds the allowed ceiling (0 or 1).
+	ErrInvalidNestingDepth = errors.New("nesting_depth must be 0 (primary) or 1 (subcontractor)")
 	// ErrRedactionViolation indicates forbidden internal, sensitive, or authority fields detected in public payload.
 	ErrRedactionViolation = errors.New("contract payload contains forbidden internal, PII, or authority field")
 )
@@ -50,6 +52,8 @@ var ProhibitedFieldPatterns = []string{
 	"permissions",
 	"database_id",
 	"raw_id",
+	"sponsor_private",
+	"internal_authority",
 }
 
 // PartySummaryView represents the sanitized, public-facing representation of an external party.
@@ -89,18 +93,21 @@ func (v *PartySummaryView) Validate() error {
 	return nil
 }
 
-// ProjectParticipationView represents the public-facing bounded participation of a party in a project.
+// ProjectParticipationView represents the public-facing bounded participation of a party in a project,
+// including contractor and subcontractor nesting boundaries.
 // Invariant: Strict scope boundary; omits internal sponsor private details and permission bitmasks.
 type ProjectParticipationView struct {
-	ParticipationID string `json:"participation_id"`
-	TenantID        string `json:"tenant_id"`
-	PartyID         string `json:"party_id"`
-	ProjectID       string `json:"project_id"`
-	SiteID          string `json:"site_id,omitempty"`
-	Role            string `json:"role"`
-	ValidFrom       string `json:"valid_from"`
-	ValidTo         string `json:"valid_to"`
-	Status          string `json:"status"`
+	ParticipationID       string `json:"participation_id"`
+	TenantID              string `json:"tenant_id"`
+	PartyID               string `json:"party_id"`
+	ProjectID             string `json:"project_id"`
+	SiteID                string `json:"site_id,omitempty"`
+	Role                  string `json:"role"`
+	ValidFrom             string `json:"valid_from"`
+	ValidTo               string `json:"valid_to"`
+	Status                string `json:"status"`
+	ParentParticipationID string `json:"parent_participation_id,omitempty"`
+	NestingDepth          int    `json:"nesting_depth,omitempty"`
 }
 
 // Validate checks all mandatory invariants for ProjectParticipationView.
@@ -140,6 +147,17 @@ func (v *ProjectParticipationView) Validate() error {
 	case "ACTIVE", "ARCHIVED":
 	default:
 		return ErrInvalidContractStatus
+	}
+
+	// Nesting depth boundary check
+	if v.NestingDepth < 0 || v.NestingDepth > 1 {
+		return ErrInvalidNestingDepth
+	}
+	if v.NestingDepth == 1 && strings.TrimSpace(v.ParentParticipationID) == "" {
+		return errors.New("parent_participation_id is required for nested subcontractor (depth 1)")
+	}
+	if v.NestingDepth == 0 && strings.TrimSpace(v.ParentParticipationID) != "" {
+		return errors.New("parent_participation_id must be empty for primary contractor (depth 0)")
 	}
 
 	return nil
