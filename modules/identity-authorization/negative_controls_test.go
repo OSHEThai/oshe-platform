@@ -1063,3 +1063,81 @@ func TestNegativeControl_NEG_V030_09_SegregationOfDutiesConflictDenial(t *testin
 		t.Fatalf("expected ErrRoleConflictDetected for concurrent Contractor + TenantAdmin, got: %v", err)
 	}
 }
+
+func TestNegativeControl_AccessCondition_TrustedDeviceProhibited(t *testing.T) {
+	tenantID := "ten_neg_cond"
+	from := time.Now()
+	to := from.Add(7 * 24 * time.Hour)
+
+	// Attempting to require trusted device authentication fails closed
+	_, err := localidentity.NewAccessConditionRecord("cnd_td", tenantID, "usr_ext_01", "prj_01", "ste_01", "usr_mgr", true, false, from, to)
+	if !errors.Is(err, localidentity.ErrTrustedDeviceProhibited) {
+		t.Errorf("expected ErrTrustedDeviceProhibited when trustedDeviceRequired=true, got %v", err)
+	}
+
+	// Attempting to allow offline access fails closed
+	_, err = localidentity.NewAccessConditionRecord("cnd_off", tenantID, "usr_ext_01", "prj_01", "ste_01", "usr_mgr", false, true, from, to)
+	if !errors.Is(err, localidentity.ErrTrustedDeviceProhibited) {
+		t.Errorf("expected ErrTrustedDeviceProhibited when allowOffline=true, got %v", err)
+	}
+}
+
+func TestNegativeControl_AccessCondition_StaleSession(t *testing.T) {
+	reg := localidentity.NewAccessConditionRegistry(nil)
+	tenantID := "ten_neg_cond"
+	from := time.Now().Add(-1 * time.Hour)
+	to := from.Add(7 * 24 * time.Hour)
+	now := time.Now()
+
+	cond, _ := localidentity.NewAccessConditionRecord("cnd_stale", tenantID, "usr_ext_01", "prj_01", "ste_01", "usr_mgr_1", false, false, from, to)
+	_ = reg.CreateCondition(cond, "usr_admin", "Init", now)
+
+	// Bump generation via sponsor change
+	_, _ = reg.ChangeSponsor(tenantID, "cnd_stale", "usr_mgr_2", "usr_admin", "Bump", now)
+
+	// Caller presenting old session token generation (1 < 2) must be denied as CategorySessionStale
+	allowed, cat := reg.EvaluateConditionAccess(tenantID, "cnd_stale", "prj_01", "ste_01", 1, now)
+	if allowed || cat != localidentity.CategorySessionStale {
+		t.Errorf("expected CategorySessionStale for stale session generation, got allowed=%v, cat=%s", allowed, cat)
+	}
+}
+
+func TestNegativeControl_AccessCondition_ExcessiveDuration(t *testing.T) {
+	tenantID := "ten_neg_cond"
+	from := time.Now()
+
+	// Initial duration > 14 days is rejected
+	_, err := localidentity.NewAccessConditionRecord("cnd_long", tenantID, "usr_ext_01", "prj_01", "ste_01", "usr_mgr", false, false, from, from.Add(15*24*time.Hour))
+	if !errors.Is(err, localidentity.ErrDurationExceeded) {
+		t.Errorf("expected ErrDurationExceeded for >14 days initial duration, got %v", err)
+	}
+}
+
+func TestNegativeControl_AccessCondition_SponsorChangeImmediateEffect(t *testing.T) {
+	reg := localidentity.NewAccessConditionRegistry(nil)
+	tenantID := "ten_neg_cond"
+	from := time.Now().Add(-1 * time.Hour)
+	to := from.Add(7 * 24 * time.Hour)
+	now := time.Now()
+
+	cond, _ := localidentity.NewAccessConditionRecord("cnd_imm", tenantID, "usr_ext_01", "prj_01", "ste_01", "usr_mgr_1", false, false, from, to)
+	_ = reg.CreateCondition(cond, "usr_admin", "Init", now)
+
+	// Prior session works
+	allowed, _ := reg.EvaluateConditionAccess(tenantID, "cnd_imm", "prj_01", "ste_01", 1, now)
+	if !allowed {
+		t.Fatalf("expected initial session to be allowed")
+	}
+
+	// Changing sponsor takes immediate local effect without grace period
+	_, err := reg.ChangeSponsor(tenantID, "cnd_imm", "usr_mgr_2", "usr_admin", "Immediate switch", now)
+	if err != nil {
+		t.Fatalf("ChangeSponsor error: %v", err)
+	}
+
+	// Old session is immediately denied
+	allowedAfter, catAfter := reg.EvaluateConditionAccess(tenantID, "cnd_imm", "prj_01", "ste_01", 1, now)
+	if allowedAfter || catAfter != localidentity.CategorySessionStale {
+		t.Errorf("expected immediate stale session denial, got allowed=%v, cat=%s", allowedAfter, catAfter)
+	}
+}
