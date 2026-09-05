@@ -13,12 +13,12 @@
 
 ## 1. Executive Summary & Purpose
 
-This document provides the authoritative system-context, trust-boundary, and control-evidence-owner assurance case for multi-tenant and multi-party isolation in the OSHE Platform for Milestone v0.3.0. 
+This document provides the authoritative system-context, trust-boundary, and control-evidence-owner assurance case for multi-tenant and multi-party isolation in the OSHE Platform for Milestone v0.3.0.
 
 The primary objective is to demonstrate that tenant data, organizational structures, party contexts, scoped directory projections, operational records, and public presentation views remain strictly segregated, tamper-evident, and protected against unauthorized lateral movement, privilege escalation, cross-tenant leakage, directory enumeration, or live query bypass.
 
 ### Explicit Boundary & Non-Claims Declaration
-In strict compliance with approved Sole Human Owner decisions (`H030-003` through `H030-008`), all mechanisms detailed herein operate exclusively as local, in-memory synthetic models and automated qualification test fixtures (`usr_*`, `prj_*`, `ten_*`, `snp_*`). 
+In strict compliance with approved Sole Human Owner decisions (`H030-003` through `H030-008`), all mechanisms detailed herein operate exclusively as local, in-memory synthetic models and automated qualification test fixtures (`usr_*`, `prj_*`, `ten_*`, `snp_*`).
 
 **No operational authority, live cloud infrastructure, or production claims are enacted:**
 - **Zero Live Public Routes:** No public DNS records, reverse proxies, ingress routes, or live internet endpoints are established (`H030-006`, `H030-007`).
