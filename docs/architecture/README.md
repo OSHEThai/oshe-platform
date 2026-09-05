@@ -2,6 +2,10 @@
 
 Stakeholder snapshots remain in Drive; engineering-authoritative records are versioned here.
 
+## Evidence Gates & Qualification Matrices
+
+- [v0.3.0 Deterministic Local Evidence Gates and Traceable Required-Check Matrix](v030-evidence-gates.md) (`ARC-V030-EVGATES-001` / `V030-I035`)
+
 ## Decision Packets
 
 - [v0.3.0 External Route Activation, Cache, Indexing, and Withdrawal Controls Decision Packet (H030-007 HOLD)](v030-external-route-activation-packet.md) (`ARC-V030-EXTROUTE-001` / `V030-I027`)
