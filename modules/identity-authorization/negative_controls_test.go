@@ -506,3 +506,125 @@ func TestNegativeControl_NonLeakingDiagnostics(t *testing.T) {
 		}
 	}
 }
+
+// NEG-V030-04: Cross-Project Directory Enumeration Rejection (H030-005 / NFR-V030-PRIV-001)
+// Threat: Unauthorized employee directory harvesting across projects.
+// Test Scenario & Hostile Input: Authenticated worker on prj_alpha submits directory query targeting prj_beta.
+// Expected Behavior: Query returns empty list ([]), anti-enumeration prevents existence discovery.
+func TestNegativeControl_NEG_V030_04_CrossProjectDirectoryEnumeration(t *testing.T) {
+	reg := localidentity.NewDirectoryRegistry()
+	matrix := localidentity.NewProvisionalAuthorizationMatrix()
+
+	// Seed profile in victim project prj_beta
+	victimProfile, err := localidentity.NewDirectoryProfile(
+		"prof_victim_01",
+		"usr_synth_victim",
+		"ten_alpha",
+		"cmp_contracting",
+		"prj_beta",
+		"ste_site_b",
+		"Victim Worker",
+		"Senior Safety Officer",
+		"Safety Operations",
+		[]string{"ara_confined_space"},
+	)
+	if err != nil {
+		t.Fatalf("failed to create fixture profile: %v", err)
+	}
+	if err := reg.RegisterProfile(victimProfile); err != nil {
+		t.Fatalf("failed to register fixture profile: %v", err)
+	}
+
+	svc := localidentity.NewDirectoryVisibilityService(reg, matrix)
+
+	// Attacker worker is bounded strictly to prj_alpha
+	attackerViewer := localidentity.ViewerContext{
+		Identity: localidentity.SubjectIdentity{
+			Subject:         "usr_synth_attacker",
+			TenantID:        "ten_alpha",
+			IsAuthenticated: true,
+		},
+		Role:  localidentity.RoleInspector,
+		Scope: localidentity.ScopeGrant{TenantID: "ten_alpha", CompanyID: "cmp_contracting", ProjectID: "prj_alpha"},
+	}
+
+	// 1. Hostile query: Attacker attempts to query prj_beta directory
+	results, err := svc.SearchDirectory(attackerViewer, localidentity.DirectorySearchFilter{
+		ProjectID: "prj_beta",
+	})
+	if err != nil {
+		t.Fatalf("anti-enumeration requires nil error (HTTP 200 equivalent), got error: %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("anti-enumeration failure (NEG-V030-04): attacker on prj_alpha received %d profiles from prj_beta", len(results))
+	}
+
+	// 2. Hostile query: Attacker omits project filter attempting to enumerate tenant-wide profiles
+	unfilteredResults, err := svc.SearchDirectory(attackerViewer, localidentity.DirectorySearchFilter{})
+	if err != nil {
+		t.Fatalf("unexpected search error: %v", err)
+	}
+	for _, p := range unfilteredResults {
+		if p.ProjectID != "prj_alpha" {
+			t.Fatalf("exact-scope partition failure: attacker discovered profile %s in project %s", p.ProfileID, p.ProjectID)
+		}
+	}
+
+	// 3. Hostile direct lookup: Attacker probes direct profile ID in prj_beta
+	_, err = svc.GetVisibleProfile(attackerViewer, "prof_victim_01")
+	if err == nil {
+		t.Fatalf("expected ErrProfileNotFound for hostile direct profile probe, got nil")
+	}
+	if !errors.Is(err, localidentity.ErrProfileNotFound) {
+		t.Errorf("expected non-leaking ErrProfileNotFound, got: %v", err)
+	}
+}
+
+// Data Minimization Negative Control: Verifies no sensitive PII or credentials in directory outputs
+func TestNegativeControl_DirectoryDataMinimization(t *testing.T) {
+	reg := localidentity.NewDirectoryRegistry()
+	matrix := localidentity.NewProvisionalAuthorizationMatrix()
+
+	safeProfile, err := localidentity.NewDirectoryProfile(
+		"prof_safe_01",
+		"usr_synth_safe",
+		"ten_alpha",
+		"cmp_main",
+		"prj_alpha",
+		"ste_site_a",
+		"Kallaya Sorn",
+		"Safety Lead",
+		"EHS Operations",
+		[]string{"ara_1"},
+	)
+	if err != nil {
+		t.Fatalf("failed to create safe profile: %v", err)
+	}
+	_ = reg.RegisterProfile(safeProfile)
+
+	svc := localidentity.NewDirectoryVisibilityService(reg, matrix)
+	viewer := localidentity.ViewerContext{
+		Identity: localidentity.SubjectIdentity{Subject: "usr_synth_safe", TenantID: "ten_alpha", IsAuthenticated: true},
+		Role:     localidentity.RoleInspector,
+		Scope:    localidentity.ScopeGrant{TenantID: "ten_alpha", CompanyID: "cmp_main", ProjectID: "prj_alpha"},
+	}
+
+	p, err := svc.GetVisibleProfile(viewer, "prof_safe_01")
+	if err != nil {
+		t.Fatalf("failed to get visible profile: %v", err)
+	}
+
+	// Assert data minimization passes
+	if err := localidentity.AssertDataMinimization(p); err != nil {
+		t.Fatalf("data minimization check failed: %v", err)
+	}
+
+	// Verify absence of sensitive keys in struct representation
+	forbiddenKeys := []string{"password", "token", "hash", "secret", "email", "phone", "ssn"}
+	rep := p.DisplayName + " " + p.JobTitle + " " + p.Department
+	for _, k := range forbiddenKeys {
+		if strings.Contains(strings.ToLower(rep), k) {
+			t.Errorf("found forbidden pattern %q in directory representation", k)
+		}
+	}
+}
