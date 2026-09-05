@@ -95,6 +95,7 @@ func TestProjectParticipationView_ValidSerializationAndValidation(t *testing.T) 
 		ValidFrom:       validFrom,
 		ValidTo:         validTo,
 		Status:          "ACTIVE",
+		NestingDepth:    0,
 	}
 
 	if err := view.Validate(); err != nil {
@@ -108,6 +109,93 @@ func TestProjectParticipationView_ValidSerializationAndValidation(t *testing.T) 
 
 	if err := AssertRedactedPartyContract(b); err != nil {
 		t.Errorf("expected clean redacted contract, got %v", err)
+	}
+}
+
+func TestProjectParticipationView_NestedSubcontractorValidation(t *testing.T) {
+	validFrom := time.Date(2026, 9, 5, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	validTo := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
+
+	// Valid subcontractor view at depth 1
+	subView := &ProjectParticipationView{
+		ParticipationID:       "ptp_sub_01",
+		TenantID:              "ten_01",
+		PartyID:               "prt_sub_01",
+		ProjectID:             "prj_01",
+		SiteID:                "ste_01",
+		Role:                  "SUBCONTRACTOR_LEAD",
+		ValidFrom:             validFrom,
+		ValidTo:               validTo,
+		Status:                "ACTIVE",
+		ParentParticipationID: "ptp_prime_01",
+		NestingDepth:          1,
+	}
+
+	if err := subView.Validate(); err != nil {
+		t.Fatalf("unexpected validation error for valid subcontractor: %v", err)
+	}
+
+	b, err := json.Marshal(subView)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+	if err := AssertRedactedPartyContract(b); err != nil {
+		t.Errorf("expected clean subcontractor payload, got: %v", err)
+	}
+}
+
+func TestProjectParticipationView_InvalidNestingRejections(t *testing.T) {
+	from := time.Now().UTC().Format(time.RFC3339)
+	to := time.Now().Add(48 * time.Hour).UTC().Format(time.RFC3339)
+
+	// Depth 2 (sub-subcontractor) rejected
+	v := ProjectParticipationView{
+		ParticipationID:       "ptp_sub2",
+		TenantID:              "ten_01",
+		PartyID:               "prt_sub2",
+		ProjectID:             "prj_01",
+		Role:                  "CONTRACTOR_WORKER",
+		ValidFrom:             from,
+		ValidTo:               to,
+		Status:                "ACTIVE",
+		ParentParticipationID: "ptp_sub1",
+		NestingDepth:          2,
+	}
+	if err := v.Validate(); !errors.Is(err, ErrInvalidNestingDepth) {
+		t.Errorf("expected ErrInvalidNestingDepth for depth 2, got %v", err)
+	}
+
+	// Depth 1 with missing parent ID rejected
+	v = ProjectParticipationView{
+		ParticipationID: "ptp_sub1",
+		TenantID:        "ten_01",
+		PartyID:         "prt_sub1",
+		ProjectID:       "prj_01",
+		Role:            "SUBCONTRACTOR_LEAD",
+		ValidFrom:       from,
+		ValidTo:         to,
+		Status:          "ACTIVE",
+		NestingDepth:    1,
+	}
+	if err := v.Validate(); err == nil {
+		t.Errorf("expected error for depth 1 without parent ID")
+	}
+
+	// Depth 0 with non-empty parent ID rejected
+	v = ProjectParticipationView{
+		ParticipationID:       "ptp_prime1",
+		TenantID:              "ten_01",
+		PartyID:               "prt_prime1",
+		ProjectID:             "prj_01",
+		Role:                  "SITE_SAFETY_LEAD",
+		ValidFrom:             from,
+		ValidTo:               to,
+		Status:                "ACTIVE",
+		ParentParticipationID: "ptp_other",
+		NestingDepth:          0,
+	}
+	if err := v.Validate(); err == nil {
+		t.Errorf("expected error for depth 0 with parent ID")
 	}
 }
 
@@ -167,6 +255,8 @@ func TestAssertRedactedPartyContract_BoundaryEnforcement(t *testing.T) {
 		{"admin privilege leak", `{"party_id":"prt_01","is_admin":true}`},
 		{"permissions bitmask leak", `{"party_id":"prt_01","permissions":["*"]}`},
 		{"ssn leak", `{"party_id":"prt_01","ssn":"000-00-0000"}`},
+		{"sponsor private key leak", `{"party_id":"prt_01","sponsor_private_key":"sk_live_123"}`},
+		{"internal authority escalation leak", `{"party_id":"prt_01","internal_authority":"COMPANY_ADMIN"}`},
 	}
 
 	for _, tc := range leakCases {
