@@ -220,7 +220,7 @@ retained_holds:
 
 In strict adherence to `HDEC-V040-FOUNDATION-054` and `HDEC-V040-SCORING-058`:
 1. **Scope of Authority:** Approval applies strictly to the scoring rule baseline for private-alpha synthetic test fixtures. No policy selection beyond `HDEC-V040-SCORING-058` is enacted.
-2. **Issue Status:** GitHub Issue #136 remains **OPEN** pending completed independent review and PR merge.
+2. **Issue Status:** GitHub Issue #136 is **CLOSED** following formal acceptance and merge of PR #1075.
 3. **No External Route or Deployment Action:** Public network routes, DNS, CDN distribution, cloud infrastructure, and database mutations remain on strict **`HOLD`** (`H040-007`, `H040-010`).
 4. **No Real User Testing:** Real participant recruitment and live UAT remain on strict **`HOLD`** (`H040-008`).
 5. **No Production / Customer Data:** Operates exclusively on synthetic non-regulatory fixtures (`H040-003`).

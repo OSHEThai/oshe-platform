@@ -147,7 +147,7 @@ class V040ScoringDecisionPreworkTests(unittest.TestCase):
             self.assertIn(h, self.content)
         self.assertIn("HOLD", self.content)
 
-        self.assertIn("GitHub Issue #136 remains **OPEN**", self.content)
+        self.assertIn("GitHub Issue #136 is **CLOSED** following formal acceptance and merge of PR #1075", self.content)
         self.assertIn("No External Route or Deployment Action", self.content)
 
 
