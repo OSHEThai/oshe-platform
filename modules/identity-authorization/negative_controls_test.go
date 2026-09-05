@@ -888,3 +888,89 @@ func TestNegativeControl_ScopedAssignment_ScopeMismatch(t *testing.T) {
 		t.Errorf("expected DenialScopeMismatch for out-of-scope project, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
 	}
 }
+
+func TestNegativeControl_Delegation_EmergencyAccessDenial(t *testing.T) {
+	// Negative control: emergency break-glass is strictly rejected under H030-003
+	if err := localidentity.AssertEmergencyAccessDenied(true); !errors.Is(err, localidentity.ErrEmergencyAccessDenied) {
+		t.Errorf("expected ErrEmergencyAccessDenied, got %v", err)
+	}
+}
+
+func TestNegativeControl_Delegation_MultiHopChainDenial(t *testing.T) {
+	tenantID := "ten_neg_del"
+	from := time.Now()
+	to := from.Add(7 * 24 * time.Hour)
+	scope := localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}
+
+	// Chain depth > 1 rejected
+	_, err := localidentity.NewDelegationRecord("del_hop", tenantID, "usr_pm", localidentity.RoleProjectManager, scope, "usr_sub", localidentity.RoleInspector, scope, from, to, "Appr", 2, false)
+	if !errors.Is(err, localidentity.ErrUnauthorizedChainDepth) {
+		t.Errorf("expected ErrUnauthorizedChainDepth for chain depth 2, got %v", err)
+	}
+
+	// Sub-delegation flag rejected
+	_, err = localidentity.NewDelegationRecord("del_sub", tenantID, "usr_pm", localidentity.RoleProjectManager, scope, "usr_sub", localidentity.RoleInspector, scope, from, to, "Appr", 1, true)
+	if !errors.Is(err, localidentity.ErrUnauthorizedChainDepth) {
+		t.Errorf("expected ErrUnauthorizedChainDepth for isSubDelegation=true, got %v", err)
+	}
+}
+
+func TestNegativeControl_Delegation_SelfDelegationDenial(t *testing.T) {
+	tenantID := "ten_neg_del"
+	from := time.Now()
+	to := from.Add(7 * 24 * time.Hour)
+	scope := localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}
+
+	// Self-delegation rejected
+	_, err := localidentity.NewDelegationRecord("del_self", tenantID, "usr_same", localidentity.RoleProjectManager, scope, "usr_same", localidentity.RoleInspector, scope, from, to, "Appr", 1, false)
+	if !errors.Is(err, localidentity.ErrSelfDelegationForbidden) {
+		t.Errorf("expected ErrSelfDelegationForbidden, got %v", err)
+	}
+}
+
+func TestNegativeControl_Delegation_ProtectedAuthorityDenial(t *testing.T) {
+	matrix := localidentity.NewProvisionalAuthorizationMatrix()
+	tenantID := "ten_neg_del"
+	from := time.Now()
+	to := from.Add(7 * 24 * time.Hour)
+	scope := localidentity.ScopeGrant{TenantID: tenantID}
+
+	// Attempting to delegate TenantAdmin is rejected
+	rec, _ := localidentity.NewDelegationRecord("del_admin", tenantID, "usr_adm", localidentity.RoleTenantAdmin, scope, "usr_sub", localidentity.RoleTenantAdmin, scope, from, to, "Appr", 1, false)
+	err := localidentity.ValidateDelegationAuthority(rec, &matrix)
+	if !errors.Is(err, localidentity.ErrProtectedAuthorityNonDelegable) {
+		t.Errorf("expected ErrProtectedAuthorityNonDelegable, got %v", err)
+	}
+}
+
+func TestNegativeControl_Delegation_ExpiredDenial(t *testing.T) {
+	eval := localidentity.NewPolicyEvaluator()
+	reg := localidentity.NewDelegationRegistry(nil, nil)
+	tenantID := "ten_neg_del"
+	delegator := "usr_pm"
+	delegatee := "usr_lead"
+
+	eval.SetMembership(tenantID, delegator, localidentity.MembershipActive)
+	eval.SetMembership(tenantID, delegatee, localidentity.MembershipActive)
+
+	baseTime := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	from := baseTime
+	to := baseTime.Add(24 * time.Hour) // expired Sept 2
+
+	scope := localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_01"}
+	rec, _ := localidentity.NewDelegationRecord("del_exp", tenantID, delegator, localidentity.RoleProjectManager, scope, delegatee, localidentity.RoleInspector, scope, from, to, "Appr", 1, false)
+	_ = reg.CreateDelegation(rec, delegator, "Test", from)
+
+	// Evaluate access after expiration (Sept 5)
+	now := time.Date(2026, 9, 5, 0, 0, 0, 0, time.UTC)
+	req := localidentity.AccessRequest{
+		Identity: localidentity.SubjectIdentity{Subject: delegatee, TenantID: tenantID, IsAuthenticated: true},
+		Target:   localidentity.TargetResource{TenantID: tenantID, ProjectID: "prj_01", Lifecycle: localidentity.ResourceActive},
+		Action:   localidentity.ActionRead,
+	}
+
+	res := localidentity.EvaluateDelegatedAccess(reg, eval, req, now)
+	if res.Allowed || res.DenialReason != localidentity.DenialRoleNotGranted {
+		t.Errorf("expected DenialRoleNotGranted for expired delegation, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
+	}
+}
