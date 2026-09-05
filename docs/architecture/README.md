@@ -18,6 +18,7 @@ Stakeholder snapshots remain in Drive; engineering-authoritative records are ver
 ## Decision Records
 
 - [v0.3.0 Sole Human Owner Release Decision Record (H030-008 Approved, H030-007 HOLD)](v030-release-decision-record.md) (`ARC-V030-DECREC-001` / `HDEC-V030-RELEASE-053` / `V030-I038`)
+- [v0.4.0 OSHE Inspect Private Alpha Foundation Decisions (H040-001 through H040-006 Approved / H040-007 through H040-011 HOLD)](v040-foundation-decision.md) (`ARC-V040-DECREC-001` / `HDEC-V040-FOUNDATION-054` / `V040-I001`)
 
 ## Assurance Cases
 
