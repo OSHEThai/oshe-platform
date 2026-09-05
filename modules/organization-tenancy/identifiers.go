@@ -20,6 +20,7 @@ const (
 	PrefixSite        = "ste"
 	PrefixArea        = "ara"
 	PrefixParty        = "prt"
+	PrefixParticipation = "ptp"
 	PrefixUser        = "usr"
 	PrefixCorrelation = "corr"
 	PrefixCausation   = "caus"
