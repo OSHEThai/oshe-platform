@@ -16,15 +16,16 @@ const (
 	TargetKindTemplate = "TEMPLATE"
 	TargetKindWorkflow = "WORKFLOW"
 	TargetKindAction   = "ACTION"
+	TargetKindScoring  = "SCORING"
 )
 
 // RuleResult defines the deterministic output result of a business rule.
 type RuleResult string
 
 const (
-	RuleResultPermitted       RuleResult = "PERMITTED"
+	RuleResultPermitted        RuleResult = "PERMITTED"
 	RuleResultRequiresApproval RuleResult = "REQUIRES_APPROVAL"
-	RuleResultDenied          RuleResult = "DENIED"
+	RuleResultDenied           RuleResult = "DENIED"
 )
 
 // FailureBehavior defines how a failed rule evaluation must behave.
@@ -474,6 +475,16 @@ func DefaultRuleMatrix() *RuleMatrix {
 		TraceabilityKey:     "OSHE-BR-ACT-05",
 		Description:         "Action reopened from Closed state",
 	})
+	// Scoring rule (HDEC-V040-SCORING-058)
+	_ = m.RegisterRule(BusinessRule{
+		RuleID:              "RULE-WFA-SCORING-EVAL",
+		OwnerRole:           "INSPECTOR",
+		RequiredConditions:  []string{"pinned_version_verified", "model_2_weighted"},
+		DeterministicResult: RuleResultPermitted,
+		FailureBehavior:     FailureFailClosed,
+		TraceabilityKey:     "OSHE-BR-SCORING-01",
+		Description:         "Deterministic operational compliance scoring under HDEC-V040-SCORING-058",
+	})
 
 	return m
 }
@@ -500,6 +511,7 @@ func DefaultTransitionCatalog() *TransitionCatalog {
 	_ = c.RegisterTransition(TargetKindAction, string(ActionStateInReview), string(ActionStateRejected), "RULE-ACT-REJECT")
 	_ = c.RegisterTransition(TargetKindAction, string(ActionStateInReview), string(ActionStateClosed), "RULE-ACT-CLOSE")
 	_ = c.RegisterTransition(TargetKindAction, string(ActionStateClosed), string(ActionStateReopened), "RULE-ACT-REOPEN")
+	_ = c.RegisterTransition(TargetKindScoring, "UNSCORED", "SCORED", "RULE-WFA-SCORING-EVAL")
 
 	return c
 }
