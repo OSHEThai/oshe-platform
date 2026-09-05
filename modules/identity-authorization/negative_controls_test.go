@@ -628,3 +628,59 @@ func TestNegativeControl_DirectoryDataMinimization(t *testing.T) {
 		}
 	}
 }
+
+// NEG-V030-05: Duplicate Directory Identifier Collision & False-Merge Rejection (H030-003, H030-004)
+// Threat: Identity aliasing and duplicate profile hijacking across synthetic workers.
+// Test Scenario: Register profile with duplicate ID, attempt to alias two distinct synthetic subjects.
+// Expected Behavior: Rejection with ErrDuplicateIdentifierCollision and ErrFalseMergeProhibited.
+func TestNegativeControl_NEG_V030_05_DuplicateCollisionAndFalseMerge(t *testing.T) {
+	resolver := localidentity.NewDirectoryResolver(nil, nil)
+	tenantID := "ten_neg_dup_01"
+
+	p1, err := localidentity.NewDirectoryProfile("prof_neg_01", "usr_worker_1", tenantID, "cmp_1", "prj_1", "", "Worker One", "Officer", "EHS", nil)
+	if err != nil {
+		t.Fatalf("failed to create profile: %v", err)
+	}
+	if err := resolver.RegisterProfile(p1, "usr_admin", "Register initial"); err != nil {
+		t.Fatalf("failed to register profile: %v", err)
+	}
+
+	// Hostile input: duplicate profile ID registration
+	pDup, _ := localidentity.NewDirectoryProfile("prof_neg_01", "usr_worker_2", tenantID, "cmp_1", "prj_1", "", "Worker Two", "Officer", "EHS", nil)
+	err = resolver.RegisterProfile(pDup, "usr_admin", "Hostile duplicate registration")
+	if !errors.Is(err, localidentity.ErrDuplicateIdentifierCollision) {
+		t.Fatalf("expected ErrDuplicateIdentifierCollision, got: %v", err)
+	}
+
+	// Hostile input: false-merge attempt
+	err = localidentity.AssertNoFalseMerge(p1, "usr_worker_2")
+	if !errors.Is(err, localidentity.ErrFalseMergeProhibited) {
+		t.Fatalf("expected ErrFalseMergeProhibited on false-merge, got: %v", err)
+	}
+}
+
+// NEG-V030-06: Inactive Profile Attribute Mutation Denial (H030-005)
+// Threat: Modifying decommissioned or departed worker directory profiles.
+// Test Scenario: Inactivate active profile, then attempt non-structural attribute update.
+// Expected Behavior: Update fails closed with ErrProfileInactive.
+func TestNegativeControl_NEG_V030_06_InactiveProfileMutationDenial(t *testing.T) {
+	resolver := localidentity.NewDirectoryResolver(nil, nil)
+	tenantID := "ten_neg_inact_01"
+
+	p, _ := localidentity.NewDirectoryProfile("prof_neg_inact_01", "usr_worker_inact", tenantID, "cmp_1", "prj_1", "", "Departing Worker", "Lead", "Eng", nil)
+	_ = resolver.RegisterProfile(p, "usr_admin", "Register")
+
+	_, err := resolver.InactivateProfile(tenantID, "prof_neg_inact_01", "usr_admin", "Departure")
+	if err != nil {
+		t.Fatalf("failed to inactivate profile: %v", err)
+	}
+
+	// Hostile input: attempt attribute update on inactive profile
+	newTitle := "Unauthorized Title Mutation"
+	_, err = resolver.UpdateProfileAttributes(tenantID, "prof_neg_inact_01", localidentity.ProfileNonStructuralUpdate{
+		JobTitle: &newTitle,
+	}, "usr_admin", "Hostile mutation")
+	if !errors.Is(err, localidentity.ErrProfileInactive) {
+		t.Fatalf("expected ErrProfileInactive when mutating inactive profile, got: %v", err)
+	}
+}
