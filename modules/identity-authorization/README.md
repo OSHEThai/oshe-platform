@@ -105,3 +105,14 @@ Entitlement does not replace authorization. Clients, integrations, extensions, a
 - **Append-Only Historical Audit Ledger (`AssignmentLedger`):** Captures immutable records (`AssignmentAuditRecord`) for every assignment creation, revocation, and expiration. Guarantees strict tenant isolation and zero hard deletion of past authorization events.
 - **End-to-End Scoped Access Evaluation (`EvaluateScopedAccess`):** Integrates scoped role assignments with the `PolicyEvaluator` to dynamically assert active membership, time-valid role grants, and exact scope coverage, failing closed on scope mismatches or unauthorized actions.
 - **Provisional Local Boundary (`H030-003` / Issue #91):** Confined strictly to in-memory local fixtures without external identity provider synchronization, persistent database mutation, or final sovereign authority selection.
+
+## Explicit Delegation Controls, Chain Limits & Emergency-Access Boundary (`delegation_control.go`)
+
+- **Direct Delegation Chain Ceiling (`MaxDelegationChainDepth = 1`):** Restricts role delegation strictly to direct 1-hop grants. Re-delegating previously delegated roles or multi-hop chaining is forbidden and fails closed (`ErrUnauthorizedChainDepth`, `ErrMultiHopDelegationForbidden`).
+- **Self-Delegation Prohibition:** A delegator cannot delegate authorities to themselves (`ErrSelfDelegationForbidden`).
+- **Source Authority & Scope Containment:** A delegator cannot delegate permissions or scopes exceeding their own active entitlements (`ErrExceedsSourceAuthority`, `ErrScopeExceedsSourceAuthority`).
+- **Protected Sovereign Authority Non-Delegability:** Sovereign administrative roles (`RoleTenantAdmin`) and protected permissions are categorically non-delegable (`ErrProtectedAuthorityNonDelegable`).
+- **Emergency Break-Glass Prohibition:** Unapproved automated emergency escalations or break-glass access bypasses are strictly prohibited in Milestone v0.3.0 and fail closed with default-deny (`ErrEmergencyAccessDenied`, `AssertEmergencyAccessDenied`).
+- **Temporal Validity & Revocation:** All delegations enforce explicit start/end windows (`ValidFrom`, `ValidTo`) capped at 30 days (`MaxDelegationDuration`) or role-specific maximums. Active delegations can be explicitly revoked with audit attribution (`Revoke`).
+- **Append-Only Delegation Audit Ledger (`DelegationLedger`):** An in-memory, thread-safe audit log recording immutable history records (`DelegationAuditRecord`) for every delegation creation and revocation event, enforcing strict tenant boundary isolation.
+- **Provisional Non-Binding Policy Boundary (H030-003 / Issue #92):** Operates purely on local synthetic fixtures in memory without external identity provider synchronization, database persistence, or final policy binding.
