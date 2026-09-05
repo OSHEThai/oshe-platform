@@ -15,9 +15,11 @@ import (
 const (
 	PrefixTenant      = "ten"
 	PrefixCompany     = "cmp"
+	PrefixBusinessUnit = "bnu"
 	PrefixProject     = "prj"
 	PrefixSite        = "ste"
 	PrefixArea        = "ara"
+	PrefixParty        = "prt"
 	PrefixUser        = "usr"
 	PrefixCorrelation = "corr"
 	PrefixCausation   = "caus"
