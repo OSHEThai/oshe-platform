@@ -974,3 +974,92 @@ func TestNegativeControl_Delegation_ExpiredDenial(t *testing.T) {
 		t.Errorf("expected DenialRoleNotGranted for expired delegation, got allowed=%v reason=%s", res.Allowed, res.DenialReason)
 	}
 }
+
+// NEG-V030-07: Emergency Break-Glass Access Denial (H030-003 / Issue #92)
+// Threat: Unapproved emergency/break-glass escalation bypassing standard access controls.
+// Test Scenario & Hostile Input: Subject asserts emergency override or break-glass status.
+// Expected Behavior: Fails closed immediately with ErrEmergencyAccessDenied.
+func TestNegativeControl_NEG_V030_07_EmergencyBreakGlassDenial(t *testing.T) {
+	if err := localidentity.AssertEmergencyAccessDenied(true); !errors.Is(err, localidentity.ErrEmergencyAccessDenied) {
+		t.Fatalf("expected ErrEmergencyAccessDenied for emergency access claim, got: %v", err)
+	}
+
+	if err := localidentity.AssertEmergencyAccessDenied(false); err != nil {
+		t.Fatalf("expected nil for non-emergency state, got: %v", err)
+	}
+}
+
+// NEG-V030-08: Delegation Scope Escalation Denial (H030-003 / Issue #92)
+// Threat: Horizontal or vertical privilege escalation via delegation of sibling or foreign scopes.
+// Test Scenario & Hostile Input: Delegator scoped to prj_alpha attempts to delegate authority on prj_beta or foreign tenant.
+// Expected Behavior: Rejection with ErrScopeExceedsSourceAuthority.
+func TestNegativeControl_NEG_V030_08_DelegationScopeEscalationDenial(t *testing.T) {
+	matrix := localidentity.NewProvisionalAuthorizationMatrix()
+	t0 := time.Date(2026, 9, 5, 12, 0, 0, 0, time.UTC)
+	t1 := t0.Add(7 * 24 * time.Hour)
+
+	// 1. Sibling project scope escalation
+	siblingReq := localidentity.DelegationRequest{
+		DelegatorSubject: "usr_pm_alpha",
+		DelegatorRole:    localidentity.RoleProjectManager,
+		DelegatorScope:   localidentity.ScopeGrant{TenantID: "ten_alpha", CompanyID: "cmp_1", ProjectID: "prj_alpha"},
+		DelegateeSubject: "usr_lead_alpha",
+		DelegatedRole:    localidentity.RoleProjectManager,
+		DelegatedScope:   localidentity.ScopeGrant{TenantID: "ten_alpha", CompanyID: "cmp_1", ProjectID: "prj_beta"},
+		ValidFrom:        t0,
+		ValidTo:          t1,
+		IsSubDelegation:  false,
+	}
+
+	err := matrix.ValidateDelegationRequest(siblingReq)
+	if !errors.Is(err, localidentity.ErrScopeExceedsSourceAuthority) {
+		t.Fatalf("expected ErrScopeExceedsSourceAuthority for sibling project delegation, got: %v", err)
+	}
+
+	// 2. Cross-tenant scope escalation
+	crossTenantReq := siblingReq
+	crossTenantReq.DelegatedScope = localidentity.ScopeGrant{TenantID: "ten_foreign", CompanyID: "cmp_1", ProjectID: "prj_alpha"}
+	err = matrix.ValidateDelegationRequest(crossTenantReq)
+	if !errors.Is(err, localidentity.ErrScopeExceedsSourceAuthority) {
+		t.Fatalf("expected ErrScopeExceedsSourceAuthority for cross-tenant delegation, got: %v", err)
+	}
+}
+
+// NEG-V030-09: Segregation of Duties Conflict Denial (H030-003 / Issue #90 / Issue #91)
+// Threat: SOD bypass through concurrent conflicting role assignments on overlapping scopes.
+// Test Scenario & Hostile Input: Concurrent assignment of Inspector + Auditor, or Contractor + Admin.
+// Expected Behavior: Rejection with ErrRoleConflictDetected.
+func TestNegativeControl_NEG_V030_09_SegregationOfDutiesConflictDenial(t *testing.T) {
+	tenantID := "ten_neg_sod_01"
+	t0 := time.Date(2026, 9, 5, 14, 0, 0, 0, time.UTC)
+	t1 := t0.Add(14 * 24 * time.Hour)
+
+	workerSub := "usr_synth_sod_worker"
+	scope := localidentity.ScopeGrant{TenantID: tenantID, ProjectID: "prj_alpha"}
+
+	existingInsp, err := localidentity.NewScopedAssignment("asn_neg_insp", tenantID, workerSub, localidentity.RoleInspector, scope, t0, t1, "usr_sponsor")
+	if err != nil {
+		t.Fatalf("unexpected NewScopedAssignment error: %v", err)
+	}
+
+	// Hostile input: Proposed Auditor role on same project scope
+	candAuditor, err := localidentity.NewScopedAssignment("asn_neg_aud", tenantID, workerSub, localidentity.RoleAuditor, scope, t0, t1, "usr_sponsor")
+	if err != nil {
+		t.Fatalf("unexpected NewScopedAssignment error: %v", err)
+	}
+
+	err = localidentity.CheckRoleConflict([]localidentity.ScopedAssignment{existingInsp}, candAuditor, t0.Add(1*time.Hour))
+	if !errors.Is(err, localidentity.ErrRoleConflictDetected) {
+		t.Fatalf("expected ErrRoleConflictDetected for concurrent Inspector + Auditor on same scope, got: %v", err)
+	}
+
+	// Hostile input: Proposed TenantAdmin role for Contractor
+	contractorSub := "usr_synth_contractor"
+	existingContractor, _ := localidentity.NewScopedAssignment("asn_neg_cont", tenantID, contractorSub, localidentity.RoleContractor, scope, t0, t1, "usr_sponsor")
+	candAdmin, _ := localidentity.NewScopedAssignment("asn_neg_admin", tenantID, contractorSub, localidentity.RoleTenantAdmin, localidentity.ScopeGrant{TenantID: tenantID}, t0, t1, "usr_sponsor")
+
+	err = localidentity.CheckRoleConflict([]localidentity.ScopedAssignment{existingContractor}, candAdmin, t0.Add(1*time.Hour))
+	if !errors.Is(err, localidentity.ErrRoleConflictDetected) {
+		t.Fatalf("expected ErrRoleConflictDetected for concurrent Contractor + TenantAdmin, got: %v", err)
+	}
+}
