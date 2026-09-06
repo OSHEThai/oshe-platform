@@ -13,10 +13,11 @@ const (
 	CurrentRuleMatrixVersion = "1.0.0"
 
 	// Target kinds
-	TargetKindTemplate = "TEMPLATE"
-	TargetKindWorkflow = "WORKFLOW"
-	TargetKindAction   = "ACTION"
-	TargetKindScoring  = "SCORING"
+	TargetKindTemplate   = "TEMPLATE"
+	TargetKindWorkflow   = "WORKFLOW"
+	TargetKindAction     = "ACTION"
+	TargetKindScoring    = "SCORING"
+	TargetKindInspection = "INSPECTION"
 )
 
 // RuleResult defines the deterministic output result of a business rule.
@@ -26,6 +27,7 @@ const (
 	RuleResultPermitted        RuleResult = "PERMITTED"
 	RuleResultRequiresApproval RuleResult = "REQUIRES_APPROVAL"
 	RuleResultDenied           RuleResult = "DENIED"
+	RuleResultQuarantined      RuleResult = "QUARANTINED"
 )
 
 // FailureBehavior defines how a failed rule evaluation must behave.
@@ -40,15 +42,19 @@ const (
 type DenialCode string
 
 const (
-	DenialNone                DenialCode = "NONE"
-	DenialUnregisteredRule    DenialCode = "UNREGISTERED_RULE"
-	DenialIncompatibleVersion DenialCode = "INCOMPATIBLE_MATRIX_VERSION"
-	DenialMissingCondition    DenialCode = "MISSING_REQUIRED_CONDITION"
-	DenialMissingEvidence     DenialCode = "MISSING_REQUIRED_EVIDENCE"
-	DenialUnauthorizedActor   DenialCode = "UNAUTHORIZED_ACTOR_CLASS"
-	DenialArchivedTarget      DenialCode = "ARCHIVED_TARGET_MUTATION_DENIED"
-	DenialInvalidTransition   DenialCode = "INVALID_CATALOG_TRANSITION"
-	DenialBlankIdentifier     DenialCode = "BLANK_IDENTIFIER"
+	DenialNone                   DenialCode = "NONE"
+	DenialUnregisteredRule       DenialCode = "UNREGISTERED_RULE"
+	DenialIncompatibleVersion    DenialCode = "INCOMPATIBLE_MATRIX_VERSION"
+	DenialMissingCondition       DenialCode = "MISSING_REQUIRED_CONDITION"
+	DenialMissingEvidence        DenialCode = "MISSING_REQUIRED_EVIDENCE"
+	DenialUnauthorizedActor      DenialCode = "UNAUTHORIZED_ACTOR_CLASS"
+	DenialArchivedTarget         DenialCode = "ARCHIVED_TARGET_MUTATION_DENIED"
+	DenialInvalidTransition      DenialCode = "INVALID_CATALOG_TRANSITION"
+	DenialBlankIdentifier        DenialCode = "BLANK_IDENTIFIER"
+	DenialCriticalFailActive     DenialCode = "CRITICAL_FAIL_ACTIVE"
+	DenialUnknownQuarantined     DenialCode = "UNKNOWN_RESPONSE_QUARANTINED"
+	DenialManualOverrideDeferred DenialCode = "MANUAL_OVERRIDE_DEFERRED"
+	DenialAutonomousAIBoundary   DenialCode = "AUTONOMOUS_AI_BOUNDARY_EXCEEDED"
 )
 
 var (
@@ -62,6 +68,10 @@ var (
 	ErrArchivedTargetMutation    = errors.New("archived target cannot undergo transition")
 	ErrInvalidCatalogTransition  = errors.New("transition is not permitted by transition catalog")
 	ErrBlankIdentifier           = errors.New("required identifier cannot be blank")
+	ErrCriticalFailActive        = errors.New("transition blocked: unresolved critical failure present")
+	ErrUnknownQuarantined        = errors.New("transition quarantined: unresolved unknown response present")
+	ErrManualOverrideDeferred    = errors.New("manual override authority is deferred human-owned: override attempt denied")
+	ErrAutonomousAIBoundary      = errors.New("autonomous AI actor is prohibited from executing protected action")
 )
 
 // EvidenceRequirement specifies evidence constraints for a business rule.
