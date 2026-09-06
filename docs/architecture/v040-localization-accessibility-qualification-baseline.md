@@ -54,7 +54,7 @@ This document establishes the governed qualification baseline for internationali
   - `Disposition = DispositionMissing`
   - `Text = "[MISSING: <key>]"`
   - `MissingNotice` details the missing key across both locales.
-- The UI and API contract explicitly exposes missing translations rather than masking them.
+- The synthetic qualification contract explicitly exposes missing translations via visible placeholders rather than masking them, with no runtime UI or API implementation implied.
 
 ### Invariant 4: Dual Time-Zone and Buddhist Era Formatting
 - Timestamps are formatted deterministically for UTC and `Asia/Bangkok` (UTC+7).
@@ -73,10 +73,10 @@ This document establishes the governed qualification baseline for internationali
 
 ### Invariant 6: Default-Off Feature Toggle Invariant
 - All governed feature flags must explicitly declare `DefaultOff: true`. Registering a flag with `DefaultOff: false` fails closed with `ErrMustDefaultOff`.
-- A newly registered or disabled flag always evaluates to `Exposed = false` with safe fallback active.
+- A disabled flag is not exposed (evaluates to `Exposed = false` with safe fallback active), and registration with `DefaultOff = false` fails closed with `ErrMustDefaultOff`.
 
 ### Invariant 7: Strict Authorization Separation
-- Feature flags govern client UI exposure only and **never grant security authority or bypass authorization**:
+- Feature flags govern client qualification exposure only (with no runtime UI or API implementation implied) and **never grant security authority or bypass authorization**:
   $$\text{ctx.IsAuthorized} = \text{false} \implies \text{res.Exposed} = \text{false}$$
 - If a caller lacks authorization, the flag evaluation returns `Exposed = false` with reason `"underlying authorization denied: flags cannot bypass security controls"`.
 - Every flag evaluation result includes the mandatory disclaimer:
@@ -126,4 +126,4 @@ Under **HDEC-V040-FOUNDATION-054**, the following foundation holds remain in act
 | `H040-010` | External environment, device, account, route, storage, and notification activation | **HOLD** | No external environment, device, account, route, storage, or notification activation is granted. |
 | `H040-011` | Final outcome, residual-risk acceptance, and v0.5.0 entry decision | **HOLD** | No final outcome, residual-risk acceptance, or v0.5.0 entry decision authorization is granted. |
 
-Zero authority is granted to lift any hold. All qualification suites assert synthetic isolation and immutability of audit records.
+Zero authority is granted to lift any hold. No claim is made beyond the listed synthetic localization and accessibility fixtures; this qualification suite does not assert audit-record immutability.
