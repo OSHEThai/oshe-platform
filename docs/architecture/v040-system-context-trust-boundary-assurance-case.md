@@ -8,180 +8,181 @@
 | **Planning Status** | `PLANNING_ONLY` |
 | **Governing Decisions** | `HDEC-V040-FOUNDATION-054`, `HDEC-V040-SCORING-058`, `H040-001`..`H040-006` Approved / `H040-007`..`H040-011` HOLD |
 | **Target Milestone** | `v0.4.0 - OSHE Inspect Private Alpha` |
-| **Security Risk Classification** | Architecture Assurance & Boundary Control Baseline |
+| **Security Risk Classification** | Proposed Architecture Planning & Boundary Specification |
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-This document establishes the bounded, static system-context, trust-boundary, and safety-assurance case for Milestone `v0.4.0 OSHE Inspect Private Alpha` under Issue #144 (`V040-I033`).
+This document establishes the bounded, static system-context, trust-boundary, and safety-assurance planning case for Milestone `v0.4.0 OSHE Inspect Private Alpha` under Issue #144 (`V040-I033`).
 
-The primary objective is to define the authoritative architectural boundaries, data-flow directions, trust domains, and control matrices governing operational inspections, hazard identification, corrective and preventive actions (CAPA), evidence integrity, mobile offline synchronization, and derived reporting.
+The primary objective is to define the proposed architectural boundaries, planned data-flow directions, conceptual trust domains, and control matrices governing operational inspections, hazard identification, corrective and preventive actions (CAPA), evidence integrity, mobile offline synchronization, and derived reporting.
 
-### Explicit Boundary, Non-Claims, and Non-Activation Declaration
+### Explicit Planning-Only, Non-Claims, and Non-Activation Declaration
 In strict adherence to approved Sole Human Owner foundation decisions **HDEC-V040-FOUNDATION-054** and **HDEC-V040-SCORING-058**:
-- **Planning-Only Status:** This document is an authoritative engineering architecture specification and planning baseline. It operates strictly under lifecycle state `DRAFT_STATIC_ASSURANCE_CASE`.
-- **Zero Runtime Claims:** This static assurance case makes no claims of live runtime deployment, system uptime, SLA, or execution availability.
-- **Zero Security Certification Claims:** No external ISO, SOC 2, or regulatory security certification is asserted or implied.
-- **Zero Regulatory Compliance Claims:** No statutory safety or legal compliance certification is granted.
-- **No Schema, Service, Container, Event Contract, or Activation:** This static record creates **no database schema, migration, microservice, container configuration, broker event contract, external route, or infrastructure activation**. All such implementations remain separately leased, developed, and reviewed under human governance.
-- **Retained Foundation Holds:** Foundation holds `H040-007` through `H040-011` remain strictly on `HOLD`. Zero authority is granted to alter or lift these holds.
+- **Planning-Only Status:** This document is an architectural planning specification and static design baseline only. It operates strictly under lifecycle state `DRAFT_STATIC_ASSURANCE_CASE`.
+- **Proposed and Static Concepts Only:** Every system, subsystem, module, storage tier, encryption concept, API endpoint, UI/browser interface, offline mechanism, test requirement, role assignment, and control mechanism described in this document is explicitly **proposed, planned, and static**. Nothing herein represents an implemented, validated, or running capability.
+- **Zero Runtime Claims:** This static document makes no claims of live runtime deployment, system execution, operational availability, throughput, or performance behavior.
+- **Zero Security Enforcement Claims:** No active security enforcement, access control implementation, or real-time barrier operation is asserted as functioning.
+- **Zero Certification Claims:** No external certification (such as ISO, SOC, or regulatory safety accreditations) is asserted, granted, or implied.
+- **Zero Data Retention Claims:** No operational data retention, long-term archival guarantee, or compliance storage behavior is enacted.
+- **No Schema, Service, Container, Event Contract, or Activation:** This static record creates **no database schema, migration, microservice, container configuration, broker event contract, external route, or infrastructure activation**.
+- **Retained Foundation Holds:** Foundation holds `H040-007` through `H040-011` remain strictly on `HOLD`. Zero activation, release, or operational authorization is granted.
 
 ---
 
-## 2. System Context & Architecture Overview
+## 2. Proposed System Context & Architecture Overview
 
-The OSHE Platform v0.4.0 Private Alpha architecture establishes a deterministic, modular core for safety inspection workflows, structured findings tracking, evidence custody, offline-first field capture, and non-authoritative reporting projections.
+The proposed OSHE Platform v0.4.0 Private Alpha architecture establishes a modular design model for safety inspection workflows, structured findings tracking, evidence custody, offline-first field capture, and non-authoritative reporting projections.
 
-### Architectural Subsystems and Domain Modules
+### Proposed Architectural Subsystems and Modules (Planning Models)
 
-1. **`MOD-WFA` (Workflow & Inspection Action Subsystem):**
-   - Coordinates authoritative inspection lifecycles (`DRAFT` $\to$ `IN_PROGRESS` $\to$ `UNDER_REVIEW` $\to$ `APPROVED` $\to$ `CLOSED`).
-   - Executes deterministic operational compliance scoring under **HDEC-V040-SCORING-058** (`MODEL_2_WEIGHTED`, `U1_QUARANTINE_DENOMINATOR`, `R1_ROUND_HALF_UP`, `CF1_PRIORITY_FLAG`, 80.00% / 8000 bps passing threshold).
-   - Enforces fail-closed governance (`critical > UNKNOWN > score`), unconditional manual override denial under deferred Gate `H040-004`, and autonomous AI boundary enforcement.
-2. **`MOD-EVD` (Evidence Integrity & Capture Subsystem):**
-   - Manages cryptographic SHA-256 content-addressable evidence references (photos, documents, scan observations).
-   - Enforces tamper-evident bundle binding and immutable linkage to inspection items and findings.
-3. **`MOD-CAPA` (Finding & Corrective Action Subsystem):**
-   - Manages finding triage, critical severity flags, corrective action assignments, remediation verification, and re-inspection closure.
-4. **`MOD-OFF` (Mobile Offline & Conflict Resolution Subsystem):**
-   - Manages local client draft staging in encrypted sandbox storage.
-   - Enforces provisional-only offline state; changes become authoritative only upon server-side conflict detection and transactional PostgreSQL commit.
-5. **`MOD-REP` (Controlled Reporting & Localization Subsystem):**
-   - Houses reporting query catalogs, operational dashboard aggregations, and export renderers.
-   - Enforces the mandatory `DERIVED_OUTPUT_NON_AUTHORITY` notice across all metrics, reports, and exports.
-6. **`MOD-ORG` & `MOD-IAM` (Hierarchy & Authorization Subsystem):**
-   - Enforces multi-tenant isolation, organizational hierarchies (`Tenant` $\to$ `Company` $\to$ `Project` $\to$ `Site` $\to$ `Area`), role matrices, and least-privilege access rules.
-7. **`MOD-PORTAL` (Standalone Inspect Composition Subsystem):**
-   - Composes user-facing navigation, forms, and views while maintaining strict client-side untrusted boundaries.
+1. **Proposed `MOD-WFA` (Workflow & Inspection Action Subsystem Planning Model):**
+   - Planned lifecycle states (`DRAFT` $\to$ `IN_PROGRESS` $\to$ `UNDER_REVIEW` $\to$ `APPROVED` $\to$ `CLOSED`).
+   - Planned deterministic compliance scoring direction under **HDEC-V040-SCORING-058** (`MODEL_2_WEIGHTED`, `U1_QUARANTINE_DENOMINATOR`, `R1_ROUND_HALF_UP`, `CF1_PRIORITY_FLAG`, 80.00% / 8000 bps threshold).
+   - Planned fail-closed priority model (`critical > UNKNOWN > score`), deferred override boundary under Gate `H040-004`, and autonomous AI decision prohibition.
+2. **Proposed `MOD-EVD` (Evidence Integrity & Capture Subsystem Planning Model):**
+   - Planned content-addressable reference design using SHA-256 digests for inspection media and documentation.
+   - Proposed tamper-evident bundle binding linking evidence references to checklist items and findings.
+3. **Proposed `MOD-CAPA` (Finding & Corrective Action Subsystem Planning Model):**
+   - Planned hazard triage, critical severity tagging, remediation tracking, and re-inspection verification workflows.
+4. **Proposed `MOD-OFF` (Mobile Offline Synchronization Planning Model):**
+   - Planned local encrypted sandbox storage model for provisional field inspection drafts.
+   - Proposed three-way conflict detection model with final reconciliation deferred to server-side ingestion.
+5. **Proposed `MOD-REP` (Controlled Reporting & Localization Subsystem Planning Model):**
+   - Planned reporting catalogs, dashboard aggregations, and export generation renderers.
+   - Proposed mandatory inclusion of the `DERIVED_OUTPUT_NON_AUTHORITY` notice across all reporting projections.
+6. **Proposed `MOD-ORG` & `MOD-IAM` (Hierarchy & Access Control Planning Model):**
+   - Planned multi-tenant isolation, organizational hierarchy levels (`Tenant` $\to$ `Company` $\to$ `Project` $\to$ `Site` $\to$ `Area`), and role-based access specifications.
+7. **Proposed `MOD-PORTAL` (Standalone Inspect Composition Planning Model):**
+   - Planned user-facing navigation and inspection views, structured under client-side untrusted assumptions.
 
-### System Context Diagram
+### Proposed System Context & Boundary Architecture Diagram
 
 ```mermaid
 flowchart TD
-    subgraph Untrusted_Clients["Untrusted Client Domain (TB-01)"]
-        MobileClient["Mobile Inspection App\n(Offline SQLite / Local Encrypted Sandbox)"]
-        WebPortal["Web Inspection Portal\n(Browser Single-Page Application)"]
+    subgraph Untrusted_Clients["Untrusted Client Domain (Proposed Boundary TB-01)"]
+        MobileClient["Proposed Mobile Inspection App\n(Planned Local Encrypted Sandbox)"]
+        WebPortal["Proposed Web Inspection Portal\n(Planned Browser Interface)"]
     end
 
-    subgraph API_Edge["Platform API Boundary (TB-02)"]
-        Gateway["API Gateway / Security Middleware\n(Session Validation, Scope Derivation, Rate Limiting)"]
+    subgraph API_Edge["Platform API Boundary (Proposed Boundary TB-02)"]
+        Gateway["Planned API Boundary & Middleware\n(Proposed Session Validation & Scope Derivation)"]
     end
 
-    subgraph Authoritative_Core["Authoritative Persistence Domain (TB-03)"]
-        PG[("Authoritative PostgreSQL Database\n(Single Source of Truth, ACID Transactions)")]
-        Outbox[("Transactional Outbox Table\n(Atomic Commit with Domain State)")]
+    subgraph Authoritative_Core["Selected Persistence Direction (Proposed Boundary TB-03)"]
+        PG[("Authoritative PostgreSQL Store\n(Selected Planning Direction: Single Source of Truth)")]
+        Outbox[("Transactional Outbox Pattern\n(Selected Planning Direction: Atomic State & Event)")]
     end
 
-    subgraph Event_Transport["Event Transport Domain (TB-04)"]
-        NATS["NATS JetStream\n(Asynchronous Stream Transport, Coordination Only)"]
+    subgraph Event_Transport["Selected Event Transport Direction (Proposed Boundary TB-04)"]
+        NATS["NATS JetStream\n(Selected Planning Direction: Event Coordination Only)")]
     end
 
-    subgraph Projection_Plane["Derived Projection Domain (TB-05)"]
-        Meili[("Meilisearch\n(Search Projections Only, Non-Authoritative)")]
-        Valkey[("Valkey\n(In-Memory Cache & Rate-Limit Coordination Only)")]
+    subgraph Projection_Plane["Selected Derived Projection Direction (Proposed Boundary TB-05)"]
+        Meili[("Meilisearch\n(Selected Planning Direction: Projection-Only Search)")]
+        Valkey[("Valkey\n(Selected Planning Direction: Cache & Rate Coordination Only)")]
     end
 
-    subgraph Derived_Reporting["Reporting & Export Domain (TB-06)"]
-        ReportCatalog["MOD-REP Catalog & Renderer\n(DERIVED_OUTPUT_NON_AUTHORITY)"]
+    subgraph Derived_Reporting["Selected Reporting Direction (Proposed Boundary TB-06)"]
+        ReportCatalog["MOD-REP Catalog & Renderer\n(Planned DERIVED_OUTPUT_NON_AUTHORITY)"]
     end
 
-    MobileClient -->|"HTTPS / REST (Untrusted Scope Claims)"| Gateway
-    WebPortal -->|"HTTPS / REST (Untrusted Scope Claims)"| Gateway
-    Gateway -->|"Validated & Scoped Commands"| PG
-    PG ---|"Transactional Outbox Write"| Outbox
-    Outbox -->|"Reliable Relay (At-Least-Once)"| NATS
-    NATS -->|"Asynchronous Consumer Fanout"| Meili
-    NATS -->|"Cache Invalidation Events"| Valkey
-    NATS -->|"Domain Metrics Ingestion"| ReportCatalog
-    Gateway -.->|"Read-Only Search Query (Tenant-Filtered)"| Meili
-    Gateway -.->|"Short-Lived Cached Reads"| Valkey
-    Gateway -.->|"Derived Export Queries"| ReportCatalog
+    MobileClient -->|"Planned HTTPS / REST (Untrusted Scopes)"| Gateway
+    WebPortal -->|"Planned HTTPS / REST (Untrusted Scopes)"| Gateway
+    Gateway -->|"Planned Validated Commands"| PG
+    PG ---|"Planned Transactional Write"| Outbox
+    Outbox -->|"Planned Outbox Relay"| NATS
+    NATS -->|"Planned Projection Consumer"| Meili
+    NATS -->|"Planned Invalidation Events"| Valkey
+    NATS -->|"Planned Metrics Ingestion"| ReportCatalog
+    Gateway -.->|"Planned Scoped Search Read"| Meili
+    Gateway -.->|"Planned Cached Read"| Valkey
+    Gateway -.->|"Planned Export Queries"| ReportCatalog
 ```
 
+*Note: All architectural entities, data stores, and transport paths in the diagram represent the selected architecture planning direction from `data-projection-boundaries.md` (ADR-0006). They do not represent deployed, active, or running components.*
+
 ---
 
-## 3. Data-Flow and Trust Boundaries
+## 3. Data-Flow and Trust Boundaries (Selected Planning Direction)
 
-The platform architecture segregates components into discrete trust domains to prevent data tampering, lateral privilege escalation, and projection desynchronization.
+The platform architecture adopts the selected data-projection and storage direction documented in `data-projection-boundaries.md` (ADR-0006). These specifications represent architectural design targets, not active infrastructure:
 
-### Core Data-Flow Invariants
+1. **Authoritative PostgreSQL (Selected Planning Direction):**
+   - PostgreSQL is selected as the planned sole authoritative persistent store for operational data.
+   - All domain state changes are planned to execute via transactional operations with ACID guarantees.
+   - This document provisions no database tables, schemas, or migrations.
 
-1. **Authoritative PostgreSQL (Single Source of Truth):**
-   - PostgreSQL is the **sole authoritative persistence engine** for all operational entities (checklists, inspection records, findings, corrective actions, evidence metadata, scores, and organization structures).
-   - Direct database writes occur exclusively through transactional command handlers operating under ACID guarantees.
-   - External clients, projection services, and reporting subsystems have zero direct write authority to PostgreSQL tables.
+2. **Transactional Outbox Pattern (Selected Planning Direction):**
+   - Domain mutations and event payloads are planned to commit atomically within the PostgreSQL transaction boundary.
+   - This architectural pattern is planned to eliminate dual-write inconsistencies.
 
-2. **Transactional Outbox Pattern:**
-   - Domain mutations commit state changes and corresponding event records atomically within the same PostgreSQL transaction.
-   - This eliminates dual-write hazards and ensures zero data loss between operational state transitions and downstream messaging.
+3. **NATS JetStream (Selected Planning Direction):**
+   - NATS JetStream is selected as the planned event streaming backbone for asynchronous messaging.
+   - Under this design, JetStream is strictly a transport and coordination mechanism, never an operational source of truth.
 
-3. **NATS JetStream (Transport and Coordination Only):**
-   - NATS JetStream serves strictly as an asynchronous event streaming backbone.
-   - JetStream is **never an authoritative record store**. Messages are transient event notifications used to trigger projection updates, cache invalidation, and asynchronous audit recording.
-   - Message consumers are idempotent to safely accommodate at-least-once delivery semantics.
+4. **Meilisearch Projection-Only (Selected Planning Direction):**
+   - Meilisearch is selected strictly as a search projection store derived from transactional outbox events.
+   - Meilisearch is planned to be non-authoritative and read-only to clients.
+   - If search index drift or corruption occurs, the planned recovery mechanism is full re-indexing from PostgreSQL via outbox replay.
 
-4. **Meilisearch (Projection-Only):**
-   - Meilisearch stores locale-aware, tokenized text search projections derived exclusively from outbox event streams.
-   - Meilisearch is **strictly projection-only**; it is never an operational source of truth.
-   - API endpoints querying Meilisearch apply mandatory server-side tenant, site, classification, and authorization filters before returning results.
-   - In the event of Meilisearch index corruption, partition, or drift, the search index is completely wiped and rebuilt from authoritative PostgreSQL state through transactional-outbox event replay.
-
-5. **Valkey (Cache-Only):**
-   - Valkey provides low-latency caching, API rate-limiting buckets, and ephemeral distributed coordination.
-   - Valkey is **strictly cache-only**; it never stores authoritative business state.
-   - Any cache miss, eviction, or server restart falls back gracefully to PostgreSQL. Direct alteration of authoritative data via cache writes is strictly prohibited.
+5. **Valkey Cache-Only (Selected Planning Direction):**
+   - Valkey is selected strictly for caching, rate-limit state, and transient coordination.
+   - Valkey is planned to never store authoritative business state. Cache evictions are designed to fall back safely to PostgreSQL.
 
 6. **Failed Projection Rebuilding:**
-   - A failure, desynchronization, or crash of Meilisearch or Valkey does not affect operational transaction processing in PostgreSQL.
-   - Recovery is achieved exclusively through deterministic replay from PostgreSQL via outbox logs.
+   - Failures or desynchronization in projection or cache tiers are designed to leave PostgreSQL unaffected.
+   - Planned restoration relies solely on replaying outbox event logs from PostgreSQL.
 
 ---
 
-## 4. Untrusted Client Scopes & Default-Deny Boundaries
+## 4. Untrusted Client Scopes & Default-Deny Concept
 
-### Untrusted Client-Supplied Scope Claims
-All client inputs—including parameters submitted in request headers, query strings, and JSON payloads—are treated as **inherently untrusted**. Specifically:
-- **`tenant_id` Claims:** Clients cannot assert or switch tenant contexts arbitrarily. The effective tenant context is derived strictly from verified, cryptographically signed authentication credentials.
-- **`project_id` & `site_id` Claims:** The user's permission to interact with a specific project or site is validated server-side against active assignments in PostgreSQL.
-- **Role and Permission Claims:** Client assertions of administrative, supervisory, or inspector roles are ignored. Authorized permissions are resolved server-side per request.
-- **Timestamp Claims:** Client-submitted creation or modification timestamps are treated as unverified hints; authoritative event sequencing relies on monotonic server clocks and audit ledger sequence counters.
+### Proposed Handling of Untrusted Client Scopes
+The architectural baseline specifies that all client-supplied parameters are treated as untrusted:
+- **`tenant_id` Scopes:** Planned to be derived server-side from verified authentication tokens rather than accepted from client headers or payloads.
+- **`project_id` & `site_id` Scopes:** Planned to require server-side verification against active user assignment records in PostgreSQL.
+- **Role Claims:** Proposed design ignores client-asserted roles; permissions are planned to be evaluated server-side per request.
+- **Client Timestamps:** Proposed design treats client timestamps as unverified hints, using monotonic server time for authoritative ordering.
 
-### Default-Deny Access Policy
-- Every request without valid, unexpired credentials and explicit authorization is denied with HTTP 401 (Unauthorized) or HTTP 403 (Forbidden).
-- Missing, malformed, or out-of-scope parameters trigger immediate fail-closed rejection with stable denial error codes (`BLANK_IDENTIFIER`, `UNAUTHORIZED_ACTOR_CLASS`, `INVALID_CATALOG_TRANSITION`).
+### Proposed Default-Deny Policy
+- The architectural design specifies a default-deny stance: requests without valid credentials and explicit authorization are planned to be rejected.
+- Unrecognized or malformed scope claims are planned to result in immediate fail-closed denial with stable error codes.
 
 ---
 
-## 5. Discrete Multi-Dimensional Isolation Boundaries
+## 5. Discrete Multi-Dimensional Isolation Boundaries (Proposed Design)
 
-| Boundary Domain | Boundary Identifier | Isolation Mechanism & Enforcement Rules |
+| Boundary Domain | Boundary Identifier | Proposed Isolation Mechanism & Planning Rules |
 | :--- | :--- | :--- |
-| **Tenant Boundary** | `TB-TENANT` | Strict relational partitioning by `tenant_id`. Database queries require hardcoded tenant filtering; cross-tenant references fail closed (`ErrCrossTenantRecord`, `ErrUnauthorizedReader`). Zero cross-tenant data leakage permitted. |
-| **Project Boundary** | `TB-PROJECT` | Hierarchical scoping (`Tenant` $\to$ `Company` $\to$ `Project`). Users access inspections and findings only within projects where active participation is explicitly mapped. |
-| **Site / Area Boundary** | `TB-SITE` | Physical location zoning. Inspections and equipment checklists are pinned to specific sites and areas (`SiteID`, `AreaID`). Mobile client GPS metadata is recorded for audit verification but cannot override site assignment. |
-| **Contractor Boundary** | `TB-CONTRACTOR` | External third-party contractor personnel are restricted to assigned corrective actions and findings. Contractor accounts are prohibited from browsing general tenant directories, unrelated checklists, or executive analytics. |
-| **Evidence Boundary** | `TB-EVIDENCE` | Media files and documents are stored in content-addressable storage hashed with SHA-256. Stored evidence files are immutable. Database records store only hashes and validated metadata; raw evidence replacement is impossible. |
-| **Offline Boundary** | `TB-OFFLINE` | Local mobile drafts reside in encrypted sandbox storage (`MOD-OFF`). Offline drafts carry provisional status only. Conflicts are detected on sync; server-side reconciliation in PostgreSQL is required for authoritative state change. |
-| **Report Boundary** | `TB-REPORT` | Operational metrics and analytics in `MOD-REP` are derived projections. All outputs carry mandatory header `DERIVED_OUTPUT_NON_AUTHORITY`. Direct state mutation via reporting endpoints is prohibited. |
-| **Export Boundary** | `TB-EXPORT` | Complete-record exports require authorization and produce a `GenerationManifest` containing dual cryptographic digests (`SourceDataDigest` and `RenderedDigest`). Tampering invalidates manifest integrity. |
+| **Tenant Boundary** | `TB-TENANT` | Planned relational isolation by `tenant_id`. Database queries are planned with mandatory tenant filtering; cross-tenant references fail closed. |
+| **Project Boundary** | `TB-PROJECT` | Planned hierarchical containment (`Tenant` $\to$ `Company` $\to$ `Project`). Inspection access is planned to require active project assignment. |
+| **Site / Area Boundary** | `TB-SITE` | Planned physical site and area constraints pinning checklists and findings to designated locations (`SiteID`, `AreaID`). |
+| **Contractor Boundary** | `TB-CONTRACTOR` | Planned third-party contractor access restricted to assigned corrective actions, with directory browsing disabled. |
+| **Evidence Boundary** | `TB-EVIDENCE` | Planned content-addressable reference model with SHA-256 cryptographic hashes bound immutably to inspection records. |
+| **Offline Boundary** | `TB-OFFLINE` | Planned local encrypted sandbox storage on mobile devices with provisional status; authoritative status requires server ingestion. |
+| **Report Boundary** | `TB-REPORT` | Planned derived reporting projections carrying the mandatory `DERIVED_OUTPUT_NON_AUTHORITY` notice. |
+| **Export Boundary** | `TB-EXPORT` | Planned complete-record export generation with cryptographic manifests containing source and rendered SHA-256 digests. |
 
 ---
 
-## 6. Prevention, Detection, Evidence, and Owner (PDEO) Matrix
+## 6. Prevention, Detection, Evidence, and Owner (PDEO) Planning Matrix
 
-| Domain | Threat / Risk Vector | Prevention Mechanism | Detection Mechanism | Evidence Artifact | Governed Owner |
+The following matrix defines the proposed architectural threat vectors, planned prevention mechanisms, proposed detection strategies, planned evidence verification criteria, and designated governance roles:
+
+| Domain | Threat / Risk Vector | Planned Prevention Mechanism | Proposed Detection Strategy | Planned Evidence Artifact / Verification Criteria | Proposed Governed Owner Role |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Tenant Isolation** | Cross-tenant data exfiltration via manipulated query parameter | Tenant context derived exclusively from verified session; hardcoded `tenant_id` filter on all PostgreSQL queries | Real-time query assertion interceptors; automated cross-tenant penetration tests | Test suite `TestCrossTenantDenial`, `TestReportRenderer_TenantValidation` | Architecture & Data Lead |
-| **Data Flow** | Unauthorized write to authoritative PostgreSQL from Meilisearch or Valkey | Strict network isolation; Meilisearch and Valkey credentials have zero write access to PostgreSQL | Database connection permission monitoring; read-only role enforcement | Database role privileges audit; `data-projection-boundaries.md` | Platform Security Lead |
-| **Projection Integrity** | Search index desynchronization or cache poisoning | Projections populated exclusively via PostgreSQL transactional outbox and NATS JetStream; client writes denied | Periodic hash reconciliation between PostgreSQL records and Meilisearch search documents | Outbox replay test harness; `TestReproducibleFixtureComparison` | Infrastructure & Core Lead |
-| **Client Scope** | Privilege escalation via forged `project_id` or role in JSON payload | Server-side validation of user participation matrix; client scope claims discarded | Security audit logging of rejected scope mismatches (`DenialUnauthorizedActor`) | Test suite `TestQualification_AutonomousAIBoundaryDenial` | Authorization Lead |
-| **Evidence Custody** | Post-inspection replacement or tampering of hazard photographs | Content-addressable storage; SHA-256 digests computed at capture and immutably pinned in PostgreSQL | Hash verification on retrieval; digest validation in export manifests | `VerifyReportIntegrity` tests; cryptographic manifest verification | Evidence & Assurance Lead |
-| **Offline Sync** | Stale offline mobile draft overwriting concurrent online modification | Three-way version vector conflict detection; server-side merge or quarantine in `MOD-OFF` | Conflict audit logs; rejected sync sequence tracking | `TestLocalDraftRecovery`, offline conflict test suite | Mobile Client Lead |
-| **Scoring Safety** | High numerical score masking active critical hazard | `CF1_PRIORITY_FLAG` locks outcome to `NON_COMPLIANT_CRITICAL` while reporting score unmasked | Mandatory three-predicate conjunction check before compliance approval | Test suite `TestScoring_CriticalFailPriorityFlag`, `SYN-SCORING-07` | Test & Quality Lead |
-| **Override Safety** | Unauthorized managerial bypass of critical inspection failures | Manual override unconditionally denied under deferred Gate `H040-004` (`DenialManualOverrideDeferred`) | Append-only immutable audit ledger recording all override attempts | Audit entry logs; test `TestQualification_DeferredManualOverrideDenial` | Human Reviewer / PM Secretary |
-| **Autonomous AI** | Autonomous AI agent clearing critical finding or authorizing state transition | Strict role check (`isAutonomousAgentRole`); unconditional fail-closed denial (`DenialAutonomousAIBoundary`) | Immediate security alert on AI transition authorization attempt | Test suite `TestFailClosed_AutonomousAIBoundaryEnforced` | Sole Human Owner |
-| **Report Authority** | User treating derived report metric as binding operational approval | Mandatory `DERIVED_OUTPUT_NON_AUTHORITY` notice header on all reports and exports | Automated schema validator checking `NonAuthority: true` on all metric definitions | Validator check `TestDerivedResultNonAuthority`, `SYN-REP-12` | Reporting Lead |
+| **Tenant Isolation** | Cross-tenant data leakage via forged request parameters | Planned server-side tenant derivation from session token; mandatory tenant query filtering | Proposed runtime query inspection and automated cross-tenant isolation test suite | Planned tenant isolation verification test specification | Architecture & Data Lead |
+| **Data Flow** | Unauthorized write to PostgreSQL from projection tiers | Planned network segmentation; projection credentials have zero write privileges to PostgreSQL | Proposed database connection permission audit and role monitoring | Planned database privilege audit and boundary specification | Platform Security Lead |
+| **Projection Integrity** | Search index desynchronization or cache pollution | Planned unidirectional data flow via PostgreSQL outbox and NATS JetStream; direct writes rejected | Proposed periodic hash reconciliation between PostgreSQL source records and search index | Planned outbox replay test harness specification | Infrastructure & Core Lead |
+| **Client Scope** | Privilege escalation via forged `project_id` or role | Planned server-side validation of user participation; client scope claims discarded | Proposed audit logging of scope mismatch rejections | Planned authorization boundary test specification | Authorization Lead |
+| **Evidence Custody** | Post-inspection alteration or replacement of hazard media | Planned SHA-256 digest computation at capture, stored immutably in PostgreSQL | Proposed hash verification on retrieval and digest validation in export manifests | Planned cryptographic digest verification test harness | Evidence & Assurance Lead |
+| **Offline Sync** | Stale offline mobile draft overwriting concurrent online edits | Planned three-way conflict detection and server-side reconciliation in `MOD-OFF` | Proposed conflict audit logging and rejected sequence tracking | Planned offline synchronization test specification | Mobile Client Lead |
+| **Scoring Safety** | High numerical score masking active critical hazard | Planned `CF1_PRIORITY_FLAG` locking outcome to `NON_COMPLIANT_CRITICAL` while reporting score unmasked | Planned mandatory three-predicate conjunction check before compliance approval | Planned scoring safety qualification test specification | Test & Quality Lead |
+| **Override Safety** | Unauthorized managerial bypass of critical inspection failures | Planned unconditional override denial under deferred Gate `H040-004` | Proposed append-only audit logging of all override attempts | Planned override denial audit log verification specification | Human Reviewer / PM Secretary |
+| **Autonomous AI** | Autonomous AI agent clearing critical finding or authorizing state change | Planned strict role checking; unconditional fail-closed denial for AI roles | Proposed immediate security alert on AI transition authorization attempt | Planned autonomous AI boundary test specification | Sole Human Owner |
+| **Report Authority** | User treating derived report metric as binding operational authority | Planned mandatory `DERIVED_OUTPUT_NON_AUTHORITY` header on all reports and exports | Proposed schema validation checking non-authority designation on metric definitions | Planned non-authority notice verification specification | Reporting Lead |
 
 ---
 
@@ -191,10 +192,10 @@ Under **HDEC-V040-FOUNDATION-054**, the following foundation holds remain in act
 
 | Hold ID | Governance Subject | Status | Enforcement Constraint |
 | :--- | :--- | :--- | :--- |
-| `H040-007` | External Production Deployment | **HOLD** | No public/production traffic, reverse proxy ingress, or DNS routing |
-| `H040-008` | Live Third-Party Integrations | **HOLD** | External API adapters strictly mocked or in-memory |
-| `H040-009` | Commercial Licensing & Payment Gateways | **HOLD** | Financial transactions and commercial billing strictly disabled |
-| `H040-010` | Automated Destructive Maintenance | **HOLD** | Automatic deletion or unreviewed purge routines strictly prohibited |
-| `H040-011` | Autonomous Human Decision Delegation | **HOLD** | Human signoff strictly required for all protected state transitions |
+| `H040-007` | Technical release authorization | **HOLD** | HOLD: No technical release authorization is granted. |
+| `H040-008` | Real participant, private-alpha, and UAT engagement | **HOLD** | HOLD: No real participant, private-alpha, or UAT engagement authorization is granted. |
+| `H040-009` | Binding support and manual-fallback operational ownership | **HOLD** | HOLD: No binding support or manual-fallback operational ownership authorization is granted. |
+| `H040-010` | External environment, device, account, route, storage, and notification activation | **HOLD** | HOLD: No external environment, device, account, route, storage, or notification activation is granted. |
+| `H040-011` | Final outcome, residual-risk acceptance, and v0.5.0 entry decision | **HOLD** | HOLD: No final outcome, residual-risk acceptance, or v0.5.0 entry decision authorization is granted. |
 
-Zero authority is granted to lift any hold. All qualification suites assert synthetic isolation, default-deny boundaries, and immutability of audit records.
+Every hold row remains in active **HOLD** status. No activation, authorization, release, operational deployment, or hold lift is granted.
