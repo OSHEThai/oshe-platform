@@ -50,8 +50,8 @@ class TestV040ControlledReportingQualificationBaseline(unittest.TestCase):
 
         self.assertIn("document_id: QLF-V040-REPORTING-001", fm_text)
         self.assertIn("governing_issue: 141", fm_text)
-        self.assertIn("assignment_id: ASN-V040-I030-CONTROLLED-REPORTING-008", fm_text)
-        self.assertIn("lease_id: LEASE-V040-I030-CONTROLLED-REPORTING-008", fm_text)
+        self.assertIn("assignment_id: ASN-V040-I030-HOLD-MAPPING-CORRECTION-009", fm_text)
+        self.assertIn("lease_id: LEASE-V040-I030-HOLD-MAPPING-CORRECTION-009", fm_text)
         self.assertIn("status: APPROVED", fm_text)
         self.assertIn("lifecycle: APPROVED", fm_text)
         self.assertIn("target_milestone: v0.4.0", fm_text)
@@ -91,15 +91,26 @@ class TestV040ControlledReportingQualificationBaseline(unittest.TestCase):
     def test_05_retained_foundation_holds_table(self):
         content = self.baseline_path.read_text(encoding="utf-8")
         holds = [
-            ("H040-007", "External Production Deployment"),
-            ("H040-008", "Live Third-Party Integrations"),
-            ("H040-009", "Commercial Licensing & Payments"),
-            ("H040-010", "Automated Destructive Maintenance"),
-            ("H040-011", "Autonomous Human Delegation"),
+            ("H040-007", "Technical release authorization"),
+            ("H040-008", "Real participant, private-alpha, and UAT engagement"),
+            ("H040-009", "Binding support and manual-fallback operational ownership"),
+            ("H040-010", "External environment, device, account, route, storage, and notification activation"),
+            ("H040-011", "Final outcome, residual-risk acceptance, and v0.5.0 entry decision"),
         ]
         for hold_id, subject in holds:
             self.assertIn(hold_id, content, f"Hold {hold_id} missing")
             self.assertIn(subject, content, f"Hold subject '{subject}' missing")
+
+        # Verify every row remains HOLD and explicitly states no activation/authorization is granted
+        for hold_id, _ in holds:
+            row_match = re.search(rf"\|\s*\*\*{hold_id}\*\*\s*\|\s*([^|]+)\|\s*\*\*HOLD\*\*\s*\|\s*([^|\n]+)\|", content)
+            self.assertIsNotNone(row_match, f"Row for {hold_id} must have status HOLD")
+            enforcement = row_match.group(2)
+            self.assertIn(
+                "no activation/authorization is granted",
+                enforcement,
+                f"Row for {hold_id} must say 'no activation/authorization is granted'",
+            )
 
     def test_06_go_qualification_test_coverage(self):
         self.assertTrue(self.go_test_path.is_file(), f"Go qualification test file missing at {self.go_test_path}")

@@ -2,8 +2,8 @@
 document_id: QLF-V040-REPORTING-001
 title: V0.4.0 Controlled Reporting, Export, and Audit Reconstruction Qualification Baseline
 governing_issue: 141
-assignment_id: ASN-V040-I030-CONTROLLED-REPORTING-008
-lease_id: LEASE-V040-I030-CONTROLLED-REPORTING-008
+assignment_id: ASN-V040-I030-HOLD-MAPPING-CORRECTION-009
+lease_id: LEASE-V040-I030-HOLD-MAPPING-CORRECTION-009
 status: APPROVED
 lifecycle: APPROVED
 author: Test and Quality Lead
@@ -102,8 +102,8 @@ The export facility produces a `GenerationManifest` containing:
 
 | Hold ID | Area | Status | Enforcement Description |
 | :--- | :--- | :--- | :--- |
-| **H040-007** | External Production Deployment | **HOLD** | Purely local in-memory execution; no external hosting or cloud deployments. |
-| **H040-008** | Live Third-Party Integrations | **HOLD** | Zero external API calls, webhook dispatches, or third-party storage adapters. |
-| **H040-009** | Commercial Licensing & Payments | **HOLD** | No commercial or payment gateway capabilities implemented. |
-| **H040-010** | Automated Destructive Maintenance | **HOLD** | Reporting engine is strictly read-only; no deletion or mutation logic. |
-| **H040-011** | Autonomous Human Delegation | **HOLD** | Reports do not grant authority; sign-off and closures remain human-owned. |
+| **H040-007** | Technical release authorization | **HOLD** | Purely local in-memory execution; no activation/authorization is granted. |
+| **H040-008** | Real participant, private-alpha, and UAT engagement | **HOLD** | Synthetic fixtures only; no activation/authorization is granted. |
+| **H040-009** | Binding support and manual-fallback operational ownership | **HOLD** | Synthetic reporting only; no activation/authorization is granted. |
+| **H040-010** | External environment, device, account, route, storage, and notification activation | **HOLD** | Strictly local execution; no activation/authorization is granted. |
+| **H040-011** | Final outcome, residual-risk acceptance, and v0.5.0 entry decision | **HOLD** | Read-only qualification baseline; no activation/authorization is granted. |
