@@ -2,16 +2,16 @@
 """
 test_v040_release_evidence_and_learning_prework.py
 Automated validation suite for v0.4.0 Release Evidence and Learning Prework Scorecard.
-Governed by Issue #150 / ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001.
+Governed by Issue #150 / ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001 / LEASE-V040-I039-EVIDENCE-LEARNING-PREWORK-002.
 
 Verifies:
 1. Document existence and non-trivial length.
 2. Frontmatter metadata conforms to governance requirements (document_id, human_gates, retained_holds).
 3. Scorecard sections presence: source-attribution, technical synthetic results, missing evidence,
-   proposed-unmeasured thresholds, defect/risk reconciliation, and recommendations.
+   proposed-unmeasured thresholds, defect/risk reconciliation, and preliminary evidence-gap observations.
 4. Explicitly missing evidence catalog (human, UAT, support, device, network, runtime, backup).
 5. Proposed-unmeasured thresholds catalog carrying NON-BINDING_PROPOSED and UNMEASURED markers.
-6. Formal recommendation records INSUFFICIENT EVIDENCE rather than acceptance.
+6. Conclusion records INSUFFICIENT EVIDENCE WITHOUT A DECISION (no H040-011 disposition or recommendation).
 7. Retained foundation holds H040-007 through H040-011 on HOLD / BLOCKED with zero authority grant.
 """
 
@@ -65,9 +65,6 @@ class TestV040ReleaseEvidenceAndLearningPrework(unittest.TestCase):
             "assignment_id: ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001", fm_text
         )
         self.assertIn(
-            "lease_id: LEASE-V040-I039-EVIDENCE-LEARNING-PREWORK-001", fm_text
-        )
-        self.assertIn(
             "credit_boundary: PLANNING_ONLY_NO_EXECUTION_OR_RELEASE_CREDIT", fm_text
         )
 
@@ -91,7 +88,7 @@ class TestV040ReleaseEvidenceAndLearningPrework(unittest.TestCase):
             "Explicitly Missing Operational Evidence Ledger",
             "Proposed-Unmeasured Thresholds Catalog",
             "Defect, Limitation, and Risk Reconciliation",
-            "Learning Synthesis & Recommendations",
+            "Learning Synthesis & Preliminary Evidence-Gap Observations",
         ]
         for section in required_sections:
             self.assertIn(
@@ -128,14 +125,22 @@ class TestV040ReleaseEvidenceAndLearningPrework(unittest.TestCase):
         for nfr in ["NFR-PERF-01", "NFR-PERF-02", "NFR-PERF-03", "NFR-SYNC-01", "NFR-CAP-01", "NFR-SLA-01"]:
             self.assertIn(nfr, content, f"Metric '{nfr}' missing from thresholds catalog")
 
-    def test_06_recommendation_asserts_insufficient_evidence(self):
+    def test_06_insufficient_evidence_without_decision(self):
         content = self.doc_path.read_text(encoding="utf-8")
-        content_upper = content.upper()
+        content_lower = content.lower()
 
-        # Formal recommendation must record insufficient evidence rather than acceptance
-        self.assertIn("INSUFFICIENT EVIDENCE", content_upper)
-        self.assertIn("DO NOT RELEASE", content_upper)
-        self.assertIn("DO NOT ACCEPT RESIDUAL RISK", content_upper)
+        # Must record insufficient evidence without a decision
+        self.assertIn("insufficient evidence recorded without a decision", content_lower)
+        self.assertIn("without making any release or residual-risk decision", content_lower)
+
+        # Must NOT claim authoritativeness
+        self.assertNotIn("authoritative release evidence", content_lower)
+        self.assertNotIn("establishes the authoritative", content_lower)
+
+        # Must NOT usurp H040-011 with release/residual-risk decisions or recommendations
+        self.assertNotIn("formal release recommendation", content_lower)
+        self.assertNotIn("release determination", content_lower)
+        self.assertNotIn("residual-risk acceptance determination", content_lower)
 
     def test_07_retained_foundation_holds_table(self):
         content = self.doc_path.read_text(encoding="utf-8")

@@ -14,7 +14,7 @@ governing_decisions:
   - HDEC-V040-SCORING-058
 milestone: "v0.4.0 - OSHE Inspect Private Alpha"
 assignment_id: ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001
-lease_id: LEASE-V040-I039-EVIDENCE-LEARNING-PREWORK-001
+lease_id: LEASE-V040-I039-EVIDENCE-LEARNING-PREWORK-002
 human_gates:
   - H040-007
   - H040-008
@@ -34,16 +34,16 @@ credit_boundary: PLANNING_ONLY_NO_EXECUTION_OR_RELEASE_CREDIT
 
 ## 1. Executive Summary & Purpose
 
-This document establishes the authoritative **Release Evidence and Learning Prework Scorecard** for Milestone `v0.4.0 OSHE Inspect Private Alpha` under GitHub Issue #150 (`[V040-I039] Release Evidence and Learning Prework Scorecard`) and Assignment `ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001`.
+This document provides a draft planning-only preliminary evidence-gap scorecard for Milestone `v0.4.0 OSHE Inspect Private Alpha` under GitHub Issue #150 (`[V040-I039] Release Evidence and Learning Prework Scorecard`) and Assignment `ASN-V040-I039-EVIDENCE-LEARNING-PREWORK-001`.
 
-This scorecard provides a rigorous, transparent synthesis reconciling passed technical synthetic evidence against **explicitly missing human, operational, environmental, and runtime evidence**. It is designated strictly as **PLANNING-ONLY AI PREWORK** (`PLANNING_ONLY_NO_EXECUTION_OR_RELEASE_CREDIT`).
+This scorecard provides a draft planning-only preliminary synthesis reconciling passed technical synthetic evidence against **explicitly missing human, operational, environmental, and runtime evidence**. It is designated strictly as **DRAFT PLANNING-ONLY AI PREWORK** (`PLANNING_ONLY_NO_EXECUTION_OR_RELEASE_CREDIT`).
 
-### Definitive Finding: Insufficient Evidence Rather than Acceptance
-Technical qualification suites establish that in-process Go algorithms, data boundaries, and state-machine transitions operate correctly under synthetic test conditions. However, the complete absence of empirical human usability trials, physical hardware testing, live network validation, production infrastructure execution, and staffed operational support leads to an unambiguous conclusion:
+### Preliminary Evidence-Gap Observation: Insufficient Evidence Recorded Without a Decision
+Technical qualification suites establish that in-process Go algorithms, data boundaries, and state-machine transitions operate correctly under synthetic test conditions. However, empirical human usability trials, physical hardware testing, live network validation, production infrastructure execution, and staffed operational support are not yet conducted or proven.
 
-> **FORMAL EVALUATION: INSUFFICIENT EVIDENCE TO PROCEED TO RELEASE OR RESIDUAL-RISK ACCEPTANCE.**
+> **PRELIMINARY EVIDENCE-GAP OBSERVATION: INSUFFICIENT EVIDENCE RECORDED WITHOUT A DECISION.**
 >
-> Zero authority is granted or inferred to lift any operational hold, accept residual risk, deploy services, or authorize release.
+> This artifact records that empirical evidence remains insufficient; it makes no release recommendation, makes no residual-risk recommendation, makes no H040-011 disposition, and authorizes no next action. All release, risk, and operational authorizations remain strictly reserved to Sole Human Owner governance under gates `H040-007` through `H040-011`.
 
 ---
 
@@ -140,18 +140,14 @@ In accordance with `ARC-V040-PROF-001`, every non-functional performance target 
 
 ---
 
-## 8. Learning Synthesis & Recommendations
+## 8. Learning Synthesis & Preliminary Evidence-Gap Observations
 
 ### 8.1 Key Engineering Learnings from v0.4.0 Prework
 1. **Deterministic Invariants Provide Robust Safety Guarantees:** Designing scoring, feature toggles, and authorization matrices to fail closed (`DefaultOff: true`, `ErrMustDefaultOff`, `DenialUnauthenticated`) provides strong mathematical proof against accidental privilege escalation or miscalculation.
 2. **Transactional Outbox Prevents Silent State Mutation:** Enforcing transaction rollback semantics ensures that interrupted operations leave zero lingering artifacts, establishing a dependable baseline for mobile sync.
 3. **Synthetic Qualifications Do Not Equal Operational Readiness:** Passing 100% of unit and qualification suites verifies that code conforms to specified rules, but provides zero proof that the system satisfies real-world user needs or survives physical deployment.
 
-### 8.2 Formal Release Recommendation
-- **Release Determination:** **DO NOT RELEASE.**
-- **Residual-Risk Acceptance Determination:** **DO NOT ACCEPT RESIDUAL RISK.**
-- **Rationale:** The total absence of empirical human, device, network, runtime, and operational support evidence makes any release authorization premature and hazardous.
-- **Required Next Actions:**
-  1. Maintain all foundation holds (`H040-007` through `H040-011`) strictly on **`HOLD`**.
-  2. Await Sole Human Owner review of Issue #149 (Private Alpha UAT Protocol) and Issue #150 (this Scorecard).
-  3. Authorize real-world testing only after explicit sovereign sign-off on human gates `H040-007`, `H040-008`, and `H040-010`.
+### 8.2 Preliminary Evidence-Gap Conclusion
+- **Artifact Conclusion:** This document records that current empirical evidence is insufficient, without making any release or residual-risk decision or recommendation.
+- **Reservation of Human Authority:** Sovereign decisions regarding release authorization (`H040-007`), participant engagement (`H040-008`), operational support (`H040-009`), external activation (`H040-010`), and residual-risk acceptance / v0.5.0 entry (`H040-011`) are reserved entirely to Sole Human Owner review.
+- **Status of Foundation Holds:** All foundation holds (`H040-007` through `H040-011`) remain strictly on **`HOLD / BLOCKED`**. No next action is authorized by this prework document.
