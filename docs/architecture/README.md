@@ -22,6 +22,7 @@ Stakeholder snapshots remain in Drive; engineering-authoritative records are ver
 - [v0.5.0 Workforce and Incident Alpha Foundation Boundaries](v050-foundation-decision.md) (`ARC-V050-DECREC-001` / `HDEC-V050-WAVE0-EXECUTION-ACTIVATION-001` / `V050-E001`)
 - [v0.5.0 Workforce and Incident Domain Data Authority Baseline](v050-domain-data-authority-baseline.md) (`ARC-V050-DOMAIN-001` / `HDEC-V050-E002-EXECUTION-ACTIVATION-008` / `V050-E002`)
 - [v0.5.0 Workforce and Incident Supported Alpha Profile](v050-supported-alpha-profile-baseline.md) (`ARC-V050-PROF-001` / `HDEC-V050-E003-EXECUTION-ACTIVATION-014` / `V050-E003`)
+- [v0.5.0 Workforce and Incident Test, Assurance, UAT, Support, Recovery, and Evidence Plan](v050-test-assurance-uat-support-recovery-evidence-plan.md) (`ARC-V050-ASSURE-001` / `HDEC-V050-E004-EXECUTION-ACTIVATION-020` / `V050-E004`)
 
 ## Assurance Cases
 
