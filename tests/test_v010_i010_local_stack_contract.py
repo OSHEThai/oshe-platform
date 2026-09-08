@@ -80,6 +80,16 @@ class LocalStackContractTests(unittest.TestCase):
         matches = re.findall(r"^FROM golang:1\.26\.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS go$", bad_dockerfile, re.MULTILINE)
         self.assertEqual(len(matches), 0, "A digest in a comment should not satisfy parity")
 
+    @staticmethod
+    def _has_valid_corepack_launcher(dockerfile: str) -> bool:
+        has_direct_copy = bool(re.search(r"COPY\s+--from=node\s+/usr/local/bin/corepack\s+/usr/local/bin/corepack", dockerfile))
+        has_symlink_construction = bool(
+            re.search(r"COPY\s+--from=node\s+/usr/local/lib/node_modules\s+/usr/local/lib/node_modules", dockerfile)
+            and re.search(r"COPY\s+--from=node\s+/usr/local/bin/node\s+/usr/local/bin/node", dockerfile)
+            and re.search(r"ln\s+-s\s+(?:\.\./lib/node_modules|/usr/local/lib/node_modules)/corepack/dist/corepack\.js\s+/usr/local/bin/corepack", dockerfile)
+        )
+        return has_direct_copy or has_symlink_construction
+
     def test_devcontainer_viability_and_security(self) -> None:
         dockerfile = (ROOT / ".devcontainer" / "Dockerfile").read_text(encoding="utf-8")
         devcontainer = (ROOT / ".devcontainer" / "devcontainer.json").read_text(encoding="utf-8")
@@ -89,7 +99,15 @@ class LocalStackContractTests(unittest.TestCase):
         self.assertEqual(dev_cfg.get("remoteUser"), "vscode", "remoteUser must be exactly vscode")
         
         self.assertRegex(dockerfile, r"(?s)addgroup -g 1000 vscode.*?adduser -u 1000 -G vscode", "vscode user not created")
-        self.assertIn("COPY --from=node /usr/local/bin/corepack /usr/local/bin/corepack", dockerfile, "corepack launcher missing")
+        self.assertTrue(
+            self._has_valid_corepack_launcher(dockerfile),
+            "corepack launcher missing: expected supported equivalent construction (direct COPY or symlink to corepack.js with node_modules)",
+        )
+        self.assertRegex(
+            dockerfile,
+            r"corepack\s+enable(?:\s+&&\s+corepack\s+prepare\s+pnpm@\d+\.\d+\.\d+\s+--activate)?",
+            "corepack activation instruction missing",
+        )
         
         self.assertNotIn("postCreateCommand", dev_cfg)
         self.assertNotIn("docker-cli", dockerfile)
@@ -104,6 +122,28 @@ class LocalStackContractTests(unittest.TestCase):
         dev_cfg_bad2 = '{"name": "oshe-platform", "remoteUser": "root"}'
         with self.assertRaises(AssertionError):
             self.assertEqual(json.loads(dev_cfg_bad2).get("remoteUser"), "vscode")
+
+    def test_devcontainer_corepack_launcher_negative_coverage(self) -> None:
+        bad_dockerfile_missing = "FROM python:3.14.7-alpine\nRUN apk add git"
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_missing))
+
+        # Incomplete construction: symlink present but node_modules copy missing
+        bad_dockerfile_no_modules = (
+            "COPY --from=node /usr/local/bin/node /usr/local/bin/node\n"
+            "RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack\n"
+        )
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_no_modules))
+
+        # Incomplete construction: symlink target invalid
+        bad_dockerfile_bad_target = (
+            "COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules\n"
+            "COPY --from=node /usr/local/bin/node /usr/local/bin/node\n"
+            "RUN ln -s /some/invalid/path /usr/local/bin/corepack\n"
+        )
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_bad_target))
 
     def test_fail_closed_native_compose_regression(self) -> None:
         bootstrap = (ROOT / "deploy" / "local" / "bootstrap.ps1").read_text(encoding="utf-8")
