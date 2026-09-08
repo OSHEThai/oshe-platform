@@ -85,6 +85,13 @@ Runtime prerequisites are classified honestly:
 2. **Missing Python Modules:** Missing required Python dependencies (such as PyYAML or jsonschema) must raise an import error that causes the test runner or validator to exit with non-zero exit codes.
 3. **Database / Network Dependencies:** Standalone unit and qualification tests must execute strictly against synthetic fixtures and in-memory stubs. Any test requiring external network access or unprovisioned databases must fail closed.
 
+### 4.1 Multi-Toolchain Checkpoint Identity & Invalidation Invariants
+To prevent caching false passes across toolchain mutations, `tools/run_local_ci.py` computes check-specific `toolchain_identity` values:
+- **Python Checks:** Evaluated using Python implementation, version, and binary path (`cpython:<version>:<path>`).
+- **Go Test Checks:** For checks executing `tools/run_go_tests.py` or `go`, the evidence key incorporates both the Python runner identity and the resolved Go binary path and version (`cpython:...|go:<go_path>:<go_version>`). If `go` is missing from `PATH`, the identity becomes `...|go:UNAVAILABLE`.
+- **Invalidation Rule:** Any modification, upgrade, relocation, or removal of the Go executable alters the check's `toolchain_identity`, immediately invalidating any prior passing checkpoint and forcing a re-run of `go-test-suite`. Python-only checks remain unaffected by Go toolchain alterations.
+- **Native Caching:** Native Go build and test caching (`go test`) operates under this layer, providing sub-second re-verification for unchanged packages while the local-ci layer enforces strict compiler and toolchain parity.
+
 ---
 
 ## 5. Hosted CI Parity (`.github/workflows/foundation.yml`)

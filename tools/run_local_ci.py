@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -63,6 +64,32 @@ def git_value(root: pathlib.Path, *args: str) -> str:
 def toolchain_identity() -> str:
     return f"{sys.implementation.name}:{sys.version.split()[0]}:{sys.executable}"
 
+
+def check_toolchain_identity(command: list[str]) -> str:
+    py_identity = toolchain_identity()
+    # For Go test suites or checks invoking run_go_tests.py or go directly,
+    # incorporate the exact Go executable path and version into the toolchain identity.
+    if any("run_go_tests.py" in str(arg) or arg == "go" for arg in command):
+        go_path = shutil.which("go")
+        if not go_path:
+            return f"{py_identity}|go:UNAVAILABLE"
+        try:
+            completed = subprocess.run(
+                [go_path, "version"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=5,
+            )
+            go_version = (
+                completed.stdout.strip()
+                if completed.returncode == 0
+                else f"ERROR:{completed.returncode}"
+            )
+        except Exception as exc:
+            go_version = f"EXCEPTION:{exc}"
+        return f"{py_identity}|go:{go_path}:{go_version}"
+    return py_identity
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -136,7 +163,7 @@ def main() -> int:
         command_digest = sha256_bytes(json.dumps(command, separators=(",", ":")).encode("utf-8"))
         evidence_key = {
             "command_digest": command_digest,
-            "toolchain_identity": toolchain,
+            "toolchain_identity": check_toolchain_identity(command),
             "repository_input_digest": repo_digest,
             "base_commit": base_commit,
         }
