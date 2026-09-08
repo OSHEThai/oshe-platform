@@ -133,10 +133,11 @@ type CreateActionRequest struct {
 	Creator               string
 }
 
+
 // ActionManager coordinates thread-safe, authorized, deterministic action lifecycles.
 type ActionManager struct {
 	mu      sync.RWMutex
-	actions map[string]*action
+	actions map[actionKey]*action
 	clock   Clock
 }
 
@@ -146,7 +147,7 @@ func NewActionManager(clock Clock) *ActionManager {
 		clock = time.Now
 	}
 	return &ActionManager{
-		actions: make(map[string]*action),
+		actions: make(map[actionKey]*action),
 		clock:   clock,
 	}
 }
@@ -160,14 +161,16 @@ func (m *ActionManager) CreateAction(req CreateActionRequest) (ActionSnapshot, e
 	if id == "" {
 		return ActionSnapshot{}, ErrBlankActionID
 	}
-	if _, exists := m.actions[id]; exists {
-		return ActionSnapshot{}, ErrDuplicateActionID
-	}
-
 	tenantID := strings.TrimSpace(req.TenantID)
 	if tenantID == "" {
 		return ActionSnapshot{}, ErrBlankTenantID
 	}
+	key := actionKey{tenantID: tenantID, actionID: id}
+	if _, exists := m.actions[key]; exists {
+		return ActionSnapshot{}, ErrDuplicateActionID
+	}
+
+
 
 	owner := strings.TrimSpace(req.Owner)
 	if owner == "" {
@@ -213,16 +216,24 @@ func (m *ActionManager) CreateAction(req CreateActionRequest) (ActionSnapshot, e
 		},
 	}
 
-	m.actions[id] = act
+	m.actions[key] = act
 	return act.snapshot(), nil
 }
 
 // GetAction retrieves an immutable copy of an action.
-func (m *ActionManager) GetAction(id string) (ActionSnapshot, error) {
+func (m *ActionManager) GetAction(tenantID, id string) (ActionSnapshot, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ActionSnapshot{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(id)
+	if tID == "" {
+		return ActionSnapshot{}, ErrBlankActionID
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	act, exists := m.actions[id]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ActionSnapshot{}, ErrActionNotFound
 	}
@@ -230,11 +241,19 @@ func (m *ActionManager) GetAction(id string) (ActionSnapshot, error) {
 }
 
 // StartWork transitions action to IN_PROGRESS. Caller must be the assigned owner.
-func (m *ActionManager) StartWork(actionID, callerIdentity string) error {
+func (m *ActionManager) StartWork(tenantID, actionID, callerIdentity string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -271,11 +290,19 @@ func (m *ActionManager) StartWork(actionID, callerIdentity string) error {
 
 // AttachEvidence associates accepted evidence with an action.
 // Fails closed if caller is not owner, tenant mismatches, action is closed, or duplicate evidence.
-func (m *ActionManager) AttachEvidence(actionID, callerIdentity string, ev EvidenceAttachment) error {
+func (m *ActionManager) AttachEvidence(tenantID, actionID, callerIdentity string, ev EvidenceAttachment) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -334,11 +361,19 @@ func (m *ActionManager) AttachEvidence(actionID, callerIdentity string, ev Evide
 
 // SubmitForReview submits the action for review.
 // Requires authorized owner and requisite accepted evidence count.
-func (m *ActionManager) SubmitForReview(actionID, callerIdentity, notes string) error {
+func (m *ActionManager) SubmitForReview(tenantID, actionID, callerIdentity, notes string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -377,11 +412,19 @@ func (m *ActionManager) SubmitForReview(actionID, callerIdentity, notes string) 
 
 // RejectReview rejects the action and returns it to REJECTED for corrective rework.
 // Requires authorized reviewer identity.
-func (m *ActionManager) RejectReview(actionID, callerIdentity, reason string) error {
+func (m *ActionManager) RejectReview(tenantID, actionID, callerIdentity, reason string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -423,11 +466,19 @@ func (m *ActionManager) RejectReview(actionID, callerIdentity, reason string) er
 // - valid preceding state IN_REVIEW
 // - requisite accepted evidence count satisfied
 // - double-closure prevention (fails closed if already CLOSED)
-func (m *ActionManager) CloseAction(actionID, callerIdentity, notes string) error {
+func (m *ActionManager) CloseAction(tenantID, actionID, callerIdentity, notes string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -466,11 +517,19 @@ func (m *ActionManager) CloseAction(actionID, callerIdentity, notes string) erro
 
 // ReopenAction transitions a CLOSED action to REOPENED for additional corrective actions.
 // Requires authorized reviewer/authority identity and non-blank reason.
-func (m *ActionManager) ReopenAction(actionID, callerIdentity, reason string) error {
+func (m *ActionManager) ReopenAction(tenantID, actionID, callerIdentity, reason string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return ErrActionNotFound
 	}
@@ -505,11 +564,19 @@ func (m *ActionManager) ReopenAction(actionID, callerIdentity, reason string) er
 }
 
 // CheckOverdue evaluates if an action has passed its due date and marks it OVERDUE.
-func (m *ActionManager) CheckOverdue(actionID string) (bool, error) {
+func (m *ActionManager) CheckOverdue(tenantID, actionID string) (bool, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return false, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return false, ErrBlankActionID
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	act, exists := m.actions[actionID]
+	act, exists := m.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !exists {
 		return false, ErrActionNotFound
 	}

@@ -33,7 +33,7 @@ func TestOwnership_VisibleHistoryAndReassignment(t *testing.T) {
 		t.Fatalf("failed to register action: %v", err)
 	}
 
-	act, err := engine.GetAction(actID)
+	act, err := engine.GetAction("ten_synthetic_alpha", actID)
 	if err != nil {
 		t.Fatalf("failed to get action: %v", err)
 	}
@@ -46,6 +46,7 @@ func TestOwnership_VisibleHistoryAndReassignment(t *testing.T) {
 
 	// Reassign to successor
 	reassignedAct, err := engine.ReassignOwner(
+		"ten_synthetic_alpha",
 		actID,
 		"usr_capa_owner_02",
 		"CAPA_OWNER",
@@ -98,8 +99,8 @@ func TestOwnership_Revocation(t *testing.T) {
 		DueDate:          t0.Add(48 * time.Hour),
 	})
 
-	act, _ := engine.GetAction(actID)
-	revokedAct, err := engine.RevokeOwner(actID, "usr_supervisor_01", "Assigned contractor contract terminated", act.StateVersion)
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
+	revokedAct, err := engine.RevokeOwner("ten_synthetic_alpha", actID, "usr_supervisor_01", "Assigned contractor contract terminated", act.StateVersion)
 	if err != nil {
 		t.Fatalf("revocation failed: %v", err)
 	}
@@ -112,7 +113,7 @@ func TestOwnership_Revocation(t *testing.T) {
 	}
 
 	// Re-revoking without owner must fail closed
-	_, err = engine.RevokeOwner(actID, "usr_supervisor_01", "Second attempt", revokedAct.StateVersion)
+	_, err = engine.RevokeOwner("ten_synthetic_alpha", actID, "usr_supervisor_01", "Second attempt", revokedAct.StateVersion)
 	if err != workflowaction.ErrNoActiveOwner {
 		t.Errorf("expected ErrNoActiveOwner, got %v", err)
 	}
@@ -136,7 +137,7 @@ func TestExtension_RequestAndApprovalWorkflow(t *testing.T) {
 		DueDate:          initialDue,
 	})
 
-	act, _ := engine.GetAction(actID)
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
 
 	// Owner requests extension
 	extReq := workflowaction.ExtensionRequest{
@@ -147,7 +148,7 @@ func TestExtension_RequestAndApprovalWorkflow(t *testing.T) {
 		Reason:           "Delayed delivery of replacement durable tag supplies from vendor",
 	}
 
-	withReq, err := engine.RequestExtension(extReq, act.StateVersion)
+	withReq, err := engine.RequestExtension("ten_synthetic_alpha", extReq, act.StateVersion)
 	if err != nil {
 		t.Fatalf("extension request failed: %v", err)
 	}
@@ -160,6 +161,7 @@ func TestExtension_RequestAndApprovalWorkflow(t *testing.T) {
 
 	// Independent Reviewer approves extension
 	approvedAct, err := engine.ReviewExtension(
+		"ten_synthetic_alpha",
 		actID,
 		"ext_req_01",
 		"usr_reviewer_01",
@@ -197,17 +199,17 @@ func TestExtension_SelfApprovalProhibition(t *testing.T) {
 		DueDate:          t0.Add(24 * time.Hour),
 	})
 
-	act, _ := engine.GetAction(actID)
-	withReq, _ := engine.RequestExtension(workflowaction.ExtensionRequest{
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
+	withReq, _ := engine.RequestExtension("ten_synthetic_alpha", workflowaction.ExtensionRequest{
 		RequestID:        "ext_req_sod_01",
 		ActionID:         actID,
 		RequestedBy:      "usr_capa_owner_01",
 		RequestedDueDate: t0.Add(48 * time.Hour),
 		Reason:           "Fabrication queue delay",
 	}, act.StateVersion)
-
 	// Owner attempts self-approval -> MUST FAIL
 	_, err := engine.ReviewExtension(
+		"ten_synthetic_alpha",
 		actID,
 		"ext_req_sod_01",
 		"usr_capa_owner_01", // same as owner / requester
@@ -237,17 +239,17 @@ func TestExtension_RejectionWorkflow(t *testing.T) {
 		DueDate:          originalDue,
 	})
 
-	act, _ := engine.GetAction(actID)
-	withReq, _ := engine.RequestExtension(workflowaction.ExtensionRequest{
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
+	withReq, _ := engine.RequestExtension("ten_synthetic_alpha", workflowaction.ExtensionRequest{
 		RequestID:        "ext_req_reject_01",
 		ActionID:         actID,
 		RequestedBy:      "usr_capa_owner_01",
 		RequestedDueDate: t0.Add(96 * time.Hour),
 		Reason:           "High maintenance backlog",
 	}, act.StateVersion)
-
 	// Reviewer rejects extension
 	rejectedAct, err := engine.ReviewExtension(
+		"ten_synthetic_alpha",
 		actID,
 		"ext_req_reject_01",
 		"usr_reviewer_02",
@@ -282,10 +284,10 @@ func TestEscalation_RequestAndAcknowledgement(t *testing.T) {
 		DueDate:          t0.Add(12 * time.Hour),
 	})
 
-	act, _ := engine.GetAction(actID)
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
 
 	// Trigger escalation
-	withEsc, err := engine.RequestEscalation(workflowaction.EscalationRequest{
+	withEsc, err := engine.RequestEscalation("ten_synthetic_alpha", workflowaction.EscalationRequest{
 		RequestID:   "esc_req_01",
 		ActionID:    actID,
 		EscalatedBy: "usr_capa_owner_01",
@@ -297,13 +299,14 @@ func TestEscalation_RequestAndAcknowledgement(t *testing.T) {
 	}
 
 	// Self-acknowledgement prohibited
-	_, err = engine.AcknowledgeEscalation(actID, "esc_req_01", "usr_capa_owner_01", "Self ack", withEsc.StateVersion)
+	_, err = engine.AcknowledgeEscalation("ten_synthetic_alpha", actID, "esc_req_01", "usr_capa_owner_01", "Self ack", withEsc.StateVersion)
 	if err != workflowaction.ErrSelfApprovalProhibited {
 		t.Errorf("expected ErrSelfApprovalProhibited on self-acknowledgement, got %v", err)
 	}
 
 	// Plant supervisor acknowledges
 	ackedAct, err := engine.AcknowledgeEscalation(
+		"ten_synthetic_alpha",
 		actID,
 		"esc_req_01",
 		"usr_plant_director_01",
@@ -335,10 +338,10 @@ func TestEvidence_SubmissionAndReviewWorkflow(t *testing.T) {
 		RequiredEvidenceCount: 1,
 	})
 
-	act, _ := engine.GetAction(actID)
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
 
 	// Owner submits evidence photo
-	withEv, err := engine.SubmitEvidence(actID, workflowaction.GovernedEvidence{
+	withEv, err := engine.SubmitEvidence("ten_synthetic_alpha", actID, workflowaction.GovernedEvidence{
 		EvidenceID:  "evd_capa_recharge_photo_01",
 		Digest:      "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",
 		MediaType:   "image/jpeg",
@@ -354,13 +357,14 @@ func TestEvidence_SubmissionAndReviewWorkflow(t *testing.T) {
 	}
 
 	// Submitter cannot review own evidence
-	_, err = engine.ReviewEvidence(actID, "evd_capa_recharge_photo_01", "usr_capa_owner_01", true, "Self ok", withEv.StateVersion)
+	_, err = engine.ReviewEvidence("ten_synthetic_alpha", actID, "evd_capa_recharge_photo_01", "usr_capa_owner_01", true, "Self ok", withEv.StateVersion)
 	if err != workflowaction.ErrSelfApprovalProhibited {
 		t.Errorf("expected ErrSelfApprovalProhibited on self-review, got %v", err)
 	}
 
 	// Reviewer accepts evidence
 	acceptedAct, err := engine.ReviewEvidence(
+		"ten_synthetic_alpha",
 		actID,
 		"evd_capa_recharge_photo_01",
 		"usr_reviewer_01",
@@ -397,7 +401,7 @@ func TestConcurrency_OptimisticLocking(t *testing.T) {
 	})
 
 	// Mutation 1 succeeds with expected version 1
-	updated1, err := engine.ReassignOwner(actID, "usr_capa_owner_02", "CAPA_OWNER", "usr_sup_01", "Rotation", 1)
+	updated1, err := engine.ReassignOwner("ten_synthetic_alpha", actID, "usr_capa_owner_02", "CAPA_OWNER", "usr_sup_01", "Rotation", 1)
 	if err != nil {
 		t.Fatalf("mutation 1 failed: %v", err)
 	}
@@ -406,7 +410,7 @@ func TestConcurrency_OptimisticLocking(t *testing.T) {
 	}
 
 	// Mutation 2 with stale version 1 MUST FAIL with ErrConcurrentModification
-	_, err = engine.ReassignOwner(actID, "usr_capa_owner_03", "CAPA_OWNER", "usr_sup_01", "Conflicting mutation", 1)
+	_, err = engine.ReassignOwner("ten_synthetic_alpha", actID, "usr_capa_owner_03", "CAPA_OWNER", "usr_sup_01", "Conflicting mutation", 1)
 	if err != workflowaction.ErrConcurrentModification {
 		t.Fatalf("expected ErrConcurrentModification on stale version, got %v", err)
 	}
@@ -436,10 +440,10 @@ func TestDuplicatePrevention(t *testing.T) {
 		t.Errorf("expected ErrDuplicateActionID, got %v", err)
 	}
 
-	act, _ := engine.GetAction(actID)
+	act, _ := engine.GetAction("ten_synthetic_alpha", actID)
 
 	// First evidence
-	withEv, err := engine.SubmitEvidence(actID, workflowaction.GovernedEvidence{
+	withEv, err := engine.SubmitEvidence("ten_synthetic_alpha", actID, workflowaction.GovernedEvidence{
 		EvidenceID:  "evd_dup_01",
 		Digest:      "hash123",
 		MediaType:   "image/jpeg",
@@ -450,7 +454,7 @@ func TestDuplicatePrevention(t *testing.T) {
 	}
 
 	// Duplicate evidence ID must fail closed
-	_, err = engine.SubmitEvidence(actID, workflowaction.GovernedEvidence{
+	_, err = engine.SubmitEvidence("ten_synthetic_alpha", actID, workflowaction.GovernedEvidence{
 		EvidenceID:  "evd_dup_01",
 		Digest:      "hash456",
 		MediaType:   "image/png",
@@ -458,5 +462,60 @@ func TestDuplicatePrevention(t *testing.T) {
 	}, withEv.StateVersion)
 	if err != workflowaction.ErrDuplicateEvidenceID {
 		t.Errorf("expected ErrDuplicateEvidenceID, got %v", err)
+	}
+}
+
+func TestActionGovernance_TenantIsolationAndCollisionSafety(t *testing.T) {
+	engine, _, t0 := setupGovernanceEngine()
+
+	sharedID := "act_shared_coll_01"
+	// Tenant Alpha registers action
+	err := engine.RegisterAction(workflowaction.GovernedAction{
+		ActionID:         sharedID,
+		TenantID:         "ten_alpha",
+		FindingID:        "fnd_01",
+		Title:            "Action Alpha",
+		State:            workflowaction.ActionStateInProgress,
+		CurrentOwner:     "usr_alpha_owner",
+		CurrentOwnerRole: "CAPA_OWNER",
+		DueDate:          t0.Add(24 * time.Hour),
+	})
+	if err != nil {
+		t.Fatalf("alpha registration failed: %v", err)
+	}
+
+	// Tenant Bravo registers same action ID -> MUST SUCCEED (collision safe)
+	err = engine.RegisterAction(workflowaction.GovernedAction{
+		ActionID:         sharedID,
+		TenantID:         "ten_bravo",
+		FindingID:        "fnd_02",
+		Title:            "Action Bravo",
+		State:            workflowaction.ActionStateInProgress,
+		CurrentOwner:     "usr_bravo_owner",
+		CurrentOwnerRole: "CAPA_OWNER",
+		DueDate:          t0.Add(48 * time.Hour),
+	})
+	if err != nil {
+		t.Fatalf("bravo registration with same ID failed: %v", err)
+	}
+
+	// Querying cross-tenant fails closed with ErrActionNotFound
+	if _, err := engine.GetAction("ten_charlie", sharedID); err != workflowaction.ErrActionNotFound {
+		t.Fatalf("expected ErrActionNotFound for uncreated tenant, got: %v", err)
+	}
+
+	// Mutating Tenant Alpha does not affect Tenant Bravo
+	actAlpha, _ := engine.GetAction("ten_alpha", sharedID)
+	updatedAlpha, err := engine.ReassignOwner("ten_alpha", sharedID, "usr_alpha_new", "CAPA_OWNER", "usr_sup", "reassign", actAlpha.StateVersion)
+	if err != nil {
+		t.Fatalf("reassign alpha failed: %v", err)
+	}
+	if updatedAlpha.CurrentOwner != "usr_alpha_new" {
+		t.Errorf("expected alpha owner updated")
+	}
+
+	actBravo, _ := engine.GetAction("ten_bravo", sharedID)
+	if actBravo.CurrentOwner != "usr_bravo_owner" {
+		t.Errorf("tenant bravo owner was corrupted by tenant alpha mutation! got: %s", actBravo.CurrentOwner)
 	}
 }

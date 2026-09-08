@@ -37,8 +37,9 @@ func TestReinspection_HappyPath_CompleteVerificationAndClosure(t *testing.T) {
 		t.Fatalf("failed to register action: %v", err)
 	}
 
-	act, _ := actionEngine.GetAction(actID)
+	act, _ := actionEngine.GetAction("ten_syn_alpha", actID)
 	act, err = actionEngine.SubmitEvidence(
+		"ten_syn_alpha",
 		actID,
 		workflowaction.GovernedEvidence{
 			EvidenceID:  "evd_syn_scaffold_clamp_01",
@@ -54,6 +55,7 @@ func TestReinspection_HappyPath_CompleteVerificationAndClosure(t *testing.T) {
 	}
 
 	act, err = actionEngine.ReviewEvidence(
+		"ten_syn_alpha",
 		actID,
 		"evd_syn_scaffold_clamp_01",
 		"usr_reviewer_bob",
@@ -66,6 +68,7 @@ func TestReinspection_HappyPath_CompleteVerificationAndClosure(t *testing.T) {
 	}
 
 	act, err = actionEngine.SubmitEvidence(
+		"ten_syn_alpha",
 		actID,
 		workflowaction.GovernedEvidence{
 			EvidenceID:  "evd_syn_scaffold_tag_02",
@@ -81,6 +84,7 @@ func TestReinspection_HappyPath_CompleteVerificationAndClosure(t *testing.T) {
 	}
 
 	act, err = actionEngine.ReviewEvidence(
+		"ten_syn_alpha",
 		actID,
 		"evd_syn_scaffold_tag_02",
 		"usr_reviewer_bob",
@@ -348,8 +352,9 @@ func TestReinspection_FailClosed_RejectedEvidenceAndDeficiency(t *testing.T) {
 		RequiredEvidenceCount: 1,
 	})
 
-	act, _ := actionEngine.GetAction(actID)
+	act, _ := actionEngine.GetAction("ten_syn_alpha", actID)
 	act, _ = actionEngine.SubmitEvidence(
+		"ten_syn_alpha",
 		actID,
 		workflowaction.GovernedEvidence{
 			EvidenceID:  "evd_syn_pump_01",
@@ -361,6 +366,7 @@ func TestReinspection_FailClosed_RejectedEvidenceAndDeficiency(t *testing.T) {
 
 	// Reviewer rejects evidence
 	_, _ = actionEngine.ReviewEvidence(
+		"ten_syn_alpha",
 		actID,
 		"evd_syn_pump_01",
 		"usr_reviewer_01",
