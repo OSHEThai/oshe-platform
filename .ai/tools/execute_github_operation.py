@@ -27,8 +27,9 @@ def main() -> int:
     try:
         record = load_yaml(args.record)
         now = parse_datetime(args.now) if args.now else datetime.now().astimezone()
-        if record.get("actor", {}).get("execution_route_kind") != "DIRECT_GH_CLI":
-            raise ValueError("gate is not a DIRECT_GH_CLI operation")
+        kind = record.get("actor", {}).get("execution_route_kind")
+        if kind not in {"DIRECT_GH_CLI", "DIRECT_GIT_PUSH"}:
+            raise ValueError("gate is not a supported procedural direct operation")
         errors = evaluate(record, now)
     except Exception as exc:  # pragma: no cover - diagnostic boundary
         print(f"DIRECT_GH_EXECUTION_DENY: {exc}", file=sys.stderr)
@@ -41,6 +42,14 @@ def main() -> int:
         return 1
 
     command = record["execution"]["command"]
+    if kind == "DIRECT_GIT_PUSH":
+        from git_push_validation import execute_push
+        try:
+            return execute_push(record, dry_run=args.dry_run)
+        except Exception as exc:
+            # Git transport/config may contain secrets: do not echo its output.
+            print(f"BOUNDED_GIT_PUSH_DENY: {type(exc).__name__}", file=sys.stderr)
+            return 1
     if args.dry_run:
         print("DIRECT_GH_EXECUTION_DRY_RUN_PASS")
         print(f"gate_id={record['gate_id']}")

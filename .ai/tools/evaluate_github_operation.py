@@ -143,13 +143,17 @@ def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
         errors.append("organization is not allowlisted")
 
     execution_kind = record["actor"].get("execution_route_kind", "AI_PROVIDER")
-    if execution_kind == "DIRECT_GH_CLI":
+    if execution_kind in {"DIRECT_GH_CLI", "DIRECT_GIT_PUSH"}:
         execution = record["execution"]
         command = execution["command"]
         qualified_repository = f"{record['scope']['organization']}/{record['scope']['repository']}"
         if execution["command_digest"] != command_digest(command):
             errors.append("direct gh command digest does not match the exact command")
-        actual_action, actual_action_class = classify_direct_gh_command(command, qualified_repository)
+        if execution_kind == "DIRECT_GIT_PUSH":
+            from git_push_validation import classify_push
+            actual_action, actual_action_class = classify_push(record)
+        else:
+            actual_action, actual_action_class = classify_direct_gh_command(command, qualified_repository)
         if actual_action is None or actual_action_class is None:
             errors.append("direct gh command is unclassified, lacks one exact --repo, or is not permitted through the gate executor")
         else:
@@ -158,7 +162,8 @@ def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
             if record["scope"]["action_class"] != actual_action_class:
                 errors.append("direct gh scope action class does not match the exact command")
         direct_route_id = record["actor"].get("execution_route_id")
-        direct_routes = policy.get("direct_gh_execution_routes") or []
+        route_key = "direct_git_push_routes" if execution_kind == "DIRECT_GIT_PUSH" else "direct_gh_execution_routes"
+        direct_routes = policy.get(route_key) or []
         direct_route = next((item for item in direct_routes if item.get("execution_route_id") == direct_route_id), None)
         if not direct_route or direct_route.get("lifecycle_status") != "APPROVED_ACTIVE":
             errors.append("direct gh execution route is not approved and active")
@@ -176,6 +181,14 @@ def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
                     errors.append("direct gh execution route is inactive or expired")
             except (KeyError, TypeError, ValueError):
                 errors.append("direct gh execution route has an invalid expiry")
+            if execution_kind == "DIRECT_GIT_PUSH":
+                push = execution["push"]
+                if push["remote_url"] != direct_route.get("remote_url"):
+                    errors.append("push remote does not match approved route")
+                if push["destination_branch"] not in direct_route.get("destination_branches", []):
+                    errors.append("push destination is not explicitly approved")
+                if direct_route.get("executor_role_id") != record["actor"]["role_id"] or direct_route.get("required_specialist_profile_id") != record["actor"]["specialist_profile_id"]:
+                    errors.append("push route role/profile mismatch")
     else:
         route_registry = load_yaml(AI_ROOT / "provider-routes" / "ai-service-route-registry.yaml")
         route_id = record["actor"]["provider_route_id"]
@@ -192,7 +205,7 @@ def evaluate(record: dict[str, Any], now: datetime) -> list[str]:
     credential_profile = next((item for item in credential_registry.get("profiles", []) if item.get("credential_profile_id") == credential_id), None)
     if credential_id not in set(credential_registry.get("approved_profile_ids") or []):
         errors.append("GitHub credential profile is not approved")
-    if execution_kind == "DIRECT_GH_CLI":
+    if execution_kind in {"DIRECT_GH_CLI", "DIRECT_GIT_PUSH"}:
         if not credential_profile or credential_profile.get("approval_status") != "APPROVED_ACTIVE":
             errors.append("direct gh credential profile is not approved and active")
         else:

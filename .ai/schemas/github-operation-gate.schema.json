@@ -30,7 +30,7 @@
       "properties": {
         "role_id": {"const": "release-evidence-agent"},
         "specialist_profile_id": {"const": "github-manager"},
-        "execution_route_kind": {"enum": ["AI_PROVIDER", "DIRECT_GH_CLI"]},
+        "execution_route_kind": {"enum": ["AI_PROVIDER", "DIRECT_GH_CLI", "DIRECT_GIT_PUSH"]},
         "execution_route_id": {"type": "string", "minLength": 1},
         "provider_route_id": {"type": ["string", "null"], "minLength": 1},
         "credential_profile_id": {"type": "string", "minLength": 1}
@@ -72,7 +72,8 @@
           "minItems": 4,
           "items": {"type": "string", "minLength": 1}
         },
-        "command_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+        "command_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "push": {"$ref": "#/$defs/boundedPush"}
       },
       "additionalProperties": false
     },
@@ -139,7 +140,7 @@
   "allOf": [
     {
       "if": {
-        "properties": {"actor": {"properties": {"execution_route_kind": {"const": "DIRECT_GH_CLI"}}, "required": ["execution_route_kind"]}}
+        "properties": {"actor": {"properties": {"execution_route_kind": {"enum": ["DIRECT_GH_CLI", "DIRECT_GIT_PUSH"]}}, "required": ["execution_route_kind"]}}
       },
       "then": {
         "required": ["execution"],
@@ -161,9 +162,43 @@
           "evidence": {"required": ["approved_provider_route_validated"]}
         }
       }
+    },
+    {
+      "if": {"properties": {"actor": {"properties": {"execution_route_kind": {"const": "DIRECT_GIT_PUSH"}}, "required": ["execution_route_kind"]}}},
+      "then": {
+        "properties": {
+          "execution": {"required": ["push"]},
+          "scope": {"properties": {"repository": {"const": "oshe-platform"}, "action": {"const": "branch-push"}, "action_class": {"const": "BRANCH_PR"}}},
+          "independent_review": {"properties": {"disposition": {"const": "PASS"}}}
+        }
+      },
+      "else": {"properties": {"execution": {"not": {"required": ["push"]}}}}
     }
   ],
   "$defs": {
+    "evidenceFile": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}},
+      "additionalProperties": false
+    },
+    "boundedPush": {
+      "type": "object",
+      "required": ["worktree", "source_branch", "source_commit", "destination_branch", "remote_url", "expected_remote_oid", "git_executable", "git_executable_sha256", "review_evidence", "test_evidence"],
+      "properties": {
+        "worktree": {"type": "string", "minLength": 1},
+        "source_branch": {"type": "string", "minLength": 1},
+        "source_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "destination_branch": {"type": "string", "minLength": 1},
+        "remote_url": {"const": "https://github.com/OSHEThai/oshe-platform.git"},
+        "expected_remote_oid": {"type": ["string", "null"], "pattern": "^[a-f0-9]{40}$"},
+        "git_executable": {"type": "string", "minLength": 1},
+        "git_executable_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "review_evidence": {"$ref": "#/$defs/evidenceFile"},
+        "test_evidence": {"$ref": "#/$defs/evidenceFile"}
+      },
+      "additionalProperties": false
+    },
     "evidenceItem": {
       "type": "object",
       "required": ["satisfied", "refs"],

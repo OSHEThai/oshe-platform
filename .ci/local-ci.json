@@ -14,6 +14,7 @@
         "tests.test_database_ordering",
         "tests.test_evidence_bundle",
         "tests.test_foundation_negative_qualification",
+        "tests.test_git_push_gate",
         "tests.test_local_ci",
         "tests.test_mission_rehearsal",
         "tests.test_permission_delegation",
