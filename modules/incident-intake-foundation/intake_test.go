@@ -40,14 +40,22 @@ func TestSubmitDefaultDeniesDuplicateAndCrossTenantLookup(t *testing.T) {
 
 func TestSubmitRejectsDelimiterShapedCrossTenantCollision(t *testing.T) {
 	r := NewRegistry()
-	if _, err := r.Submit("int_bravo:charlie", "ten_alpha", "ref_reporter_alpha", "sub_submitter_alpha", instant); err != nil {
+	if _, err := r.Submit("int_bravo:int_charlie", "ten_alpha", "ref_reporter_alpha", "sub_submitter_alpha", instant); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := r.Get("ten_alpha:int_bravo", "int_charlie"); !errors.Is(err, ErrIntakeNotFound) {
+		t.Fatalf("former collision-shaped cross-tenant lookup must default-deny: %v", err)
 	}
 	if _, err := r.Submit("int_charlie", "ten_alpha:int_bravo", "ref_reporter_bravo", "sub_submitter_bravo", instant); err != nil {
 		t.Fatalf("distinct typed tenant and intake key must not collide: %v", err)
 	}
-	if _, err := r.Get("ten_alpha:int_bravo", "int_bravo:charlie"); !errors.Is(err, ErrIntakeNotFound) {
-		t.Fatalf("delimiter-shaped cross-tenant lookup must default-deny: %v", err)
+	first, err := r.Get("ten_alpha", "int_bravo:int_charlie")
+	if err != nil || first.ReporterRef != "ref_reporter_alpha" {
+		t.Fatalf("first formerly colliding intake must remain isolated: %+v err=%v", first, err)
+	}
+	second, err := r.Get("ten_alpha:int_bravo", "int_charlie")
+	if err != nil || second.ReporterRef != "ref_reporter_bravo" {
+		t.Fatalf("second formerly colliding intake must remain isolated: %+v err=%v", second, err)
 	}
 }
 
