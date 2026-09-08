@@ -21,6 +21,7 @@ Stakeholder snapshots remain in Drive; engineering-authoritative records are ver
 - [v0.4.0 OSHE Inspect Private Alpha Foundation Decisions (H040-001 through H040-006 Approved / H040-007 through H040-011 HOLD)](v040-foundation-decision.md) (`ARC-V040-DECREC-001` / `HDEC-V040-FOUNDATION-054` / `V040-I001`)
 - [v0.5.0 Workforce and Incident Alpha Foundation Boundaries](v050-foundation-decision.md) (`ARC-V050-DECREC-001` / `HDEC-V050-WAVE0-EXECUTION-ACTIVATION-001` / `V050-E001`)
 - [v0.5.0 Workforce and Incident Domain Data Authority Baseline](v050-domain-data-authority-baseline.md) (`ARC-V050-DOMAIN-001` / `HDEC-V050-E002-EXECUTION-ACTIVATION-008` / `V050-E002`)
+- [v0.5.0 Workforce and Incident Supported Alpha Profile](v050-supported-alpha-profile-baseline.md) (`ARC-V050-PROF-001` / `HDEC-V050-E003-EXECUTION-ACTIVATION-014` / `V050-E003`)
 
 ## Assurance Cases
 
