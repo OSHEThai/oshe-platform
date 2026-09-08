@@ -81,14 +81,32 @@ class LocalStackContractTests(unittest.TestCase):
         self.assertEqual(len(matches), 0, "A digest in a comment should not satisfy parity")
 
     @staticmethod
-    def _has_valid_corepack_launcher(dockerfile: str) -> bool:
-        has_direct_copy = bool(re.search(r"COPY\s+--from=node\s+/usr/local/bin/corepack\s+/usr/local/bin/corepack", dockerfile))
+    def _active_dockerfile_content(dockerfile: str) -> str:
+        """Strips comment lines and empty lines to isolate active instructions."""
+        return "\n".join(
+            line for line in dockerfile.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+
+    @classmethod
+    def _has_valid_corepack_launcher(cls, dockerfile: str) -> bool:
+        active = cls._active_dockerfile_content(dockerfile)
+        has_direct_copy = bool(
+            re.search(r"^\s*COPY\s+--from=node\s+/usr/local/bin/corepack\s+/usr/local/bin/corepack\s*$", active, re.MULTILINE)
+        )
         has_symlink_construction = bool(
-            re.search(r"COPY\s+--from=node\s+/usr/local/lib/node_modules\s+/usr/local/lib/node_modules", dockerfile)
-            and re.search(r"COPY\s+--from=node\s+/usr/local/bin/node\s+/usr/local/bin/node", dockerfile)
-            and re.search(r"ln\s+-s\s+(?:\.\./lib/node_modules|/usr/local/lib/node_modules)/corepack/dist/corepack\.js\s+/usr/local/bin/corepack", dockerfile)
+            re.search(r"^\s*COPY\s+--from=node\s+/usr/local/lib/node_modules\s+/usr/local/lib/node_modules\s*$", active, re.MULTILINE)
+            and re.search(r"^\s*COPY\s+--from=node\s+/usr/local/bin/node\s+/usr/local/bin/node\s*$", active, re.MULTILINE)
+            and re.search(r"^\s*RUN\s+.*ln\s+-s\s+(?:\.\./lib/node_modules|/usr/local/lib/node_modules)/corepack/dist/corepack\.js\s+/usr/local/bin/corepack", active, re.MULTILINE)
         )
         return has_direct_copy or has_symlink_construction
+
+    @classmethod
+    def _has_valid_corepack_activation(cls, dockerfile: str) -> bool:
+        active = cls._active_dockerfile_content(dockerfile)
+        return bool(
+            re.search(r"^\s*RUN\s+.*corepack\s+enable(?:\s+&&\s+corepack\s+prepare\s+pnpm@\d+\.\d+\.\d+\s+--activate)?", active, re.MULTILINE)
+        )
 
     def test_devcontainer_viability_and_security(self) -> None:
         dockerfile = (ROOT / ".devcontainer" / "Dockerfile").read_text(encoding="utf-8")
@@ -101,12 +119,11 @@ class LocalStackContractTests(unittest.TestCase):
         self.assertRegex(dockerfile, r"(?s)addgroup -g 1000 vscode.*?adduser -u 1000 -G vscode", "vscode user not created")
         self.assertTrue(
             self._has_valid_corepack_launcher(dockerfile),
-            "corepack launcher missing: expected supported equivalent construction (direct COPY or symlink to corepack.js with node_modules)",
+            "corepack launcher missing: expected supported active equivalent construction (direct COPY or symlink to corepack.js with node_modules)",
         )
-        self.assertRegex(
-            dockerfile,
-            r"corepack\s+enable(?:\s+&&\s+corepack\s+prepare\s+pnpm@\d+\.\d+\.\d+\s+--activate)?",
-            "corepack activation instruction missing",
+        self.assertTrue(
+            self._has_valid_corepack_activation(dockerfile),
+            "corepack activation instruction missing or commented out",
         )
         
         self.assertNotIn("postCreateCommand", dev_cfg)
@@ -144,6 +161,33 @@ class LocalStackContractTests(unittest.TestCase):
         )
         with self.assertRaises(AssertionError):
             self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_bad_target))
+
+        # Comment-only direct COPY must be rejected
+        bad_dockerfile_comment_copy = (
+            "# COPY --from=node /usr/local/bin/corepack /usr/local/bin/corepack\n"
+            "FROM python:3.14.7-alpine\n"
+        )
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_comment_copy))
+
+        # Comment-only symlink line must be rejected
+        bad_dockerfile_comment_symlink = (
+            "COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules\n"
+            "COPY --from=node /usr/local/bin/node /usr/local/bin/node\n"
+            "# RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack\n"
+        )
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_launcher(bad_dockerfile_comment_symlink))
+
+        # Comment-only activation line must be rejected
+        bad_dockerfile_comment_activation = (
+            "COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules\n"
+            "COPY --from=node /usr/local/bin/node /usr/local/bin/node\n"
+            "RUN ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack\n"
+            "# RUN apk add --no-cache libstdc++ libgcc && corepack enable && corepack prepare pnpm@11.24.0 --activate\n"
+        )
+        with self.assertRaises(AssertionError):
+            self.assertTrue(self._has_valid_corepack_activation(bad_dockerfile_comment_activation))
 
     def test_fail_closed_native_compose_regression(self) -> None:
         bootstrap = (ROOT / "deploy" / "local" / "bootstrap.ps1").read_text(encoding="utf-8")
