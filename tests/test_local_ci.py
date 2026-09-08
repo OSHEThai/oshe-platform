@@ -83,6 +83,15 @@ class LocalCiTests(unittest.TestCase):
         )
         self.assertEqual(supply_chain_checks[0].get("id"), "supply-chain-verification")
 
+    def test_repository_configuration_includes_go_test_suite_check(self) -> None:
+        root = self.make_repo([{"id": "pass", "command": ["python", "-c", "print('ok')"]}])
+        (root / "tools").mkdir()
+        (root / "tools" / "run_go_tests.py").write_text("print('go tests ok')", encoding="utf-8")
+        completed = self.run_ci(root, "--mode", "incremental", "--no-checkpoint")
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn("RUN  go-test-suite: python tools/run_go_tests.py", completed.stdout)
+        self.assertIn("PASS go-test-suite", completed.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

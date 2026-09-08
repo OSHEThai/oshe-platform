@@ -97,6 +97,10 @@ def main() -> int:
     if not isinstance(checks, list) or not checks:
         parser.error("CI configuration must contain at least one check.")
 
+    go_runner = root / "tools" / "run_go_tests.py"
+    if go_runner.is_file() and not any(isinstance(c, dict) and c.get("id") == "go-test-suite" for c in checks):
+        checks = list(checks) + [{"id": "go-test-suite", "command": ["python", "tools/run_go_tests.py"]}]
+
     state_path = root / ".local-ci" / "checkpoints.json"
     checkpoints: dict[str, Any] = {"schema_version": "1.0.0", "checks": {}}
     if state_path.is_file():
