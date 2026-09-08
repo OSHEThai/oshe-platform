@@ -195,55 +195,78 @@ type IntegrityLinkage struct {
 	Original OriginalRecord `json:"original"`
 }
 
+type objectKey struct {
+	tenantID string
+	objectID string
+}
+
 // IntegrityRegistry provides an in-memory, thread-safe registry that governs
 // the lifecycle, immutability, and derived-linkage validation for records.
 type IntegrityRegistry struct {
 	mu        sync.RWMutex
-	originals map[string]OriginalRecord
-	derived   map[string]DerivedRecord
+	originals map[objectKey]OriginalRecord
+	derived   map[objectKey]DerivedRecord
 }
 
 // NewIntegrityRegistry initializes a new empty registry.
 func NewIntegrityRegistry() *IntegrityRegistry {
 	return &IntegrityRegistry{
-		originals: make(map[string]OriginalRecord),
-		derived:   make(map[string]DerivedRecord),
+		originals: make(map[objectKey]OriginalRecord),
+		derived:   make(map[objectKey]DerivedRecord),
 	}
 }
 
 // RegisterOriginal registers an original record.
 // If the objectID already exists as an accepted original, overwrite is denied.
 // If the objectID already exists as draft, it cannot be registered twice.
-func (reg *IntegrityRegistry) RegisterOriginal(rec OriginalRecord) error {
+func (reg *IntegrityRegistry) RegisterOriginal(trustedTenantID string, rec OriginalRecord) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	if rec.objectID == "" {
+	tenantID := strings.TrimSpace(trustedTenantID)
+	if tenantID == "" {
+		return ErrBlankTenantID
+	}
+	if recTenant := strings.TrimSpace(rec.tenantID); recTenant != "" && recTenant != tenantID {
+		return ErrCrossTenantLinkage
+	}
+	objectID := strings.TrimSpace(rec.objectID)
+	if objectID == "" {
 		return ErrBlankID
 	}
 
-	if existing, exists := reg.originals[rec.objectID]; exists {
+	k := objectKey{tenantID: tenantID, objectID: objectID}
+	if existing, exists := reg.originals[k]; exists {
 		if existing.state == StateAccepted {
 			return ErrOriginalOverwriteDenied
 		}
 		return ErrDuplicateObjectID
 	}
 
-	if _, exists := reg.derived[rec.objectID]; exists {
+	if _, exists := reg.derived[k]; exists {
 		return ErrDuplicateObjectID
 	}
 
-	reg.originals[rec.objectID] = rec
+	reg.originals[k] = rec
 	return nil
 }
 
 // AcceptOriginal transitions an original record from DRAFT to ACCEPTED.
 // Once ACCEPTED, the original becomes permanently immutable against overwrite or mutation.
-func (reg *IntegrityRegistry) AcceptOriginal(objectID string) error {
+func (reg *IntegrityRegistry) AcceptOriginal(tenantID, objectID string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(objectID)
+	if tID == "" {
+		return ErrBlankID
+	}
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	rec, exists := reg.originals[objectID]
+	k := objectKey{tenantID: tTenant, objectID: tID}
+	rec, exists := reg.originals[k]
 	if !exists {
 		return ErrUnknownParent
 	}
@@ -259,16 +282,25 @@ func (reg *IntegrityRegistry) AcceptOriginal(objectID string) error {
 	}
 
 	rec.state = StateAccepted
-	reg.originals[objectID] = rec
+	reg.originals[k] = rec
 	return nil
 }
 
 // ArchiveOriginal transitions an accepted original to ARCHIVED state.
-func (reg *IntegrityRegistry) ArchiveOriginal(objectID string) error {
+func (reg *IntegrityRegistry) ArchiveOriginal(tenantID, objectID string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(objectID)
+	if tID == "" {
+		return ErrBlankID
+	}
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	rec, exists := reg.originals[objectID]
+	k := objectKey{tenantID: tTenant, objectID: tID}
+	rec, exists := reg.originals[k]
 	if !exists {
 		return ErrUnknownParent
 	}
@@ -280,7 +312,7 @@ func (reg *IntegrityRegistry) ArchiveOriginal(objectID string) error {
 	}
 
 	rec.state = StateArchived
-	reg.originals[objectID] = rec
+	reg.originals[k] = rec
 	return nil
 }
 
@@ -290,23 +322,33 @@ func (reg *IntegrityRegistry) ArchiveOriginal(objectID string) error {
 // - parent does not exist (ErrUnknownParent)
 // - parent is not in ACCEPTED state (ErrParentNotAccepted)
 // - derived object tenant does not match parent original tenant (ErrCrossTenantLinkage)
-func (reg *IntegrityRegistry) RegisterDerived(rec DerivedRecord) error {
+func (reg *IntegrityRegistry) RegisterDerived(trustedTenantID string, rec DerivedRecord) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	if rec.objectID == "" {
+	tenantID := strings.TrimSpace(trustedTenantID)
+	if tenantID == "" {
+		return ErrBlankTenantID
+	}
+	if recTenant := strings.TrimSpace(rec.tenantID); recTenant != "" && recTenant != tenantID {
+		return ErrCrossTenantLinkage
+	}
+	objectID := strings.TrimSpace(rec.objectID)
+	if objectID == "" {
 		return ErrBlankID
 	}
 
+	k := objectKey{tenantID: tenantID, objectID: objectID}
 	// Cannot treat original as derived
-	if _, exists := reg.originals[rec.objectID]; exists {
+	if _, exists := reg.originals[k]; exists {
 		return ErrOriginalAsDerivedDenied
 	}
-	if _, exists := reg.derived[rec.objectID]; exists {
+	if _, exists := reg.derived[k]; exists {
 		return ErrDuplicateObjectID
 	}
 
-	parent, parentExists := reg.originals[rec.parentID]
+	parentKey := objectKey{tenantID: tenantID, objectID: strings.TrimSpace(rec.parentID)}
+	parent, parentExists := reg.originals[parentKey]
 	if !parentExists {
 		return ErrUnknownParent
 	}
@@ -319,16 +361,25 @@ func (reg *IntegrityRegistry) RegisterDerived(rec DerivedRecord) error {
 		return ErrCrossTenantLinkage
 	}
 
-	reg.derived[rec.objectID] = rec
+	reg.derived[k] = rec
 	return nil
 }
 
 // AcceptDerived transitions a derived record from DRAFT to ACCEPTED.
-func (reg *IntegrityRegistry) AcceptDerived(objectID string) error {
+func (reg *IntegrityRegistry) AcceptDerived(tenantID, objectID string) error {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(objectID)
+	if tID == "" {
+		return ErrBlankID
+	}
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	rec, exists := reg.derived[objectID]
+	k := objectKey{tenantID: tTenant, objectID: tID}
+	rec, exists := reg.derived[k]
 	if !exists {
 		return ErrUnknownParent
 	}
@@ -344,7 +395,7 @@ func (reg *IntegrityRegistry) AcceptDerived(objectID string) error {
 	}
 
 	rec.state = StateAccepted
-	reg.derived[objectID] = rec
+	reg.derived[k] = rec
 	return nil
 }
 
@@ -357,19 +408,24 @@ func (reg *IntegrityRegistry) AcceptDerived(objectID string) error {
 // - Unknown parent original (ErrUnknownParent)
 // - Unaccepted parent original (ErrParentNotAccepted)
 func (reg *IntegrityRegistry) VerifyIntegrityLinkage(derivedID, callerTenantID, expectedDigest string) (IntegrityLinkage, error) {
+	tCaller := strings.TrimSpace(callerTenantID)
+	if tCaller == "" {
+		return IntegrityLinkage{}, ErrBlankTenantID
+	}
+	tDerived := strings.TrimSpace(derivedID)
+	if tDerived == "" {
+		return IntegrityLinkage{}, ErrBlankID
+	}
+
 	reg.mu.RLock()
 	defer reg.mu.RUnlock()
 
-	if strings.TrimSpace(callerTenantID) == "" {
-		return IntegrityLinkage{}, ErrBlankTenantID
-	}
-
-	derived, exists := reg.derived[derivedID]
+	k := objectKey{tenantID: tCaller, objectID: tDerived}
+	derived, exists := reg.derived[k]
 	if !exists {
 		return IntegrityLinkage{}, ErrUnknownParent
 	}
-
-	if derived.tenantID != strings.TrimSpace(callerTenantID) {
+	if derived.tenantID != tCaller {
 		return IntegrityLinkage{}, ErrCrossTenantLinkage
 	}
 
@@ -381,11 +437,11 @@ func (reg *IntegrityRegistry) VerifyIntegrityLinkage(derivedID, callerTenantID, 
 		return IntegrityLinkage{}, ErrDigestMismatch
 	}
 
-	parent, parentExists := reg.originals[derived.parentID]
+	parentKey := objectKey{tenantID: derived.tenantID, objectID: derived.parentID}
+	parent, parentExists := reg.originals[parentKey]
 	if !parentExists {
 		return IntegrityLinkage{}, ErrUnknownParent
 	}
-
 	if parent.tenantID != derived.tenantID {
 		return IntegrityLinkage{}, ErrCrossTenantLinkage
 	}

@@ -36,16 +36,16 @@ func TestOriginal_CreationAndAcceptance(t *testing.T) {
 	}
 
 	reg := recordsaudit.NewIntegrityRegistry()
-	if err := reg.RegisterOriginal(orig); err != nil {
+	if err := reg.RegisterOriginal("ten_alpha", orig); err != nil {
 		t.Fatalf("unexpected registration error: %v", err)
 	}
 
-	if err := reg.AcceptOriginal("orig_001"); err != nil {
+	if err := reg.AcceptOriginal("ten_alpha", "orig_001"); err != nil {
 		t.Fatalf("unexpected acceptance error: %v", err)
 	}
 
 	// Idempotent acceptance
-	if err := reg.AcceptOriginal("orig_001"); err != nil {
+	if err := reg.AcceptOriginal("ten_alpha", "orig_001"); err != nil {
 		t.Fatalf("unexpected error on idempotent acceptance: %v", err)
 	}
 }
@@ -56,10 +56,10 @@ func TestOriginal_ImmutableOverwriteDenial(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if err := reg.RegisterOriginal(orig); err != nil {
+	if err := reg.RegisterOriginal("ten_alpha", orig); err != nil {
 		t.Fatalf("unexpected registration error: %v", err)
 	}
-	if err := reg.AcceptOriginal("orig_002"); err != nil {
+	if err := reg.AcceptOriginal("ten_alpha", "orig_002"); err != nil {
 		t.Fatalf("unexpected accept error: %v", err)
 	}
 
@@ -69,7 +69,7 @@ func TestOriginal_ImmutableOverwriteDenial(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	err = reg.RegisterOriginal(tamperedOrig)
+	err = reg.RegisterOriginal("ten_alpha", tamperedOrig)
 	if !errors.Is(err, recordsaudit.ErrOriginalOverwriteDenied) {
 		t.Fatalf("expected ErrOriginalOverwriteDenied, got: %v", err)
 	}
@@ -119,13 +119,13 @@ func TestOriginal_InputValidation(t *testing.T) {
 func TestDuplicateMediaIdentityHandling(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("dup_001", "ten_alpha", "image/png", 100, validDigestOriginal, time.Time{})
-	if err := reg.RegisterOriginal(orig); err != nil {
+	if err := reg.RegisterOriginal("ten_alpha", orig); err != nil {
 		t.Fatalf("first register failed: %v", err)
 	}
 
 	// Re-registering draft with same ID
 	orig2, _ := recordsaudit.NewOriginalRecord("dup_001", "ten_alpha", "image/png", 200, validDigestOriginal, time.Time{})
-	if err := reg.RegisterOriginal(orig2); !errors.Is(err, recordsaudit.ErrDuplicateObjectID) {
+	if err := reg.RegisterOriginal("ten_alpha", orig2); !errors.Is(err, recordsaudit.ErrDuplicateObjectID) {
 		t.Fatalf("expected ErrDuplicateObjectID, got %v", err)
 	}
 }
@@ -133,8 +133,8 @@ func TestDuplicateMediaIdentityHandling(t *testing.T) {
 func TestDerived_LinkageAndIntegrity(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("orig_parent", "ten_alpha", "image/png", 1024, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(orig)
-	_ = reg.AcceptOriginal("orig_parent")
+	_ = reg.RegisterOriginal("ten_alpha", orig)
+	_ = reg.AcceptOriginal("ten_alpha", "orig_parent")
 
 	derivedKinds := []recordsaudit.DerivedKind{
 		recordsaudit.DerivedAnnotation,
@@ -150,11 +150,11 @@ func TestDerived_LinkageAndIntegrity(t *testing.T) {
 			t.Fatalf("failed to create derived record for %s: %v", kind, err)
 		}
 
-		if err := reg.RegisterDerived(der); err != nil {
+		if err := reg.RegisterDerived("ten_alpha", der); err != nil {
 			t.Fatalf("failed to register derived record for %s: %v", kind, err)
 		}
 
-		if err := reg.AcceptDerived(derivedID); err != nil {
+		if err := reg.AcceptDerived("ten_alpha", derivedID); err != nil {
 			t.Fatalf("failed to accept derived record for %s: %v", kind, err)
 		}
 
@@ -180,16 +180,16 @@ func TestDerived_UnknownAndUnacceptedParent(t *testing.T) {
 
 	// 1. Unknown parent
 	der, _ := recordsaudit.NewDerivedRecord("der_no_parent", "ten_alpha", "nonexistent_parent", recordsaudit.DerivedThumbnail, "image/png", 100, validDigestDerived, time.Time{})
-	if err := reg.RegisterDerived(der); !errors.Is(err, recordsaudit.ErrUnknownParent) {
+	if err := reg.RegisterDerived("ten_alpha", der); !errors.Is(err, recordsaudit.ErrUnknownParent) {
 		t.Fatalf("expected ErrUnknownParent, got %v", err)
 	}
 
 	// 2. Parent exists but is DRAFT (not ACCEPTED)
 	origDraft, _ := recordsaudit.NewOriginalRecord("orig_draft", "ten_alpha", "image/png", 500, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(origDraft)
+	_ = reg.RegisterOriginal("ten_alpha", origDraft)
 
 	der2, _ := recordsaudit.NewDerivedRecord("der_draft_parent", "ten_alpha", "orig_draft", recordsaudit.DerivedThumbnail, "image/png", 100, validDigestDerived, time.Time{})
-	if err := reg.RegisterDerived(der2); !errors.Is(err, recordsaudit.ErrParentNotAccepted) {
+	if err := reg.RegisterDerived("ten_alpha", der2); !errors.Is(err, recordsaudit.ErrParentNotAccepted) {
 		t.Fatalf("expected ErrParentNotAccepted, got %v", err)
 	}
 }
@@ -197,35 +197,40 @@ func TestDerived_UnknownAndUnacceptedParent(t *testing.T) {
 func TestDerived_CrossTenantDenial(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("orig_tenant_a", "tenant_a", "image/png", 1024, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(orig)
-	_ = reg.AcceptOriginal("orig_tenant_a")
+	_ = reg.RegisterOriginal("tenant_a", orig)
+	_ = reg.AcceptOriginal("tenant_a", "orig_tenant_a")
 
-	// Attempt to register derived object with tenant_b linked to tenant_a original
+	// Attempt to register derived object in tenant_b linked to unshared tenant_a original -> uniform ErrUnknownParent
 	derCross, _ := recordsaudit.NewDerivedRecord("der_tenant_b", "tenant_b", "orig_tenant_a", recordsaudit.DerivedRedaction, "image/png", 100, validDigestDerived, time.Time{})
-	err := reg.RegisterDerived(derCross)
-	if !errors.Is(err, recordsaudit.ErrCrossTenantLinkage) {
-		t.Fatalf("expected ErrCrossTenantLinkage on RegisterDerived, got %v", err)
+	err := reg.RegisterDerived("tenant_b", derCross)
+	if !errors.Is(err, recordsaudit.ErrUnknownParent) {
+		t.Fatalf("expected ErrUnknownParent on RegisterDerived without foreign enumeration, got %v", err)
+	}
+
+	// Mismatched trusted tenant on derived registration fails closed with ErrCrossTenantLinkage
+	if err := reg.RegisterDerived("tenant_a", derCross); !errors.Is(err, recordsaudit.ErrCrossTenantLinkage) {
+		t.Fatalf("expected ErrCrossTenantLinkage on mismatched trusted tenant scope, got %v", err)
 	}
 
 	// Valid derived registered under tenant_a
 	derValid, _ := recordsaudit.NewDerivedRecord("der_tenant_a", "tenant_a", "orig_tenant_a", recordsaudit.DerivedRedaction, "image/png", 100, validDigestDerived, time.Time{})
-	_ = reg.RegisterDerived(derValid)
+	_ = reg.RegisterDerived("tenant_a", derValid)
 
-	// Caller attempts to verify linkage under tenant_b scope
+	// Caller attempts to verify linkage under tenant_b scope -> uniform ErrUnknownParent without leakage
 	_, err = reg.VerifyIntegrityLinkage("der_tenant_a", "tenant_b", validDigestDerived)
-	if !errors.Is(err, recordsaudit.ErrCrossTenantLinkage) {
-		t.Fatalf("expected ErrCrossTenantLinkage on VerifyIntegrityLinkage with mismatched caller scope, got %v", err)
+	if !errors.Is(err, recordsaudit.ErrUnknownParent) {
+		t.Fatalf("expected ErrUnknownParent on VerifyIntegrityLinkage with unshared foreign record, got %v", err)
 	}
 }
 
 func TestDerived_OriginalAsDerivedConfusionDenial(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("entity_001", "ten_alpha", "image/png", 1024, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(orig)
+	_ = reg.RegisterOriginal("ten_alpha", orig)
 
 	// Attempting to register entity_001 as derived
 	der, _ := recordsaudit.NewDerivedRecord("entity_001", "ten_alpha", "orig_other", recordsaudit.DerivedAnnotation, "application/json", 100, validDigestDerived, time.Time{})
-	err := reg.RegisterDerived(der)
+	err := reg.RegisterDerived("ten_alpha", der)
 	if !errors.Is(err, recordsaudit.ErrOriginalAsDerivedDenied) {
 		t.Fatalf("expected ErrOriginalAsDerivedDenied, got %v", err)
 	}
@@ -234,11 +239,11 @@ func TestDerived_OriginalAsDerivedConfusionDenial(t *testing.T) {
 func TestVerifyIntegrityLinkage_TamperDigestFailure(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("orig_verify", "ten_alpha", "image/png", 1024, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(orig)
-	_ = reg.AcceptOriginal("orig_verify")
+	_ = reg.RegisterOriginal("ten_alpha", orig)
+	_ = reg.AcceptOriginal("ten_alpha", "orig_verify")
 
 	der, _ := recordsaudit.NewDerivedRecord("der_verify", "ten_alpha", "orig_verify", recordsaudit.DerivedThumbnail, "image/png", 200, validDigestDerived, time.Time{})
-	_ = reg.RegisterDerived(der)
+	_ = reg.RegisterDerived("ten_alpha", der)
 
 	// Verify with tampered digest
 	_, err := reg.VerifyIntegrityLinkage("der_verify", "ten_alpha", tamperedDigest)
@@ -262,22 +267,60 @@ func TestVerifyIntegrityLinkage_TamperDigestFailure(t *testing.T) {
 func TestLifecycle_InvalidTransitions(t *testing.T) {
 	reg := recordsaudit.NewIntegrityRegistry()
 	orig, _ := recordsaudit.NewOriginalRecord("orig_life", "ten_alpha", "image/png", 1024, validDigestOriginal, time.Time{})
-	_ = reg.RegisterOriginal(orig)
+	_ = reg.RegisterOriginal("ten_alpha", orig)
 
 	// Direct archive from DRAFT must fail
-	err := reg.ArchiveOriginal("orig_life")
+	err := reg.ArchiveOriginal("ten_alpha", "orig_life")
 	if !errors.Is(err, recordsaudit.ErrInvalidLifecycleTransition) {
 		t.Fatalf("expected ErrInvalidLifecycleTransition from DRAFT->ARCHIVED, got %v", err)
 	}
 
-	_ = reg.AcceptOriginal("orig_life")
-	if err := reg.ArchiveOriginal("orig_life"); err != nil {
+	_ = reg.AcceptOriginal("ten_alpha", "orig_life")
+	if err := reg.ArchiveOriginal("ten_alpha", "orig_life"); err != nil {
 		t.Fatalf("expected successful archive from ACCEPTED, got %v", err)
 	}
 
 	// Attempt to re-accept archived record
-	err = reg.AcceptOriginal("orig_life")
+	err = reg.AcceptOriginal("ten_alpha", "orig_life")
 	if !errors.Is(err, recordsaudit.ErrRecordArchived) {
 		t.Fatalf("expected ErrRecordArchived, got %v", err)
+	}
+}
+
+func TestIntegrityRegistry_TenantIsolationAndCollisionSafety(t *testing.T) {
+	reg := recordsaudit.NewIntegrityRegistry()
+	sharedID := "evidence_media_shared_001"
+
+	// Tenant Alpha registers original
+	origA, err := recordsaudit.NewOriginalRecord(sharedID, "ten_alpha", "image/png", 1024, validDigestOriginal, time.Time{})
+	if err != nil {
+		t.Fatalf("setup origA failed: %v", err)
+	}
+	if err := reg.RegisterOriginal("ten_alpha", origA); err != nil {
+		t.Fatalf("register origA failed: %v", err)
+	}
+
+	// Tenant Bravo registers same object ID -> MUST SUCCEED (collision safe)
+	origB, err := recordsaudit.NewOriginalRecord(sharedID, "ten_bravo", "image/png", 2048, validDigestDerived, time.Time{})
+	if err != nil {
+		t.Fatalf("setup origB failed: %v", err)
+	}
+	if err := reg.RegisterOriginal("ten_bravo", origB); err != nil {
+		t.Fatalf("register origB with same ID in ten_bravo must succeed, got: %v", err)
+	}
+
+	// Tenant Bravo accepts its own original; Tenant Alpha's original remains in DRAFT
+	if err := reg.AcceptOriginal("ten_bravo", sharedID); err != nil {
+		t.Fatalf("accept origB failed: %v", err)
+	}
+
+	// Cross-tenant accept fails closed with ErrUnknownParent
+	if err := reg.AcceptOriginal("ten_charlie", sharedID); !errors.Is(err, recordsaudit.ErrUnknownParent) {
+		t.Fatalf("expected ErrUnknownParent for cross-tenant accept, got: %v", err)
+	}
+
+	// Cross-tenant archive fails closed with ErrUnknownParent
+	if err := reg.ArchiveOriginal("ten_charlie", sharedID); !errors.Is(err, recordsaudit.ErrUnknownParent) {
+		t.Fatalf("expected ErrUnknownParent for cross-tenant archive, got: %v", err)
 	}
 }

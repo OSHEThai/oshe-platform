@@ -142,11 +142,16 @@ type GovernedAction struct {
 	UpdatedAt              time.Time            `json:"updated_at"`
 }
 
+type actionKey struct {
+	tenantID string
+	actionID string
+}
+
 // ActionGovernanceEngine coordinates thread-safe, audited action governance.
 type ActionGovernanceEngine struct {
 	mu      sync.RWMutex
 	clock   Clock
-	actions map[string]*GovernedAction
+	actions map[actionKey]*GovernedAction
 }
 
 // NewActionGovernanceEngine constructs a new ActionGovernanceEngine.
@@ -156,23 +161,32 @@ func NewActionGovernanceEngine(clock Clock) *ActionGovernanceEngine {
 	}
 	return &ActionGovernanceEngine{
 		clock:   clock,
-		actions: make(map[string]*GovernedAction),
+		actions: make(map[actionKey]*GovernedAction),
 	}
 }
 
 // RegisterAction adds an initial governed action to the engine.
-func (e *ActionGovernanceEngine) RegisterAction(act GovernedAction) error {
+func (e *ActionGovernanceEngine) RegisterAction(trustedTenantID string, act GovernedAction) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	tTenant := strings.TrimSpace(trustedTenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	if actTenant := strings.TrimSpace(act.TenantID); actTenant != "" && actTenant != tTenant {
+		return ErrCrossTenantDenied
+	}
+	act.TenantID = tTenant
 
 	id := strings.TrimSpace(act.ActionID)
 	if id == "" {
 		return ErrBlankActionID
 	}
-	if _, exists := e.actions[id]; exists {
+	k := actionKey{tenantID: tTenant, actionID: id}
+	if _, exists := e.actions[k]; exists {
 		return ErrDuplicateActionID
 	}
-
 	now := e.clock().UTC()
 	if act.CreatedAt.IsZero() {
 		act.CreatedAt = now
@@ -194,16 +208,24 @@ func (e *ActionGovernanceEngine) RegisterAction(act GovernedAction) error {
 	}
 
 	copyAct := act
-	e.actions[id] = &copyAct
+	e.actions[k] = &copyAct
 	return nil
 }
 
 // GetAction returns a snapshot copy of a governed action.
-func (e *ActionGovernanceEngine) GetAction(actionID string) (GovernedAction, error) {
+func (e *ActionGovernanceEngine) GetAction(tenantID, actionID string) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -212,13 +234,21 @@ func (e *ActionGovernanceEngine) GetAction(actionID string) (GovernedAction, err
 
 // ReassignOwner transfers action custody to a new owner, preserving prior ownership history.
 func (e *ActionGovernanceEngine) ReassignOwner(
-	actionID, newOwner, newRole, callerSubject, reason string,
+	tenantID, actionID, newOwner, newRole, callerSubject, reason string,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -262,13 +292,21 @@ func (e *ActionGovernanceEngine) ReassignOwner(
 
 // RevokeOwner revokes the current owner's assignment without assigning an immediate successor.
 func (e *ActionGovernanceEngine) RevokeOwner(
-	actionID, callerSubject, reason string,
+	tenantID, actionID, callerSubject, reason string,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -305,13 +343,22 @@ func (e *ActionGovernanceEngine) RevokeOwner(
 
 // RequestExtension records an extension request from the action owner.
 func (e *ActionGovernanceEngine) RequestExtension(
+	tenantID string,
 	req ExtensionRequest,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(req.ActionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[req.ActionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -352,15 +399,23 @@ func (e *ActionGovernanceEngine) RequestExtension(
 
 // ReviewExtension reviews a pending extension request. Enforces Segregation of Duties.
 func (e *ActionGovernanceEngine) ReviewExtension(
-	actionID, requestID, reviewerSubject string,
+	tenantID, actionID, requestID, reviewerSubject string,
 	approve bool,
 	notes string,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -412,13 +467,22 @@ func (e *ActionGovernanceEngine) ReviewExtension(
 
 // RequestEscalation records an operational escalation request for the action.
 func (e *ActionGovernanceEngine) RequestEscalation(
+	tenantID string,
 	req EscalationRequest,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(req.ActionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[req.ActionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -454,13 +518,21 @@ func (e *ActionGovernanceEngine) RequestEscalation(
 
 // AcknowledgeEscalation acknowledges an escalation item. Enforces Segregation of Duties.
 func (e *ActionGovernanceEngine) AcknowledgeEscalation(
-	actionID, requestID, reviewerSubject, notes string,
+	tenantID, actionID, requestID, reviewerSubject, notes string,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -506,14 +578,22 @@ func (e *ActionGovernanceEngine) AcknowledgeEscalation(
 
 // SubmitEvidence attaches a new evidence submission from the action owner.
 func (e *ActionGovernanceEngine) SubmitEvidence(
-	actionID string,
+	tenantID, actionID string,
 	ev GovernedEvidence,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
@@ -550,15 +630,23 @@ func (e *ActionGovernanceEngine) SubmitEvidence(
 
 // ReviewEvidence evaluates submitted evidence. Enforces Segregation of Duties.
 func (e *ActionGovernanceEngine) ReviewEvidence(
-	actionID, evidenceID, reviewerSubject string,
+	tenantID, actionID, evidenceID, reviewerSubject string,
 	accept bool,
 	notes string,
 	expectedVersion int64,
 ) (GovernedAction, error) {
+	tTenant := strings.TrimSpace(tenantID)
+	if tTenant == "" {
+		return GovernedAction{}, ErrBlankTenantID
+	}
+	tID := strings.TrimSpace(actionID)
+	if tID == "" {
+		return GovernedAction{}, ErrBlankActionID
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	act, ok := e.actions[actionID]
+	act, ok := e.actions[actionKey{tenantID: tTenant, actionID: tID}]
 	if !ok {
 		return GovernedAction{}, ErrActionNotFound
 	}
