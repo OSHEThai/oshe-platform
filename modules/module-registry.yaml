@@ -44,3 +44,7 @@ modules:
     name: Incident Intake Foundation
     path: modules/incident-intake-foundation
     roadmap_topic: V050-T05
+  - id: MOD-WRP
+    name: Workforce Rule Preparation
+    path: modules/workforce-rule-preparation
+    roadmap_topic: V050-T02
