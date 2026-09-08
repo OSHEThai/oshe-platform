@@ -50,20 +50,34 @@ type HistoryRecord struct {
 	OccurredAt time.Time
 }
 
+// entityKey prevents delimiter injection and key collision across tenants.
+type entityKey struct {
+	tenantID string
+	id       string
+}
+
+func makeKey(tenantID, id string) entityKey {
+	return entityKey{
+		tenantID: strings.TrimSpace(tenantID),
+		id:       strings.TrimSpace(id),
+	}
+}
+
 // Registry is a thread-safe local fixture store. It has zero database or
 // external identity-provider effects.
 type Registry struct {
 	mu          sync.RWMutex
-	people      map[string]Person
-	employments map[string]Employment
+	people      map[entityKey]Person
+	employments map[entityKey]Employment
 	history     []HistoryRecord
 }
 
 func NewRegistry() *Registry {
-	return &Registry{people: make(map[string]Person), employments: make(map[string]Employment)}
+	return &Registry{
+		people:      make(map[entityKey]Person),
+		employments: make(map[entityKey]Employment),
+	}
 }
-
-func key(tenantID, id string) string { return strings.TrimSpace(tenantID) + ":" + strings.TrimSpace(id) }
 
 func require(value string) error {
 	if strings.TrimSpace(value) == "" {
@@ -87,8 +101,9 @@ func (r *Registry) RegisterPerson(person Person, actorRef string, at time.Time) 
 	person.ID, person.TenantID, person.TrustedIdentityRef = strings.TrimSpace(person.ID), strings.TrimSpace(person.TenantID), strings.TrimSpace(person.TrustedIdentityRef)
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if _, exists := r.people[key(person.TenantID, person.ID)]; exists { return ErrDuplicatePerson }
-	r.people[key(person.TenantID, person.ID)] = person
+	pKey := makeKey(person.TenantID, person.ID)
+	if _, exists := r.people[pKey]; exists { return ErrDuplicatePerson }
+	r.people[pKey] = person
 	r.history = append(r.history, HistoryRecord{TenantID: person.TenantID, EntityKind: "PERSON_REGISTERED", EntityID: person.ID, ActorRef: strings.TrimSpace(actorRef), OccurredAt: at.UTC()})
 	return nil
 }
@@ -96,8 +111,9 @@ func (r *Registry) RegisterPerson(person Person, actorRef string, at time.Time) 
 // GetPerson default-denies absent and cross-tenant lookup with one non-leaking error.
 func (r *Registry) GetPerson(tenantID, personID string) (Person, error) {
 	if r == nil { return Person{}, ErrPersonNotFound }
-	r.mu.RLock(); defer r.mu.RUnlock()
-	person, ok := r.people[key(tenantID, personID)]
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	person, ok := r.people[makeKey(tenantID, personID)]
 	if !ok { return Person{}, ErrPersonNotFound }
 	return person, nil
 }
@@ -112,10 +128,15 @@ func (r *Registry) RegisterEmployment(employment Employment, actorRef string, at
 	if !validSubjectRef(employment.OwnerSubjectRef) || !validSubjectRef(actorRef) { return ErrInvalidIdentityRef }
 	if !employment.ValidTo.After(employment.ValidFrom) { return ErrInvalidWindow }
 	employment.ID, employment.TenantID, employment.PersonID, employment.CompanyID, employment.OwnerSubjectRef = strings.TrimSpace(employment.ID), strings.TrimSpace(employment.TenantID), strings.TrimSpace(employment.PersonID), strings.TrimSpace(employment.CompanyID), strings.TrimSpace(employment.OwnerSubjectRef)
-	r.mu.Lock(); defer r.mu.Unlock()
-	if _, exists := r.people[key(employment.TenantID, employment.PersonID)]; !exists { return ErrPersonNotFound }
-	if _, exists := r.employments[key(employment.TenantID, employment.ID)]; exists { return ErrDuplicateEmployment }
-	r.employments[key(employment.TenantID, employment.ID)] = employment
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	personKey := makeKey(employment.TenantID, employment.PersonID)
+	if _, exists := r.people[personKey]; !exists {
+		return ErrPersonNotFound
+	}
+	empKey := makeKey(employment.TenantID, employment.ID)
+	if _, exists := r.employments[empKey]; exists { return ErrDuplicateEmployment }
+	r.employments[empKey] = employment
 	r.history = append(r.history, HistoryRecord{TenantID: employment.TenantID, EntityKind: "EMPLOYMENT_REGISTERED", EntityID: employment.ID, ActorRef: strings.TrimSpace(actorRef), OccurredAt: at.UTC()})
 	return nil
 }
@@ -123,8 +144,14 @@ func (r *Registry) RegisterEmployment(employment Employment, actorRef string, at
 // History returns a copy of only the requested tenant's append-only attribution.
 func (r *Registry) History(tenantID string) []HistoryRecord {
 	if r == nil { return nil }
-	r.mu.RLock(); defer r.mu.RUnlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	tID := strings.TrimSpace(tenantID)
 	result := make([]HistoryRecord, 0)
-	for _, record := range r.history { if record.TenantID == strings.TrimSpace(tenantID) { result = append(result, record) } }
+	for _, record := range r.history {
+		if record.TenantID == tID {
+			result = append(result, record)
+		}
+	}
 	return result
 }

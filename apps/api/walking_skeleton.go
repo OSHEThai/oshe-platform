@@ -123,13 +123,26 @@ type AuditEventData struct {
 	Timestamp     time.Time `json:"timestamp"`
 }
 
+// scopedKey prevents delimiter collision across tenant and resource identifiers.
+type scopedKey struct {
+	tenantID string
+	id       string
+}
+
+func makeScopedKey(tenantID, id string) scopedKey {
+	return scopedKey{
+		tenantID: strings.TrimSpace(tenantID),
+		id:       strings.TrimSpace(id),
+	}
+}
+
 // WalkingSkeletonStore is a thread-safe, in-memory store partitioned strictly by tenant.
 type WalkingSkeletonStore struct {
 	mu          sync.RWMutex
-	templates   map[string]PublishedTemplate      // tenantID:templateID
-	instances   map[string]ChecklistInstanceData  // tenantID:instanceID
-	evidence    map[string]EvidenceData           // tenantID:evidenceID
-	actions     map[string]ActionData             // tenantID:actionID
+	templates   map[scopedKey]PublishedTemplate      // tenantID:templateID
+	instances   map[scopedKey]ChecklistInstanceData  // tenantID:instanceID
+	evidence    map[scopedKey]EvidenceData           // tenantID:evidenceID
+	actions     map[scopedKey]ActionData             // tenantID:actionID
 	auditEvents []AuditEventData
 	seqCounter  int64
 	clock       func() time.Time
@@ -141,16 +154,12 @@ func NewWalkingSkeletonStore(clock func() time.Time) *WalkingSkeletonStore {
 		clock = time.Now
 	}
 	return &WalkingSkeletonStore{
-		templates: make(map[string]PublishedTemplate),
-		instances: make(map[string]ChecklistInstanceData),
-		evidence:  make(map[string]EvidenceData),
-		actions:   make(map[string]ActionData),
+		templates: make(map[scopedKey]PublishedTemplate),
+		instances: make(map[scopedKey]ChecklistInstanceData),
+		evidence:  make(map[scopedKey]EvidenceData),
+		actions:   make(map[scopedKey]ActionData),
 		clock:     clock,
 	}
-}
-
-func makeScopedKey(tenantID, id string) string {
-	return fmt.Sprintf("%s:%s", strings.TrimSpace(tenantID), strings.TrimSpace(id))
 }
 
 func (s *WalkingSkeletonStore) appendAudit(tenantID, eventType, entityID, actorID, corrID string) {
@@ -457,8 +466,15 @@ func (srv *WalkingSkeletonServer) handleCreateAction(w http.ResponseWriter, r *h
 	}
 
 	actID := strings.TrimSpace(req.ActionID)
-	if actID == "" || req.Owner == "" || req.Reviewer == "" {
+	owner := strings.TrimSpace(req.Owner)
+	reviewer := strings.TrimSpace(req.Reviewer)
+	if actID == "" || owner == "" || reviewer == "" {
 		writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "action_id, owner, and reviewer are required")
+		return
+	}
+
+	if owner == reviewer {
+		writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "action owner and reviewer must be distinct")
 		return
 	}
 
@@ -468,14 +484,74 @@ func (srv *WalkingSkeletonServer) handleCreateAction(w http.ResponseWriter, r *h
 	tenantID := tenantCtx.TenantID()
 	actKey := makeScopedKey(tenantID, actID)
 
+	// Duplicate creation cannot overwrite history or reopen CLOSED
+	if _, exists := srv.store.actions[actKey]; exists {
+		writeErrorResponse(w, http.StatusConflict, "CONFLICT", "action already exists in tenant scope: duplicate creation cannot overwrite history or reopen closed state")
+		return
+	}
+
+	// Require or derive exactly one matching checklist instance for non-empty evidence_ids
+	reqInstID := strings.TrimSpace(req.InstanceID)
+
+	// Evidence association checks using existing contracts only
+	if len(req.EvidenceIDs) > 0 {
+		var derivedInstID string
+		for _, evID := range req.EvidenceIDs {
+			cleanEvID := strings.TrimSpace(evID)
+			if cleanEvID == "" {
+				writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "evidence_id cannot be blank")
+				return
+			}
+			evKey := makeScopedKey(tenantID, cleanEvID)
+			ev, exists := srv.store.evidence[evKey]
+			if !exists {
+				writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", fmt.Sprintf("associated evidence %q not found in tenant scope", cleanEvID))
+				return
+			}
+			evInstID := strings.TrimSpace(ev.InstanceID)
+			if evInstID == "" {
+				writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("evidence %q has no associated checklist instance", cleanEvID))
+				return
+			}
+
+			if reqInstID != "" {
+				if evInstID != reqInstID {
+					writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("evidence %q belongs to instance %q, not %q", cleanEvID, evInstID, reqInstID))
+					return
+				}
+			} else {
+				if derivedInstID == "" {
+					derivedInstID = evInstID
+				} else if derivedInstID != evInstID {
+					writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("all evidence must belong to exactly one checklist instance: found mixed instances %q and %q", derivedInstID, evInstID))
+					return
+				}
+			}
+		}
+
+		// When instance_id is omitted with non-empty evidence, deterministically establish the derived single instance
+		if reqInstID == "" {
+			reqInstID = derivedInstID
+		}
+	}
+
+	// Verify associated instance exists in tenant scope if specified or derived
+	if reqInstID != "" {
+		instKey := makeScopedKey(tenantID, reqInstID)
+		if _, exists := srv.store.instances[instKey]; !exists {
+			writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", "associated checklist instance not found in tenant scope")
+			return
+		}
+	}
+
 	now := srv.store.clock().UTC()
 	act := ActionData{
 		ActionID:    actID,
 		TenantID:    tenantID,
-		InstanceID:  req.InstanceID,
+		InstanceID:  reqInstID,
 		Title:       req.Title,
-		Owner:       req.Owner,
-		Reviewer:    req.Reviewer,
+		Owner:       owner,
+		Reviewer:    reviewer,
 		State:       "IN_REVIEW",
 		EvidenceIDs: req.EvidenceIDs,
 		CreatedAt:   now,
@@ -505,14 +581,26 @@ func (srv *WalkingSkeletonServer) handleCloseAction(w http.ResponseWriter, r *ht
 		return
 	}
 
+	actID := strings.TrimSpace(req.ActionID)
+	if actID == "" {
+		writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "action_id is required")
+		return
+	}
+
 	srv.store.mu.Lock()
 	defer srv.store.mu.Unlock()
 
 	tenantID := tenantCtx.TenantID()
-	actKey := makeScopedKey(tenantID, req.ActionID)
+	actKey := makeScopedKey(tenantID, actID)
 	act, exists := srv.store.actions[actKey]
 	if !exists {
 		writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", "action not found in tenant scope")
+		return
+	}
+
+	// Valid preceding state: requires reviewer role and valid preceding state (IN_REVIEW). Cannot re-close CLOSED action.
+	if act.State != "IN_REVIEW" {
+		writeErrorResponse(w, http.StatusConflict, "INVALID_STATE", "action cannot be closed: requires reviewer role and valid preceding state")
 		return
 	}
 
@@ -529,7 +617,7 @@ func (srv *WalkingSkeletonServer) handleCloseAction(w http.ResponseWriter, r *ht
 	act.ClosedBy = caller
 
 	srv.store.actions[actKey] = act
-	srv.store.appendAudit(tenantID, "ACTION_CLOSED", req.ActionID, caller, "")
+	srv.store.appendAudit(tenantID, "ACTION_CLOSED", actID, caller, "")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
