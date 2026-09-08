@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import pathlib
 import re
+import subprocess
+import sys
 import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tools.verify_audit_provenance import ProvenanceTuple, parse_rfc_tuples, verify_tuple
 COMPOSE = ROOT / "deploy" / "local" / "compose.dev.yaml"
 ENV_EXAMPLE = ROOT / "deploy" / "local" / ".env.example"
 SERVICES = ("postgres", "postgis", "meilisearch", "valkey", "seaweedfs", "nats")
@@ -210,6 +215,122 @@ class LocalStackContractTests(unittest.TestCase):
         bad_bootstrap_eq = "docker compose up\nif ($LASTEXITCODE -eq 0) { throw 'Failed' }"
         with self.assertRaises(AssertionError):
             self.assertRegex(bad_bootstrap_eq, r"(?m)^docker compose.*$\n^if \(\$LASTEXITCODE -ne 0\) \{ throw .* \}$")
+
+    def test_rfc_provenance_tuples_structure_and_parseability(self) -> None:
+        rfc_file = ROOT / "docs" / "rfc" / "audit-20260908-baseline-contract-reconciliation.md"
+        self.assertTrue(rfc_file.is_file(), f"missing RFC file: {rfc_file}")
+        tuples = parse_rfc_tuples(rfc_file.read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(tuples), 2, "expected at least compose and seed tuples in RFC")
+        targets = {t.target for t in tuples}
+        self.assertIn("compose", targets)
+        self.assertIn("seed", targets)
+        for t in tuples:
+            self.assertRegex(t.commit, r"^[0-9a-f]{40}$", f"invalid commit SHA in tuple: {t}")
+            self.assertRegex(t.blob, r"^[0-9a-f]{40}$", f"invalid blob SHA in tuple: {t}")
+            self.assertRegex(t.normalized_sha256, r"^[0-9a-f]{64}$", f"invalid normalized SHA-256 in tuple: {t}")
+            self.assertTrue(t.path.startswith("deploy/local/"), f"unexpected path in tuple: {t}")
+
+    def test_hermetic_provenance_valid_mock(self) -> None:
+        sample = ProvenanceTuple(
+            target="compose",
+            commit="d36ff7d6495fff954ce645f6a0d7743b85b77c17",
+            path="deploy/local/compose.dev.yaml",
+            blob="958100545e76652235123e5a85eb8696006706de",
+            normalized_sha256="53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13",
+        )
+        raw_bytes = (ROOT / "deploy" / "local" / "compose.dev.yaml").read_bytes()
+        def mock_valid(cmd: list[str]) -> subprocess.CompletedProcess:
+            if "^{commit}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"d36ff7d6495fff954ce645f6a0d7743b85b77c17\n", stderr=b"")
+            if f"{sample.commit}:{sample.path}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"958100545e76652235123e5a85eb8696006706de\n", stderr=b"")
+            if cmd[1:3] == ["cat-file", "-t"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"blob\n", stderr=b"")
+            if cmd[1:3] == ["cat-file", "-p"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=raw_bytes, stderr=b"")
+            return subprocess.CompletedProcess(cmd, 1, stdout=b"", stderr=b"unknown cmd")
+
+        errors = verify_tuple(sample, repo_root=ROOT, git_runner=mock_valid)
+        self.assertEqual(errors, [], f"expected zero errors for valid tuple, got: {errors}")
+
+    def test_hermetic_provenance_missing_commit_mock(self) -> None:
+        sample = ProvenanceTuple(
+            target="compose",
+            commit="d36ff7d6495fff954ce645f6a0d7743b85b77c17",
+            path="deploy/local/compose.dev.yaml",
+            blob="958100545e76652235123e5a85eb8696006706de",
+            normalized_sha256="53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13",
+        )
+        def mock_missing_commit(cmd: list[str]) -> subprocess.CompletedProcess:
+            return subprocess.CompletedProcess(cmd, 1, stdout=b"", stderr=b"fatal: Not a valid object name")
+
+        errors = verify_tuple(sample, repo_root=ROOT, git_runner=mock_missing_commit)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("missing from local git history", errors[0])
+
+    def test_hermetic_provenance_missing_path_mock(self) -> None:
+        sample = ProvenanceTuple(
+            target="compose",
+            commit="d36ff7d6495fff954ce645f6a0d7743b85b77c17",
+            path="deploy/local/nonexistent.yaml",
+            blob="958100545e76652235123e5a85eb8696006706de",
+            normalized_sha256="53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13",
+        )
+        def mock_missing_path(cmd: list[str]) -> subprocess.CompletedProcess:
+            if "^{commit}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"d36ff7d6495fff954ce645f6a0d7743b85b77c17\n", stderr=b"")
+            return subprocess.CompletedProcess(cmd, 1, stdout=b"", stderr=b"fatal: path not found")
+
+        errors = verify_tuple(sample, repo_root=ROOT, git_runner=mock_missing_path)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("failed to resolve path", errors[0])
+
+    def test_hermetic_provenance_mismatched_blob_mock(self) -> None:
+        sample = ProvenanceTuple(
+            target="compose",
+            commit="d36ff7d6495fff954ce645f6a0d7743b85b77c17",
+            path="deploy/local/compose.dev.yaml",
+            blob="958100545e76652235123e5a85eb8696006706de",
+            normalized_sha256="53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13",
+        )
+        def mock_mismatched_blob(cmd: list[str]) -> subprocess.CompletedProcess:
+            if "^{commit}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"d36ff7d6495fff954ce645f6a0d7743b85b77c17\n", stderr=b"")
+            if f"{sample.commit}:{sample.path}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"0000000000000000000000000000000000000000\n", stderr=b"")
+            return subprocess.CompletedProcess(cmd, 0, stdout=b"", stderr=b"")
+
+        errors = verify_tuple(sample, repo_root=ROOT, git_runner=mock_mismatched_blob)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("blob mismatch", errors[0])
+
+    def test_hermetic_provenance_mismatched_hash_mock(self) -> None:
+        sample = ProvenanceTuple(
+            target="compose",
+            commit="d36ff7d6495fff954ce645f6a0d7743b85b77c17",
+            path="deploy/local/compose.dev.yaml",
+            blob="958100545e76652235123e5a85eb8696006706de",
+            normalized_sha256="53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13",
+        )
+        def mock_mismatched_hash(cmd: list[str]) -> subprocess.CompletedProcess:
+            if "^{commit}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"d36ff7d6495fff954ce645f6a0d7743b85b77c17\n", stderr=b"")
+            if f"{sample.commit}:{sample.path}" in cmd[3]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"958100545e76652235123e5a85eb8696006706de\n", stderr=b"")
+            if cmd[1:3] == ["cat-file", "-t"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"blob\n", stderr=b"")
+            if cmd[1:3] == ["cat-file", "-p"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=b"tampered content without valid hash\n", stderr=b"")
+            return subprocess.CompletedProcess(cmd, 0, stdout=b"", stderr=b"")
+
+        errors = verify_tuple(sample, repo_root=ROOT, git_runner=mock_mismatched_hash)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("normalized SHA-256 mismatch", errors[0])
+
+    def test_hermetic_provenance_unparseable_rfc_content(self) -> None:
+        empty_rfc = "# Empty RFC\nNo tuples here.\n"
+        with self.assertRaises(ValueError):
+            parse_rfc_tuples(empty_rfc)
 
 
 if __name__ == "__main__":
