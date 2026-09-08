@@ -38,6 +38,19 @@ func TestSubmitDefaultDeniesDuplicateAndCrossTenantLookup(t *testing.T) {
 	}
 }
 
+func TestSubmitRejectsDelimiterShapedCrossTenantCollision(t *testing.T) {
+	r := NewRegistry()
+	if _, err := r.Submit("int_bravo:charlie", "ten_alpha", "ref_reporter_alpha", "sub_submitter_alpha", instant); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Submit("int_charlie", "ten_alpha:int_bravo", "ref_reporter_bravo", "sub_submitter_bravo", instant); err != nil {
+		t.Fatalf("distinct typed tenant and intake key must not collide: %v", err)
+	}
+	if _, err := r.Get("ten_alpha:int_bravo", "int_bravo:charlie"); !errors.Is(err, ErrIntakeNotFound) {
+		t.Fatalf("delimiter-shaped cross-tenant lookup must default-deny: %v", err)
+	}
+}
+
 func TestSubmitRejectsBlankAndNonOpaqueSyntheticReferences(t *testing.T) {
 	r := NewRegistry()
 	if _, err := r.Submit("int_alpha", "ten_alpha", "reporter@example.test", "sub_submitter_alpha", instant); !errors.Is(err, ErrInvalidReference) {

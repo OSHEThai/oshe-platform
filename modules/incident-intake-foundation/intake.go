@@ -46,14 +46,19 @@ type SubmissionHistory struct {
 // external effects.
 type Registry struct {
 	mu      sync.RWMutex
-	intakes map[string]Intake
+	intakes map[intakeKey]Intake
 	history []SubmissionHistory
 }
 
-func NewRegistry() *Registry { return &Registry{intakes: make(map[string]Intake)} }
+type intakeKey struct {
+	tenantID string
+	intakeID string
+}
 
-func key(tenantID, intakeID string) string {
-	return strings.TrimSpace(tenantID) + ":" + strings.TrimSpace(intakeID)
+func NewRegistry() *Registry { return &Registry{intakes: make(map[intakeKey]Intake)} }
+
+func key(tenantID, intakeID string) intakeKey {
+	return intakeKey{tenantID: strings.TrimSpace(tenantID), intakeID: strings.TrimSpace(intakeID)}
 }
 
 func require(value string) error {
