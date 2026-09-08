@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -72,7 +73,8 @@ def check_toolchain_identity(command: list[str]) -> str:
     if any("run_go_tests.py" in str(arg) or arg == "go" for arg in command):
         go_path = shutil.which("go")
         if not go_path:
-            return f"{py_identity}|go:UNAVAILABLE"
+            # Unverifiable/missing toolchain yields a dynamically unique token to prevent cache reuse
+            return f"{py_identity}|go:UNAVAILABLE:{uuid.uuid4().hex}"
         try:
             completed = subprocess.run(
                 [go_path, "version"],
@@ -81,14 +83,14 @@ def check_toolchain_identity(command: list[str]) -> str:
                 check=False,
                 timeout=5,
             )
-            go_version = (
-                completed.stdout.strip()
-                if completed.returncode == 0
-                else f"ERROR:{completed.returncode}"
-            )
+            output = completed.stdout.strip()
+            if completed.returncode == 0 and output:
+                return f"{py_identity}|go:{go_path}:{output}"
+            # Failed or empty probe yields a dynamically unique token to enforce always-run
+            return f"{py_identity}|go:{go_path}:ERROR:{completed.returncode}:{uuid.uuid4().hex}"
         except Exception as exc:
-            go_version = f"EXCEPTION:{exc}"
-        return f"{py_identity}|go:{go_path}:{go_version}"
+            # Timed-out or exceptional probe yields a dynamically unique token to enforce always-run
+            return f"{py_identity}|go:{go_path}:EXCEPTION:{type(exc).__name__}:{uuid.uuid4().hex}"
     return py_identity
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:

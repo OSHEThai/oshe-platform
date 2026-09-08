@@ -161,5 +161,57 @@ class LocalCiTests(unittest.TestCase):
         self.assertNotIn("SKIP go-pass", fourth.stdout)
         self.assertIn("RUN  go-pass: python tools/run_go_tests.py", fourth.stdout)
 
+
+    def test_unverifiable_or_timed_out_go_identity_strictly_bypasses_cache(self) -> None:
+        root = self.make_repo([
+            {"id": "python-pass", "command": ["python", "-c", "print('py-ok')"]},
+            {"id": "go-pass", "command": ["python", "tools/run_go_tests.py"]},
+        ])
+        (root / "tools").mkdir()
+        (root / "tools" / "run_go_tests.py").write_text("print('go-pass-ran')", encoding="utf-8")
+
+        # Mock bin directory with an unverifiable/failing Go probe
+        mock_bin = tempfile.TemporaryDirectory()
+        self.addCleanup(mock_bin.cleanup)
+        mock_bin_path = pathlib.Path(mock_bin.name)
+        mock_go_script = mock_bin_path / ("go.bat" if sys.platform == "win32" else "go")
+        mock_go_script.write_text("@echo probe-failure >&2 & exit /b 1\n", encoding="utf-8")
+        mock_go_script.chmod(0o755)
+
+        custom_env = os.environ.copy()
+        custom_env["PATH"] = f"{mock_bin_path}{os.pathsep}{custom_env.get('PATH', '')}"
+
+        def run_with_env(*args: str) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [sys.executable, str(RUNNER), *args],
+                cwd=root,
+                check=False,
+                capture_output=True,
+                text=True,
+                env=custom_env,
+            )
+
+        # 1. First run: both checks execute and finish
+        first = run_with_env("--mode", "incremental")
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        self.assertIn("RUN  python-pass: python -c print('py-ok')", first.stdout)
+        self.assertIn("RUN  go-pass: python tools/run_go_tests.py", first.stdout)
+        self.assertIn("PASS python-pass", first.stdout)
+        self.assertIn("PASS go-pass", first.stdout)
+
+        # 2. Second consecutive run with EXACT SAME unverifiable Go probe:
+        # python-pass MUST skip (unchanged toolchain), but go-pass MUST strictly bypass cache and re-run
+        second = run_with_env("--mode", "incremental")
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+        self.assertIn("SKIP python-pass: unchanged passing checkpoint", second.stdout)
+        self.assertNotIn("SKIP go-pass", second.stdout)
+        self.assertIn("RUN  go-pass: python tools/run_go_tests.py", second.stdout)
+
+        # 3. Third consecutive run: still strictly bypasses cache for go-pass
+        third = run_with_env("--mode", "incremental")
+        self.assertEqual(third.returncode, 0, third.stdout + third.stderr)
+        self.assertIn("SKIP python-pass: unchanged passing checkpoint", third.stdout)
+        self.assertNotIn("SKIP go-pass", third.stdout)
+        self.assertIn("RUN  go-pass: python tools/run_go_tests.py", third.stdout)
 if __name__ == "__main__":
     unittest.main()
