@@ -135,6 +135,9 @@ def _config(spec: dict[str, Any], env: dict[str, str]) -> str:
             or key == "core.fsmonitor" and value.lower() not in {"false", "0", "no"}
             or key.startswith("credential.") and not (
                 key == "credential.helper" and value in {"manager", "manager-core"}
+                # Exact native Git-for-Windows setting: no wildcard, helper,
+                # identity or GitHub match; all other selectors stay denied.
+                or key == "credential.https://dev.azure.com.usehttppath" and value == "true"
             )
         )
         _require(not bad, "unsupported Git configuration")

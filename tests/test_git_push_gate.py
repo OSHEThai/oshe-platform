@@ -222,6 +222,23 @@ class BoundedPushTests(unittest.TestCase):
                     diagnostic.assert_not_called()
                 self.transport.assert_not_called()
 
+    def test_native_azure_setting_with_manager_is_compatible(self):
+        self.local(["-C", str(self.wt), "config", "credential.helper", "manager"])
+        self.local(["-C", str(self.wt), "config", "credential.https://dev.azure.com.useHttpPath", "true"])
+        self.record["scope"]["expected_pre_state_digest"] = push.digest(push.snapshot(self.record))
+        self.assertEqual(0, push.execute_push(self.record, dry_run=True))
+        self.transport.assert_not_called()
+        for key in ("credential.https://github.com.useHttpPath",
+                    "credential.https://*.com.useHttpPath",
+                    "credential.https://dev.azure.com.helper",
+                    "credential.https://dev.azure.com.username"):
+            with self.subTest(key=key):
+                self.local(["-C", str(self.wt), "config", key, "true"])
+                with self.assertRaisesRegex(ValueError, "configuration"):
+                    push.snapshot(self.record)
+                self.local(["-C", str(self.wt), "config", "--unset-all", key])
+        self.transport.assert_not_called()
+
     def test_alternate_home_credential_config_denied(self):
         home_dir = self.base / "synthetic-home"
         home_dir.mkdir()
