@@ -57,6 +57,14 @@ func TestMatrixDefaultDeniesTenantCollisionAndDuplicate(t *testing.T) {
 	if err := r.Register(completeMatrix("ten_alpha:mat_bravo", "mat_charlie"), "sub_owner_bravo", instant); err != nil {
 		t.Fatalf("former concatenated-key collision must remain isolated: %v", err)
 	}
+	sameVersionDifferentID := completeMatrix("ten_alpha", "mat_delta")
+	if err := r.Register(sameVersionDifferentID, "sub_owner_alpha", instant); !errors.Is(err, ErrDuplicateVersion) {
+		t.Fatalf("same tenant version must be rejected even with a new matrix ID: %v", err)
+	}
+	crossTenantSameVersion := completeMatrix("ten_bravo", "mat_delta")
+	if err := r.Register(crossTenantSameVersion, "sub_owner_bravo", instant); err != nil {
+		t.Fatalf("version uniqueness must remain tenant-scoped: %v", err)
+	}
 	if err := r.Register(completeMatrix("ten_alpha", "mat_bravo:mat_charlie"), "sub_owner_alpha", instant); !errors.Is(err, ErrDuplicateMatrix) {
 		t.Fatalf("want duplicate denial, got %v", err)
 	}

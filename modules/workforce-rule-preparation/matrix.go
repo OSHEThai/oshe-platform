@@ -14,6 +14,7 @@ var (
 	ErrBlankField                    = errors.New("required field is blank")
 	ErrInvalidReference              = errors.New("reference must use its required opaque synthetic prefix")
 	ErrDuplicateMatrix               = errors.New("rule matrix already exists in tenant")
+	ErrDuplicateVersion              = errors.New("rule matrix version already exists in tenant")
 	ErrDuplicateRequirement          = errors.New("requirement appears more than once in matrix")
 	ErrIncompleteDispositionCoverage = errors.New("matrix must contain every required non-current disposition")
 	ErrAssessmentNotFound            = errors.New("assessment not found")
@@ -69,6 +70,7 @@ type HistoryRecord struct {
 }
 
 type matrixKey struct{ tenantID, matrixID string }
+type versionKey struct{ tenantID, versionRef string }
 type requirementKey struct{ tenantID, matrixID, requirementRef string }
 
 // Registry is a thread-safe local fixture store with zero persistence or
@@ -76,6 +78,7 @@ type requirementKey struct{ tenantID, matrixID, requirementRef string }
 type Registry struct {
 	mu          sync.RWMutex
 	matrices    map[matrixKey]Matrix
+	versions    map[versionKey]struct{}
 	assessments map[requirementKey]Assessment
 	history     []HistoryRecord
 }
@@ -83,6 +86,7 @@ type Registry struct {
 func NewRegistry() *Registry {
 	return &Registry{
 		matrices:    make(map[matrixKey]Matrix),
+		versions:    make(map[versionKey]struct{}),
 		assessments: make(map[requirementKey]Assessment),
 	}
 }
@@ -154,7 +158,12 @@ func (r *Registry) Register(matrix Matrix, actorRef string, at time.Time) error 
 	if _, exists := r.matrices[key]; exists {
 		return ErrDuplicateMatrix
 	}
+	version := versionKey{tenantID: matrix.TenantID, versionRef: matrix.VersionRef}
+	if _, exists := r.versions[version]; exists {
+		return ErrDuplicateVersion
+	}
 	r.matrices[key] = matrix
+	r.versions[version] = struct{}{}
 	for _, entry := range matrix.Entries {
 		r.assessments[requirementKey{tenantID: matrix.TenantID, matrixID: matrix.ID, requirementRef: trim(entry.RequirementRef)}] = Assessment{
 			RequirementRef: trim(entry.RequirementRef), Disposition: entry.Disposition, NonBinding: true, HumanDecisionRequired: true,
