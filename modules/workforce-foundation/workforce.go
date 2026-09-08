@@ -5,7 +5,6 @@ package workforcefoundation
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -133,11 +132,6 @@ func (r *Registry) RegisterEmployment(employment Employment, actorRef string, at
 	defer r.mu.Unlock()
 	personKey := makeKey(employment.TenantID, employment.PersonID)
 	if _, exists := r.people[personKey]; !exists {
-		for k := range r.people {
-			if k.id == employment.PersonID && k.tenantID != employment.TenantID {
-				return fmt.Errorf("%w: %w", ErrTenantMismatch, ErrPersonNotFound)
-			}
-		}
 		return ErrPersonNotFound
 	}
 	empKey := makeKey(employment.TenantID, employment.ID)

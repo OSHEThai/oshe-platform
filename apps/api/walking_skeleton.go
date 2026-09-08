@@ -490,31 +490,56 @@ func (srv *WalkingSkeletonServer) handleCreateAction(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Verify associated instance if provided
+	// Require or derive exactly one matching checklist instance for non-empty evidence_ids
 	reqInstID := strings.TrimSpace(req.InstanceID)
+
+	// Evidence association checks using existing contracts only
+	if len(req.EvidenceIDs) > 0 {
+		var derivedInstID string
+		for _, evID := range req.EvidenceIDs {
+			cleanEvID := strings.TrimSpace(evID)
+			if cleanEvID == "" {
+				writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "evidence_id cannot be blank")
+				return
+			}
+			evKey := makeScopedKey(tenantID, cleanEvID)
+			ev, exists := srv.store.evidence[evKey]
+			if !exists {
+				writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", fmt.Sprintf("associated evidence %q not found in tenant scope", cleanEvID))
+				return
+			}
+			evInstID := strings.TrimSpace(ev.InstanceID)
+			if evInstID == "" {
+				writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("evidence %q has no associated checklist instance", cleanEvID))
+				return
+			}
+
+			if reqInstID != "" {
+				if evInstID != reqInstID {
+					writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("evidence %q belongs to instance %q, not %q", cleanEvID, evInstID, reqInstID))
+					return
+				}
+			} else {
+				if derivedInstID == "" {
+					derivedInstID = evInstID
+				} else if derivedInstID != evInstID {
+					writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("all evidence must belong to exactly one checklist instance: found mixed instances %q and %q", derivedInstID, evInstID))
+					return
+				}
+			}
+		}
+
+		// When instance_id is omitted with non-empty evidence, deterministically establish the derived single instance
+		if reqInstID == "" {
+			reqInstID = derivedInstID
+		}
+	}
+
+	// Verify associated instance exists in tenant scope if specified or derived
 	if reqInstID != "" {
 		instKey := makeScopedKey(tenantID, reqInstID)
 		if _, exists := srv.store.instances[instKey]; !exists {
 			writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", "associated checklist instance not found in tenant scope")
-			return
-		}
-	}
-
-	// Evidence association checks using existing contracts only
-	for _, evID := range req.EvidenceIDs {
-		cleanEvID := strings.TrimSpace(evID)
-		if cleanEvID == "" {
-			writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", "evidence_id cannot be blank")
-			return
-		}
-		evKey := makeScopedKey(tenantID, cleanEvID)
-		ev, exists := srv.store.evidence[evKey]
-		if !exists {
-			writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", fmt.Sprintf("associated evidence %q not found in tenant scope", cleanEvID))
-			return
-		}
-		if reqInstID != "" && ev.InstanceID != "" && ev.InstanceID != reqInstID {
-			writeErrorResponse(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("evidence %q belongs to instance %q, not %q", cleanEvID, ev.InstanceID, reqInstID))
 			return
 		}
 	}

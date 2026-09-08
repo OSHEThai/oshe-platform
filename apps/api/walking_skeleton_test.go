@@ -634,3 +634,77 @@ func TestWalkingSkeleton_ScopedKeyPreventsDelimiterCollision(t *testing.T) {
 		t.Fatalf("expected 404 for cross-tenant delimiter collision attempt, got %d", wInstB.Code)
 	}
 }
+
+func TestWalkingSkeleton_ActionEvidenceAssociation_DerivedAndMixedInstanceNegativeControls(t *testing.T) {
+	store := api.NewWalkingSkeletonStore(nil)
+	tenantID := "ten_evd_derive_test"
+	user := "usr_tester_derive"
+
+	resolver := newMockResolver(mockClaimsConfig{
+		subject:  user,
+		tenantID: tenantID,
+	})
+	handler := api.NewWalkingSkeletonServer(store, resolver).Handler()
+
+	// Setup template, instance 1, instance 2
+	pubBody := `{"template_id": "tmpl_drv", "version_id": "v1", "title": "Drv Tmpl", "questions": [{"id": "q1", "text": "Q1", "type": "BOOLEAN"}]}`
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/api/v1/templates/publish", bytes.NewBufferString(pubBody)))
+
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/api/v1/checklists/instantiate", bytes.NewBufferString(`{"instance_id": "inst_drv_1", "template_id": "tmpl_drv"}`)))
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/api/v1/checklists/instantiate", bytes.NewBufferString(`{"instance_id": "inst_drv_2", "template_id": "tmpl_drv"}`)))
+
+	// Upload evidence to instance 1 and instance 2
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/api/v1/evidence/upload", bytes.NewBufferString(`{"evidence_id": "evd_drv_1", "instance_id": "inst_drv_1", "filename": "p1.jpg", "payload": "d1"}`)))
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/api/v1/evidence/upload", bytes.NewBufferString(`{"evidence_id": "evd_drv_2", "instance_id": "inst_drv_2", "filename": "p2.jpg", "payload": "d2"}`)))
+
+	// 1. Omitted instance_id with single instance evidence -> deterministically derives and establishes instance_id
+	deriveBody := `{
+		"action_id": "act_derived_inst",
+		"title": "Action With Derived Instance",
+		"owner": "usr_owner_d",
+		"reviewer": "usr_rev_d",
+		"evidence_ids": ["evd_drv_1"]
+	}`
+	wDerive := httptest.NewRecorder()
+	handler.ServeHTTP(wDerive, httptest.NewRequest("POST", "/api/v1/actions", bytes.NewBufferString(deriveBody)))
+	if wDerive.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created for derived instance, got %d: %s", wDerive.Code, wDerive.Body.String())
+	}
+	var createdAct api.ActionData
+	_ = json.NewDecoder(wDerive.Body).Decode(&createdAct)
+	if createdAct.InstanceID != "inst_drv_1" {
+		t.Fatalf("expected derived instance_id to be inst_drv_1, got %q", createdAct.InstanceID)
+	}
+
+	// 2. Negative: Omitted instance_id with mixed-instance evidence -> 400 Bad Request
+	mixedOmittedBody := `{
+		"action_id": "act_mixed_omitted",
+		"title": "Action With Mixed Evidence Omitted Instance",
+		"owner": "usr_owner_d",
+		"reviewer": "usr_rev_d",
+		"evidence_ids": ["evd_drv_1", "evd_drv_2"]
+	}`
+	wMixedOmitted := httptest.NewRecorder()
+	handler.ServeHTTP(wMixedOmitted, httptest.NewRequest("POST", "/api/v1/actions", bytes.NewBufferString(mixedOmittedBody)))
+	if wMixedOmitted.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for mixed evidence with omitted instance, got %d: %s", wMixedOmitted.Code, wMixedOmitted.Body.String())
+	}
+	if !strings.Contains(wMixedOmitted.Body.String(), "mixed instances") {
+		t.Fatalf("expected mixed instances error message, got %s", wMixedOmitted.Body.String())
+	}
+
+	// 3. Negative: Explicit instance_id mismatching mixed evidence -> 400 Bad Request
+	mixedExplicitBody := `{
+		"action_id": "act_mixed_explicit",
+		"instance_id": "inst_drv_1",
+		"title": "Action With Mixed Evidence Explicit Instance",
+		"owner": "usr_owner_d",
+		"reviewer": "usr_rev_d",
+		"evidence_ids": ["evd_drv_1", "evd_drv_2"]
+	}`
+	wMixedExplicit := httptest.NewRecorder()
+	handler.ServeHTTP(wMixedExplicit, httptest.NewRequest("POST", "/api/v1/actions", bytes.NewBufferString(mixedExplicitBody)))
+	if wMixedExplicit.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for mixed evidence with explicit instance, got %d: %s", wMixedExplicit.Code, wMixedExplicit.Body.String())
+	}
+}

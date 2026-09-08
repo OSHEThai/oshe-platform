@@ -32,8 +32,8 @@ func TestEmploymentRequiresSameTenantPersonAndExplicitOwner(t *testing.T) {
 	e := Employment{ID: "emp_alpha", TenantID: "ten_alpha", PersonID: "per_alpha", CompanyID: "cmp_alpha", OwnerSubjectRef: "usr_owner_alpha", ValidFrom: instant, ValidTo: instant.Add(24*time.Hour)}
 	if err := r.RegisterEmployment(e, "usr_owner_alpha", instant); err != nil { t.Fatal(err) }
 	foreign := e; foreign.ID, foreign.TenantID = "emp_bravo", "ten_bravo"
-	if err := r.RegisterEmployment(foreign, "usr_owner_bravo", instant); !errors.Is(err, ErrPersonNotFound) || !errors.Is(err, ErrTenantMismatch) {
-		t.Fatalf("want cross-tenant denial ErrTenantMismatch wrapping ErrPersonNotFound, got %v", err)
+	if err := r.RegisterEmployment(foreign, "usr_owner_bravo", instant); !errors.Is(err, ErrPersonNotFound) {
+		t.Fatalf("want non-leaking foreign-person denial ErrPersonNotFound, got %v", err)
 	}
 	if got := r.History("ten_alpha"); len(got) != 2 || got[0].EntityKind != "PERSON_REGISTERED" || got[1].EntityKind != "EMPLOYMENT_REGISTERED" { t.Fatalf("unexpected history: %+v", got) }
 }
@@ -89,7 +89,49 @@ func TestStructuredKeysPreventAdversarialDelimiterCollision(t *testing.T) {
 		ValidTo:         instant.Add(24 * time.Hour),
 	}
 	err = r.RegisterEmployment(e, "usr_owner_2", instant)
-	if !errors.Is(err, ErrPersonNotFound) || !errors.Is(err, ErrTenantMismatch) {
-		t.Fatalf("cross-tenant employment via delimiter manipulation must be denied, got: %v", err)
+	if !errors.Is(err, ErrPersonNotFound) {
+		t.Fatalf("cross-tenant employment via delimiter manipulation must be denied with ErrPersonNotFound, got: %v", err)
+	}
+}
+
+func TestEmploymentNonLeakingDenialWithoutForeignEnumeration(t *testing.T) {
+	r := NewRegistry()
+	if err := r.RegisterPerson(person("ten_alpha", "per_alpha", "usr_identity_alpha"), "usr_owner_alpha", instant); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Foreign person reference: person exists in ten_alpha, employment attempted in ten_bravo
+	foreignEmp := Employment{
+		ID:              "emp_foreign",
+		TenantID:        "ten_bravo",
+		PersonID:        "per_alpha",
+		CompanyID:       "cmp_bravo",
+		OwnerSubjectRef: "usr_owner_bravo",
+		ValidFrom:       instant,
+		ValidTo:         instant.Add(24 * time.Hour),
+	}
+	errForeign := r.RegisterEmployment(foreignEmp, "usr_owner_bravo", instant)
+
+	// 2. Completely nonexistent person reference: person does not exist in any tenant
+	missingEmp := Employment{
+		ID:              "emp_missing",
+		TenantID:        "ten_bravo",
+		PersonID:        "per_nonexistent",
+		CompanyID:       "cmp_bravo",
+		OwnerSubjectRef: "usr_owner_bravo",
+		ValidFrom:       instant,
+		ValidTo:         instant.Add(24 * time.Hour),
+	}
+	errMissing := r.RegisterEmployment(missingEmp, "usr_owner_bravo", instant)
+
+	// Both must return identical non-leaking ErrPersonNotFound (zero cross-tenant existence oracle)
+	if !errors.Is(errForeign, ErrPersonNotFound) {
+		t.Fatalf("expected ErrPersonNotFound for foreign person, got: %v", errForeign)
+	}
+	if !errors.Is(errMissing, ErrPersonNotFound) {
+		t.Fatalf("expected ErrPersonNotFound for missing person, got: %v", errMissing)
+	}
+	if errForeign != errMissing {
+		t.Fatalf("expected identical non-leaking error for foreign and missing person, got foreign=%v, missing=%v", errForeign, errMissing)
 	}
 }
