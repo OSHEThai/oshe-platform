@@ -9,11 +9,9 @@ This index reconciles stale v010 registers, checkpoints, and roles with exact ve
 - **V050 Execution:** V050 implementation experienced partial execution; related data authority and alpha boundaries have been committed as architectural baseline.
 - **New Corrective Issues:** Explicitly tracked and issued via the Release Lead (e.g., corrective issues for test quality, tenant stores). Approvals for these issues must not be manufactured and must receive human validation.
 
-## Successor Index: V010 Registers and GitHub Evidence
+## Successor Index
 
-- **Registers and Checkpoints:** Historical v010 Planning Registers remain exactly as authored under `Plan/12 Roadmap and Releases/v0.1.0 - AI Engineering Foundation/05 Planning Registers`.
-- **GitHub Evidence:** Current repository HEAD represents exact verified GitHub evidence, including architectural baseline decisions (e.g., `v040-foundation-decision.md`, `v050-foundation-decision.md`).
-- **Roles:** Role boundaries are explicitly enforced per `mission.json` lanes.
+The operational Plan successor index reconciling v010 registers and roles remains local at leased `Plan/00 Project Home/94 Audit Remediation 20260908/01-successor-index.md`.
 
 ## Office Registers Inventory
 
