@@ -1,6 +1,7 @@
 package workflowaction_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestOwnership_VisibleHistoryAndReassignment(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_fire_barrier_01"
-	err := engine.RegisterAction(workflowaction.GovernedAction{
+	err := engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:              actID,
 		TenantID:              "ten_synthetic_alpha",
 		FindingID:             "fnd_syn_fire_barrier_01",
@@ -88,7 +89,7 @@ func TestOwnership_Revocation(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_spill_kit_02"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_spill_kit_02",
@@ -126,7 +127,7 @@ func TestExtension_RequestAndApprovalWorkflow(t *testing.T) {
 	initialDue := t0.Add(24 * time.Hour)
 	requestedDue := t0.Add(72 * time.Hour)
 
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_scaffold_tag_03",
@@ -188,7 +189,7 @@ func TestExtension_SelfApprovalProhibition(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_guardrail_04"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_guardrail_04",
@@ -228,7 +229,7 @@ func TestExtension_RejectionWorkflow(t *testing.T) {
 	actID := "act_syn_loto_05"
 	originalDue := t0.Add(24 * time.Hour)
 
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_loto_05",
@@ -273,7 +274,7 @@ func TestEscalation_RequestAndAcknowledgement(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_chemical_leak_06"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_chemical_leak_06",
@@ -326,7 +327,7 @@ func TestEvidence_SubmissionAndReviewWorkflow(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_extinguisher_07"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:              actID,
 		TenantID:              "ten_synthetic_alpha",
 		FindingID:             "fnd_syn_extinguisher_07",
@@ -388,7 +389,7 @@ func TestConcurrency_OptimisticLocking(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_concurrency_08"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_concurrency_08",
@@ -420,7 +421,7 @@ func TestDuplicatePrevention(t *testing.T) {
 	engine, _, t0 := setupGovernanceEngine()
 
 	actID := "act_syn_duplicate_09"
-	_ = engine.RegisterAction(workflowaction.GovernedAction{
+	_ = engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID:         actID,
 		TenantID:         "ten_synthetic_alpha",
 		FindingID:        "fnd_syn_duplicate_09",
@@ -432,7 +433,7 @@ func TestDuplicatePrevention(t *testing.T) {
 	})
 
 	// Duplicate Action Registration
-	err := engine.RegisterAction(workflowaction.GovernedAction{
+	err := engine.RegisterAction("ten_synthetic_alpha", workflowaction.GovernedAction{
 		ActionID: actID,
 		TenantID: "ten_synthetic_alpha",
 	})
@@ -470,7 +471,7 @@ func TestActionGovernance_TenantIsolationAndCollisionSafety(t *testing.T) {
 
 	sharedID := "act_shared_coll_01"
 	// Tenant Alpha registers action
-	err := engine.RegisterAction(workflowaction.GovernedAction{
+	err := engine.RegisterAction("ten_alpha", workflowaction.GovernedAction{
 		ActionID:         sharedID,
 		TenantID:         "ten_alpha",
 		FindingID:        "fnd_01",
@@ -485,7 +486,7 @@ func TestActionGovernance_TenantIsolationAndCollisionSafety(t *testing.T) {
 	}
 
 	// Tenant Bravo registers same action ID -> MUST SUCCEED (collision safe)
-	err = engine.RegisterAction(workflowaction.GovernedAction{
+	err = engine.RegisterAction("ten_bravo", workflowaction.GovernedAction{
 		ActionID:         sharedID,
 		TenantID:         "ten_bravo",
 		FindingID:        "fnd_02",
@@ -517,5 +518,14 @@ func TestActionGovernance_TenantIsolationAndCollisionSafety(t *testing.T) {
 	actBravo, _ := engine.GetAction("ten_bravo", sharedID)
 	if actBravo.CurrentOwner != "usr_bravo_owner" {
 		t.Errorf("tenant bravo owner was corrupted by tenant alpha mutation! got: %s", actBravo.CurrentOwner)
+	}
+
+	// Mismatched trusted tenant vs action tenant must be denied
+	err = engine.RegisterAction("ten_charlie", workflowaction.GovernedAction{
+		ActionID: "act_cross",
+		TenantID: "ten_delta",
+	})
+	if !errors.Is(err, workflowaction.ErrCrossTenantDenied) {
+		t.Errorf("expected ErrCrossTenantDenied on mismatched trusted tenant registration, got: %v", err)
 	}
 }

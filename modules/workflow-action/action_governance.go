@@ -166,19 +166,24 @@ func NewActionGovernanceEngine(clock Clock) *ActionGovernanceEngine {
 }
 
 // RegisterAction adds an initial governed action to the engine.
-func (e *ActionGovernanceEngine) RegisterAction(act GovernedAction) error {
+func (e *ActionGovernanceEngine) RegisterAction(trustedTenantID string, act GovernedAction) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	tTenant := strings.TrimSpace(trustedTenantID)
+	if tTenant == "" {
+		return ErrBlankTenantID
+	}
+	if actTenant := strings.TrimSpace(act.TenantID); actTenant != "" && actTenant != tTenant {
+		return ErrCrossTenantDenied
+	}
+	act.TenantID = tTenant
 
 	id := strings.TrimSpace(act.ActionID)
 	if id == "" {
 		return ErrBlankActionID
 	}
-	tenantID := strings.TrimSpace(act.TenantID)
-	if tenantID == "" {
-		return ErrBlankTenantID
-	}
-	k := actionKey{tenantID: tenantID, actionID: id}
+	k := actionKey{tenantID: tTenant, actionID: id}
 	if _, exists := e.actions[k]; exists {
 		return ErrDuplicateActionID
 	}

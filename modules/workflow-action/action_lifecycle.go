@@ -153,19 +153,24 @@ func NewActionManager(clock Clock) *ActionManager {
 }
 
 // CreateAction initializes a new action in ASSIGNED state with chronological sequence 1.
-func (m *ActionManager) CreateAction(req CreateActionRequest) (ActionSnapshot, error) {
+func (m *ActionManager) CreateAction(trustedTenantID string, req CreateActionRequest) (ActionSnapshot, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	tTenant := strings.TrimSpace(trustedTenantID)
+	if tTenant == "" {
+		return ActionSnapshot{}, ErrBlankTenantID
+	}
+	if reqTenant := strings.TrimSpace(req.TenantID); reqTenant != "" && reqTenant != tTenant {
+		return ActionSnapshot{}, ErrCrossTenantDenied
+	}
+	req.TenantID = tTenant
 
 	id := strings.TrimSpace(req.ID)
 	if id == "" {
 		return ActionSnapshot{}, ErrBlankActionID
 	}
-	tenantID := strings.TrimSpace(req.TenantID)
-	if tenantID == "" {
-		return ActionSnapshot{}, ErrBlankTenantID
-	}
-	key := actionKey{tenantID: tenantID, actionID: id}
+	key := actionKey{tenantID: tTenant, actionID: id}
 	if _, exists := m.actions[key]; exists {
 		return ActionSnapshot{}, ErrDuplicateActionID
 	}
@@ -195,7 +200,7 @@ func (m *ActionManager) CreateAction(req CreateActionRequest) (ActionSnapshot, e
 	now := m.clock().UTC()
 	act := &action{
 		id:                    id,
-		tenantID:              tenantID,
+		tenantID:              tTenant,
 		title:                 title,
 		owner:                 owner,
 		reviewer:              reviewer,

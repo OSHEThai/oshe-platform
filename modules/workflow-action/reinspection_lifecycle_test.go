@@ -22,7 +22,7 @@ func TestReinspection_HappyPath_CompleteVerificationAndClosure(t *testing.T) {
 
 	// 1. Setup governed action with 2 accepted evidence items
 	actID := "act_syn_scaffold_01"
-	err := actionEngine.RegisterAction(workflowaction.GovernedAction{
+	err := actionEngine.RegisterAction("ten_syn_alpha", workflowaction.GovernedAction{
 		ActionID:              actID,
 		TenantID:              "ten_syn_alpha",
 		FindingID:             "fnd_syn_scaffold_01",
@@ -340,7 +340,7 @@ func TestReinspection_FailClosed_RejectedEvidenceAndDeficiency(t *testing.T) {
 	reinspectionEngine, actionEngine, t0 := setupReinspectionTestEnv()
 
 	actID := "act_syn_defect_01"
-	_ = actionEngine.RegisterAction(workflowaction.GovernedAction{
+	_ = actionEngine.RegisterAction("ten_syn_alpha", workflowaction.GovernedAction{
 		ActionID:              actID,
 		TenantID:              "ten_syn_alpha",
 		FindingID:             "fnd_syn_defect_01",

@@ -52,7 +52,9 @@ In accordance with PM task instructions, this RFC establishes architectural and 
 
 1. **Mandatory Tenant Scoping on All Reads and Mutations:**
    - Every lookup, query, state transition, and attachment requires an explicit trusted `tenantID`.
+   - Creation mutations (`CreateAction`, `RegisterAction`, `RegisterOriginal`, `RegisterDerived`) require an explicit trusted tenant scope parameter and enforce equality with payload tenant fields.
    - Lookups default-deny with non-leaking errors (`ErrActionNotFound`, `ErrRecordNotFound`, `ErrUnknownParent`) when an entity does not exist within the caller's tenant scope.
+   - Unshared cross-tenant entity queries return uniform not-found errors without foreign-store scanning, eliminating resource existence enumeration oracles.
 2. **Collision-Safe Multi-Tenant Storage:**
    - In-memory registries must partition state by `tenantID` either using structured composite keys (`type actionKey struct { tenantID, actionID string }`) or nested maps (`map[string]map[string]*action`).
    - Two tenants may legitimately register identical local identifiers (e.g. `act_001` or `orig_001`) without collision, rejection, or cross-tenant interference.
@@ -78,6 +80,7 @@ In accordance with PM task instructions, this RFC establishes architectural and 
   ```
 - Method Signatures Updated:
   ```go
+  func (m *ActionManager) CreateAction(trustedTenantID string, req CreateActionRequest) (ActionSnapshot, error)
   func (m *ActionManager) GetAction(tenantID, id string) (ActionSnapshot, error)
   func (m *ActionManager) StartWork(tenantID, actionID, callerIdentity string) error
   func (m *ActionManager) AttachEvidence(tenantID, actionID, callerIdentity string, ev EvidenceAttachment) error
@@ -99,6 +102,7 @@ In accordance with PM task instructions, this RFC establishes architectural and 
   ```
 - Method Signatures Updated:
   ```go
+  func (e *ActionGovernanceEngine) RegisterAction(trustedTenantID string, act GovernedAction) error
   func (e *ActionGovernanceEngine) GetAction(tenantID, actionID string) (GovernedAction, error)
   func (e *ActionGovernanceEngine) ReassignOwner(tenantID, actionID, newOwner, newRole, callerSubject, reason string, expectedVersion int64) (GovernedAction, error)
   func (e *ActionGovernanceEngine) RevokeOwner(tenantID, actionID, callerSubject, reason string, expectedVersion int64) (GovernedAction, error)
@@ -125,10 +129,10 @@ In accordance with PM task instructions, this RFC establishes architectural and 
   ```
 - Method Signatures Updated:
   ```go
-  func (reg *IntegrityRegistry) RegisterOriginal(rec OriginalRecord) error
+  func (reg *IntegrityRegistry) RegisterOriginal(trustedTenantID string, rec OriginalRecord) error
   func (reg *IntegrityRegistry) AcceptOriginal(tenantID, objectID string) error
   func (reg *IntegrityRegistry) ArchiveOriginal(tenantID, objectID string) error
-  func (reg *IntegrityRegistry) RegisterDerived(rec DerivedRecord) error
+  func (reg *IntegrityRegistry) RegisterDerived(trustedTenantID string, rec DerivedRecord) error
   func (reg *IntegrityRegistry) AcceptDerived(tenantID, objectID string) error
   func (reg *IntegrityRegistry) VerifyIntegrityLinkage(derivedID, callerTenantID, expectedDigest string) (IntegrityLinkage, error)
   ```

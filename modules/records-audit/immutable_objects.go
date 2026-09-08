@@ -219,13 +219,16 @@ func NewIntegrityRegistry() *IntegrityRegistry {
 // RegisterOriginal registers an original record.
 // If the objectID already exists as an accepted original, overwrite is denied.
 // If the objectID already exists as draft, it cannot be registered twice.
-func (reg *IntegrityRegistry) RegisterOriginal(rec OriginalRecord) error {
+func (reg *IntegrityRegistry) RegisterOriginal(trustedTenantID string, rec OriginalRecord) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	tenantID := strings.TrimSpace(rec.tenantID)
+	tenantID := strings.TrimSpace(trustedTenantID)
 	if tenantID == "" {
 		return ErrBlankTenantID
+	}
+	if recTenant := strings.TrimSpace(rec.tenantID); recTenant != "" && recTenant != tenantID {
+		return ErrCrossTenantLinkage
 	}
 	objectID := strings.TrimSpace(rec.objectID)
 	if objectID == "" {
@@ -319,13 +322,16 @@ func (reg *IntegrityRegistry) ArchiveOriginal(tenantID, objectID string) error {
 // - parent does not exist (ErrUnknownParent)
 // - parent is not in ACCEPTED state (ErrParentNotAccepted)
 // - derived object tenant does not match parent original tenant (ErrCrossTenantLinkage)
-func (reg *IntegrityRegistry) RegisterDerived(rec DerivedRecord) error {
+func (reg *IntegrityRegistry) RegisterDerived(trustedTenantID string, rec DerivedRecord) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
-	tenantID := strings.TrimSpace(rec.tenantID)
+	tenantID := strings.TrimSpace(trustedTenantID)
 	if tenantID == "" {
 		return ErrBlankTenantID
+	}
+	if recTenant := strings.TrimSpace(rec.tenantID); recTenant != "" && recTenant != tenantID {
+		return ErrCrossTenantLinkage
 	}
 	objectID := strings.TrimSpace(rec.objectID)
 	if objectID == "" {
@@ -344,12 +350,6 @@ func (reg *IntegrityRegistry) RegisterDerived(rec DerivedRecord) error {
 	parentKey := objectKey{tenantID: tenantID, objectID: strings.TrimSpace(rec.parentID)}
 	parent, parentExists := reg.originals[parentKey]
 	if !parentExists {
-		// If parent exists under another tenant, return ErrCrossTenantLinkage
-		for kOrig, p := range reg.originals {
-			if kOrig.objectID == strings.TrimSpace(rec.parentID) && p.tenantID != rec.tenantID {
-				return ErrCrossTenantLinkage
-			}
-		}
 		return ErrUnknownParent
 	}
 
@@ -423,11 +423,6 @@ func (reg *IntegrityRegistry) VerifyIntegrityLinkage(derivedID, callerTenantID, 
 	k := objectKey{tenantID: tCaller, objectID: tDerived}
 	derived, exists := reg.derived[k]
 	if !exists {
-		for kDer, d := range reg.derived {
-			if kDer.objectID == tDerived && d.tenantID != tCaller {
-				return IntegrityLinkage{}, ErrCrossTenantLinkage
-			}
-		}
 		return IntegrityLinkage{}, ErrUnknownParent
 	}
 	if derived.tenantID != tCaller {

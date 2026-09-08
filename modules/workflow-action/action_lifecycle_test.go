@@ -31,7 +31,7 @@ func defaultActionReq(id string) workflowaction.CreateActionRequest {
 
 func TestUnauthorizedAction(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, err := mgr.CreateAction(defaultActionReq("act_unauth"))
+	_, err := mgr.CreateAction("ten_alpha", defaultActionReq("act_unauth"))
 	if err != nil {
 		t.Fatalf("create action failed: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestUnauthorizedAction(t *testing.T) {
 
 func TestInsufficientEvidence(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, _ = mgr.CreateAction(defaultActionReq("act_insufficient"))
+	_, _ = mgr.CreateAction("ten_alpha", defaultActionReq("act_insufficient"))
 
 	// Owner attempts to submit with 0 attachments (requires 2)
 	err := mgr.SubmitForReview("ten_alpha", "act_insufficient", "user_owner_alice", "ready")
@@ -133,7 +133,7 @@ func TestInsufficientEvidence(t *testing.T) {
 
 func TestReviewRejectionAndResubmission(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, _ = mgr.CreateAction(defaultActionReq("act_rejection"))
+	_, _ = mgr.CreateAction("ten_alpha", defaultActionReq("act_rejection"))
 
 	_ = mgr.AttachEvidence("ten_alpha", "act_rejection", "user_owner_alice", workflowaction.EvidenceAttachment{
 		EvidenceID: "evd_1",
@@ -187,7 +187,7 @@ func TestReviewRejectionAndResubmission(t *testing.T) {
 
 func TestReopenFlow(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, _ = mgr.CreateAction(defaultActionReq("act_reopen"))
+	_, _ = mgr.CreateAction("ten_alpha", defaultActionReq("act_reopen"))
 
 	_ = mgr.AttachEvidence("ten_alpha", "act_reopen", "user_owner_alice", workflowaction.EvidenceAttachment{
 		EvidenceID: "evd_1",
@@ -232,7 +232,7 @@ func TestOverdueHandling(t *testing.T) {
 	mgr := workflowaction.NewActionManager(clock)
 	req := defaultActionReq("act_overdue")
 	req.DueDate = baseTime.Add(1 * time.Hour)
-	_, _ = mgr.CreateAction(req)
+	_, _ = mgr.CreateAction("ten_alpha", req)
 
 	// At T + 30m, not overdue
 	advance(30 * time.Minute)
@@ -258,7 +258,7 @@ func TestCrossTenantDenial(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
 	req := defaultActionReq("act_cross")
 	req.TenantID = "ten_alpha"
-	_, _ = mgr.CreateAction(req)
+	_, _ = mgr.CreateAction("ten_alpha", req)
 
 	// Attempt to attach evidence belonging to ten_bravo
 	evCross := workflowaction.EvidenceAttachment{
@@ -285,14 +285,19 @@ func TestCrossTenantDenial(t *testing.T) {
 	// Sibling tenant can register same action ID without collision
 	reqBravo := defaultActionReq("act_cross")
 	reqBravo.TenantID = "ten_bravo"
-	if _, err := mgr.CreateAction(reqBravo); err != nil {
+	if _, err := mgr.CreateAction("ten_bravo", reqBravo); err != nil {
 		t.Fatalf("sibling tenant must be able to use same action ID without collision: %v", err)
+	}
+
+	// Mismatched trusted tenant vs request tenant must be denied
+	if _, err := mgr.CreateAction("ten_charlie", reqBravo); !errors.Is(err, workflowaction.ErrCrossTenantDenied) {
+		t.Fatalf("expected ErrCrossTenantDenied for mismatched trusted tenant, got: %v", err)
 	}
 }
 
 func TestDuplicateAndConcurrentClosureDenial(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, _ = mgr.CreateAction(defaultActionReq("act_closure"))
+	_, _ = mgr.CreateAction("ten_alpha", defaultActionReq("act_closure"))
 
 	_ = mgr.AttachEvidence("ten_alpha", "act_closure", "user_owner_alice", workflowaction.EvidenceAttachment{
 		EvidenceID: "evd_1",
@@ -342,7 +347,7 @@ func TestDuplicateAndConcurrentClosureDenial(t *testing.T) {
 
 func TestCompleteHistoryRequirement(t *testing.T) {
 	mgr := workflowaction.NewActionManager(nil)
-	_, _ = mgr.CreateAction(defaultActionReq("act_history"))
+	_, _ = mgr.CreateAction("ten_alpha", defaultActionReq("act_history"))
 
 	_ = mgr.StartWork("ten_alpha", "act_history", "user_owner_alice")
 	_ = mgr.AttachEvidence("ten_alpha", "act_history", "user_owner_alice", workflowaction.EvidenceAttachment{

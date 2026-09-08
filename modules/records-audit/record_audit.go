@@ -416,13 +416,6 @@ func (s *RecordStore) GetAuditTrail(callerTenantID, recordID string) ([]AuditEnt
 
 	key := makeRecordKey(tCaller, tRecordID)
 	if _, exists := s.records[key]; !exists {
-		// Check if record exists under a different tenant to provide strict cross-tenant denial
-		for rKey, rec := range s.records {
-			if rec.RecordID == tRecordID && rec.TenantID != tCaller {
-				_ = rKey
-				return nil, ErrCrossTenantAccess
-			}
-		}
 		return nil, ErrRecordNotFound
 	}
 
@@ -454,11 +447,6 @@ func (s *RecordStore) GetSnapshots(callerTenantID, recordID string) ([]RecordSna
 
 	rec, exists := s.records[key]
 	if !exists {
-		for _, r := range s.records {
-			if r.RecordID == tRecordID && r.TenantID != tCaller {
-				return nil, ErrCrossTenantAccess
-			}
-		}
 		return nil, ErrRecordNotFound
 	}
 
@@ -487,11 +475,6 @@ func (s *RecordStore) GetRecord(callerTenantID, recordID string) (DeclaredRecord
 
 	rec, exists := s.records[key]
 	if !exists {
-		for _, r := range s.records {
-			if r.RecordID == tRecordID && r.TenantID != tCaller {
-				return DeclaredRecord{}, ErrCrossTenantAccess
-			}
-		}
 		return DeclaredRecord{}, ErrRecordNotFound
 	}
 

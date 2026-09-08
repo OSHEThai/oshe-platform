@@ -201,20 +201,20 @@ func TestRecordStore_UnauthorizedAuditAccessAndCrossTenantDenial(t *testing.T) {
 	if err == nil {
 		t.Fatal("security violation: tenant_bravo read tenant_alpha's audit trail")
 	}
-	if !errors.Is(err, recordsaudit.ErrCrossTenantAccess) {
-		t.Errorf("expected ErrCrossTenantAccess, got: %v", err)
+	if !errors.Is(err, recordsaudit.ErrRecordNotFound) {
+		t.Errorf("expected ErrRecordNotFound on cross-tenant GetAuditTrail, got: %v", err)
 	}
 
 	// Tenant Bravo attempts to access Tenant Alpha's record
 	_, err = store.GetRecord("ten_bravo", "rec_secret_1")
-	if !errors.Is(err, recordsaudit.ErrCrossTenantAccess) {
-		t.Errorf("expected ErrCrossTenantAccess on GetRecord, got: %v", err)
+	if !errors.Is(err, recordsaudit.ErrRecordNotFound) {
+		t.Errorf("expected ErrRecordNotFound on cross-tenant GetRecord, got: %v", err)
 	}
 
 	// Tenant Bravo attempts to access Tenant Alpha's snapshots
 	_, err = store.GetSnapshots("ten_bravo", "rec_secret_1")
-	if !errors.Is(err, recordsaudit.ErrCrossTenantAccess) {
-		t.Errorf("expected ErrCrossTenantAccess on GetSnapshots, got: %v", err)
+	if !errors.Is(err, recordsaudit.ErrRecordNotFound) {
+		t.Errorf("expected ErrRecordNotFound on cross-tenant GetSnapshots, got: %v", err)
 	}
 
 	// Empty tenant ID fails closed
