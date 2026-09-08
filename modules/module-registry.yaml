@@ -36,3 +36,7 @@ modules:
     name: Contract and Migration Governance
     path: modules/contract-migration-governance
     roadmap_topic: V020-T07
+  - id: MOD-WRF
+    name: Workforce Foundation
+    path: modules/workforce-foundation
+    roadmap_topic: V050-T01
