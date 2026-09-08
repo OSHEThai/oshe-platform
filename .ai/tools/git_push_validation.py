@@ -45,6 +45,10 @@ def safe_environment() -> dict[str, str]:
         upper = key.upper()
         if upper.startswith("GIT_") and upper != "GIT_PAGER":
             raise ValueError("ambient Git environment override")
+        if upper.startswith("GCM_") or upper in {
+            "GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN",
+        }:
+            raise ValueError("ambient credential selector")
         if upper in {
             "SSH_ASKPASS", "SSH_AUTH_SOCK", "SSH_ASKPASS_REQUIRE",
             "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "CURL_CA_BUNDLE",
@@ -121,7 +125,7 @@ def _config(spec: dict[str, Any], env: dict[str, str]) -> str:
         bad = (
             key.startswith(("url.", "include.", "includeif.", "protocol."))
             or key in {"core.hookspath", "core.sshcommand", "core.gitproxy",
-                       "core.worktree", "core.attributesfile", "extensions.worktreeconfig"}
+                       "core.worktree", "core.attributesfile", "core.askpass", "extensions.worktreeconfig"}
             or key.startswith("remote.") and key.endswith((".pushurl", ".push", ".mirror", ".vcs", ".receivepack", ".uploadpack"))
             or key.startswith("push.") and not (key == "push.gpgsign" and value == "false")
             or key.startswith("filter.") and not key.startswith("filter.lfs.")
@@ -129,9 +133,9 @@ def _config(spec: dict[str, Any], env: dict[str, str]) -> str:
             or key == "http.sslverify" and value.lower() not in {"true", "1", "yes"}
             or key == "http.followredirects" and value != "false"
             or key == "core.fsmonitor" and value.lower() not in {"false", "0", "no"}
-            or key.startswith("credential.") and key.endswith(".helper")
-            and value not in {"manager", "manager-core"}
-            or key.startswith("credential.") and key.endswith(".interactive")
+            or key.startswith("credential.") and not (
+                key == "credential.helper" and value in {"manager", "manager-core"}
+            )
         )
         _require(not bad, "unsupported Git configuration")
         if key == "remote.origin.url":

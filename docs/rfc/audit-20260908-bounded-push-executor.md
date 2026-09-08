@@ -67,6 +67,14 @@ submodule recursion cannot run. The exact origin must be present once and match
 the approved HTTPS URL. Only existing Git Credential Manager helpers are accepted;
 no credentials, provider settings, routes or account provisioning are changed.
 
+Following Security finding H-P1-001, `core.askPass` and every `credential.*`
+configuration key except the unscoped `credential.helper=manager` or
+`manager-core` are rejected, including URL-scoped helpers and identity/store
+selectors. All ambient `GCM_*` variables and GitHub token override variables are
+rejected before Git diagnostics. The executor alone sets its fixed noninteractive
+GCM value after this check. Configuration discovered through HOME or XDG is subject
+to the same credential-key rejection; changing its source does not exempt it.
+
 This is a procedural control on a trusted workstation, not an OS sandbox or a
 complete defense against a hostile local user. Installed Git, its child helpers,
 OS trust store, credential manager, environment outside the explicitly checked
