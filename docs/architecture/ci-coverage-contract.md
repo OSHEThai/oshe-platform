@@ -60,11 +60,12 @@ The canonical 20 Go modules covered by this runner include:
 ### 2.2 Execution & Aggregation Invariants
 - **Non-Fail-Fast:** The runner executes `go test ./...` in every discovered module directory sequentially, ensuring that a failure in one module does not halt execution of remaining modules.
 - **Deterministic Timeout:** Each module execution is bounded by a configurable timeout (default: 120 seconds).
+- **Strict `--module` Filtering:** When specific modules are requested via `--module`, the runner resolves each path relative to repository root and validates that it contains a `go.mod` file and does not escape repository root. Any invalid, missing, or outside-root module is rejected with exit code `1`; silent omission or partial passes are prohibited.
+- **Standalone `--json` Output Contract:** When `--json` is enabled, `tools/run_go_tests.py` emits strictly parseable JSON to standard output (`stdout`). All human-readable progress, toolchain banners, and test execution logs are routed exclusively to standard error (`stderr`), ensuring `json.loads(stdout)` succeeds cleanly in automated callers.
 - **Exit Dispositions:**
-  - Exit Code `0`: All discovered modules executed and passed cleanly.
-  - Exit Code `1`: One or more modules failed during test execution.
+  - Exit Code `0`: All discovered (or requested) modules executed and passed cleanly.
+  - Exit Code `1`: One or more modules failed during test execution, or an invalid module was requested.
   - Exit Code `2`: Environment prerequisite failure (e.g., Go executable not found in `PATH`).
-
 ---
 
 ## 3. Python Regression Test Registration (`.ci/local-ci.json`)

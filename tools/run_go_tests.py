@@ -176,11 +176,22 @@ def main() -> int:
 
     # 2. Discover modules
     if args.specific_modules:
-        modules = [
-            (root / m).resolve()
-            for m in args.specific_modules
-            if (root / m / "go.mod").is_file()
-        ]
+        modules = []
+        for m in args.specific_modules:
+            target = (root / m).resolve()
+            if root not in target.parents and target != root:
+                print(
+                    f"ERROR: Requested module '{m}' resolves outside repository root: {target}",
+                    file=sys.stderr,
+                )
+                return 1
+            if not (target / "go.mod").is_file():
+                print(
+                    f"ERROR: Requested module '{m}' does not contain a go.mod file: {target}",
+                    file=sys.stderr,
+                )
+                return 1
+            modules.append(target)
     else:
         modules = discover_go_modules(root)
 
@@ -189,8 +200,9 @@ def main() -> int:
         print(msg, file=sys.stderr)
         return 1
 
-    print(f"Toolchain: {toolchain_info}")
-    print(f"Discovered {len(modules)} Go modules in {root.as_posix()}:")
+    out = sys.stderr if args.json else sys.stdout
+    print(f"Toolchain: {toolchain_info}", file=out)
+    print(f"Discovered {len(modules)} Go modules in {root.as_posix()}:", file=out)
 
     passed_modules: List[str] = []
     failed_modules: List[Dict[str, Any]] = []
@@ -198,17 +210,17 @@ def main() -> int:
     # 3. Non-fail-fast execution across all modules
     for mod in modules:
         rel_path = mod.relative_to(root).as_posix()
-        sys.stdout.write(f"  RUN   {rel_path} ... ")
-        sys.stdout.flush()
+        out.write(f"  RUN   {rel_path} ... ")
+        out.flush()
 
         res = run_module_tests(mod, timeout=args.timeout, verbose=args.verbose)
         if res["returncode"] == 0:
-            sys.stdout.write(f"PASS ({res['elapsed_seconds']}s)\n")
-            sys.stdout.flush()
+            out.write(f"PASS ({res['elapsed_seconds']}s)\n")
+            out.flush()
             passed_modules.append(rel_path)
         else:
-            sys.stdout.write(f"FAIL (exit {res['returncode']}, {res['elapsed_seconds']}s)\n")
-            sys.stdout.flush()
+            out.write(f"FAIL (exit {res['returncode']}, {res['elapsed_seconds']}s)\n")
+            out.flush()
             # Print brief error context
             output_snippet = (res["stderr"] or res["stdout"]).strip()
             if output_snippet:
@@ -229,11 +241,12 @@ def main() -> int:
             )
 
     # 4. Summary and exit disposition
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 60, file=out)
     print(
-        f"Go Test Summary: {len(passed_modules)} passed, {len(failed_modules)} failed out of {len(modules)} modules"
+        f"Go Test Summary: {len(passed_modules)} passed, {len(failed_modules)} failed out of {len(modules)} modules",
+        file=out,
     )
-    print("=" * 60)
+    print("=" * 60, file=out)
 
     if args.json:
         report = {

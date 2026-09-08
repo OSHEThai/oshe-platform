@@ -187,5 +187,70 @@ class CiCoverageRegressionTests(unittest.TestCase):
         self.assertIn("run_local_ci.py", workflow_text, "Workflow must execute run_local_ci.py")
 
 
+    def test_run_go_tests_rejects_invalid_and_outside_root_modules(self) -> None:
+        """Verifies that tools/run_go_tests.py rejects invalid or outside-root module paths."""
+        # Test mixed valid and invalid module
+        proc_mixed = subprocess.run(
+            [sys.executable, str(RUN_GO_TESTS_PATH), "--module", "apps/api", "--module", "nonexistent/invalid_mod"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            proc_mixed.returncode,
+            1,
+            f"Expected exit code 1 on invalid module request, got {proc_mixed.returncode}",
+        )
+        self.assertIn(
+            "nonexistent/invalid_mod",
+            proc_mixed.stderr,
+            "Error output must explicitly name the missing module",
+        )
+
+        # Test outside root module
+        proc_outside = subprocess.run(
+            [sys.executable, str(RUN_GO_TESTS_PATH), "--module", "../outside_repo"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            proc_outside.returncode,
+            1,
+            f"Expected exit code 1 on outside-root module request, got {proc_outside.returncode}",
+        )
+        self.assertIn(
+            "outside repository root",
+            proc_outside.stderr,
+            "Error output must report resolution outside repository root",
+        )
+
+    def test_run_go_tests_json_stdout_is_parseable_standalone_json(self) -> None:
+        """Verifies that tools/run_go_tests.py --json emits strictly parseable JSON to stdout."""
+        proc = subprocess.run(
+            [sys.executable, str(RUN_GO_TESTS_PATH), "--module", "apps/api", "--json"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+        # stdout must be directly parseable as standalone JSON without extra text
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            self.fail(f"stdout is not parseable standalone JSON: {exc}\nstdout content:\n{proc.stdout}")
+
+        self.assertIsInstance(payload, dict)
+        self.assertTrue(payload.get("prerequisite_satisfied"))
+        self.assertEqual(payload.get("total_modules"), 1)
+        self.assertEqual(payload.get("passed_count"), 1)
+        self.assertEqual(payload.get("failed_count"), 0)
+        self.assertEqual(payload.get("passed_modules"), ["apps/api"])
+        self.assertEqual(payload.get("failed_modules"), [])
+
 if __name__ == "__main__":
     unittest.main()
