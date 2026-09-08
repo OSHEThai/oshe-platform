@@ -2,6 +2,11 @@
 
 Stakeholder snapshots remain in Drive; engineering-authoritative records are versioned here.
 
+## Audit Remediation
+
+- [Audit Remediation 20260908 Current Status](audit-20260908-current-status.md)
+
+
 ## Release Evidence Bundles
 
 - [V0.3 Release Evidence Bundle and Gate Reconciliation](v030-release-evidence-bundle.md) (`REL-V030-EVD-001` / `V030-I037`)
