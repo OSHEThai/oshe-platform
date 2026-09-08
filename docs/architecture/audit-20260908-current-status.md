@@ -4,10 +4,10 @@ This index reconciles stale v010 registers, checkpoints, and roles with exact ve
 
 ## Closure Scope and Corrective Issues
 
-- **Actual Closure Scope:** Reflected in current synthetic repository state, validating testing, AI execution planning, and validation workflows.
+- **Actual Closure Scope:** Reflected in the exact remote baseline SHA c606876f209daa4c361a086e817ba20733c79b44, validating testing, AI execution planning, and validation workflows. This remote implementation baseline is distinctly separate from the current local documentation candidate branch.
 - **Deferred Human Gates:** 54 deferred human gates remain explicitly documented and unresolved pending manual owner authorization.
 - **V050 Execution:** V050 implementation experienced partial execution; related data authority and alpha boundaries have been committed as architectural baseline.
-- **New Corrective Issues:** Explicitly tracked and issued via the Release Lead (e.g., corrective issues for test quality, tenant stores). Approvals for these issues must not be manufactured and must receive human validation.
+- **New Corrective Issues:** Explicitly tracked and issued via the Release Lead (e.g., corrective issues for test quality, tenant stores).
 
 ## Successor Index
 
