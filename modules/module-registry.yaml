@@ -40,3 +40,7 @@ modules:
     name: Workforce Foundation
     path: modules/workforce-foundation
     roadmap_topic: V050-T01
+  - id: MOD-INT
+    name: Incident Intake Foundation
+    path: modules/incident-intake-foundation
+    roadmap_topic: V050-T05
