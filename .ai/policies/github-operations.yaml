@@ -77,6 +77,26 @@ required_evidence_flags:
 execution_route_evidence_flags:
   AI_PROVIDER: approved_provider_route_validated
   DIRECT_GH_CLI: approved_execution_route_validated
+  DIRECT_GIT_PUSH: approved_execution_route_validated
+direct_git_push_routes:
+- execution_route_id: audit-bounded-git-push-20260908
+  lifecycle_status: APPROVED_ACTIVE
+  authority_ref: owner-renewal-20260909-014
+  executor_role_id: release-evidence-agent
+  required_specialist_profile_id: github-manager
+  credential_profile_id: gh-cli-oshethai-two-repo-full-v1
+  organization_allowlist: [OSHEThai]
+  repository_allowlist: [OSHEThai/oshe-platform]
+  activated_at: '2026-09-09T01:36:46Z'
+  expires_at: '2026-09-09T09:36:46Z'
+  remote_url: https://github.com/OSHEThai/oshe-platform.git
+  destination_branches:
+  - fix/audit-20260908-push-gate
+  - fix/audit-20260908-integration
+  - fix/audit-20260908-tenant-stores
+  - fix/audit-20260908-ci-coverage
+  - fix/audit-20260908-baseline-contracts
+  - fix/audit-20260908-current-docs
 direct_gh_execution_routes:
 - execution_route_id: direct-gh-cli-oshethai-two-repo-v1
   lifecycle_status: APPROVED_ACTIVE

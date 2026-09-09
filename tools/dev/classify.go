@@ -22,7 +22,7 @@ var (
 // Sealed canonical SHA-256 digests. Compose and seed are accepted only by full
 // digest equality; no substring or regex acceptance is used for the final decision.
 const (
-	canonicalComposeSHA256 = "a43cf3f90494bedfa8ccf3367d1c8197fb9d10c6e47a63bb24631364c2aff05a"
+	canonicalComposeSHA256 = "53ab5ff03bd4fa90fec648b62b6a8126aa581ca94bb1a6300cc423fed7174a13"
 	canonicalSeedSHA256    = "f9d68daa5c0cc6dbe693d30497d46fff3400484c3b4fcbd1d9846f2152414d77"
 )
 

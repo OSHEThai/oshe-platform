@@ -423,7 +423,7 @@ func (e *ReinspectionEngine) VerifySatisfactory(
 
 	// Validate action evidence prerequisites if action engine is present and action is registered
 	if e.actionEngine != nil && order.ActionID != "" {
-		action, err := e.actionEngine.GetAction(order.ActionID)
+		action, err := e.actionEngine.GetAction(order.TenantID, order.ActionID)
 		if err == nil {
 			// Check for unaccepted or rejected evidence on action
 			for _, ev := range action.EvidenceList {
