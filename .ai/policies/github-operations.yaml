@@ -81,14 +81,14 @@ execution_route_evidence_flags:
 direct_git_push_routes:
 - execution_route_id: audit-bounded-git-push-20260908
   lifecycle_status: APPROVED_ACTIVE
-  authority_ref: owner-push-extension-011
+  authority_ref: owner-renewal-20260909-014
   executor_role_id: release-evidence-agent
   required_specialist_profile_id: github-manager
   credential_profile_id: gh-cli-oshethai-two-repo-full-v1
   organization_allowlist: [OSHEThai]
   repository_allowlist: [OSHEThai/oshe-platform]
-  activated_at: '2026-09-08T14:48:05Z'
-  expires_at: '2026-09-08T18:32:00Z'
+  activated_at: '2026-09-09T01:36:46Z'
+  expires_at: '2026-09-09T09:36:46Z'
   remote_url: https://github.com/OSHEThai/oshe-platform.git
   destination_branches:
   - fix/audit-20260908-push-gate
